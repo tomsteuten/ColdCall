@@ -2,7 +2,7 @@
 
 import { STARTING } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const SAVE_KEY = 'coldcall_save';
 
 /**
@@ -36,8 +36,8 @@ export function defaultState() {
     routes: [], // { id, clientId }
 
     jobs: {
-      active: null, // in-flight diagnosis job, survives refresh
-      callbacks: [], // { faultId, clientId, dueDay }
+      active: null, // in-flight diagnosis job, survives refresh; callback jobs carry { callback: { misses } }
+      callbacks: [], // { faultId, clientId, dueDay, misses } — misses counts wrong fixes so far
     },
 
     motd: {
@@ -74,6 +74,16 @@ export const MIGRATIONS = {
     fresh.lastSeen = typeof old.lastSeen === 'number' ? old.lastSeen : 0;
     fresh.schemaVersion = 1;
     return fresh;
+  },
+  // v1 -> v2: callback queue entries gain a misses count (repeat wrong fixes
+  // dampen the reputation penalty instead of repeating it in full). Every v1
+  // entry was created by exactly one wrong fix, so misses starts at 1.
+  1: (old) => {
+    for (const cb of old.jobs.callbacks) {
+      if (typeof cb.misses !== 'number') cb.misses = 1;
+    }
+    old.schemaVersion = 2;
+    return old;
   },
 };
 

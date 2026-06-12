@@ -57,6 +57,26 @@ test('v0 (pre-release flat) save migrates to v1 shape', () => {
   assert(migrated.van.slots === defaultState().van.slots, 'new keys should get defaults');
 });
 
+test('v1 save with callbacks migrates to v2: entries gain misses = 1', () => {
+  // Fixture: a real v1 save shape — callbacks queued before misses existed.
+  const v1Fixture = defaultState();
+  v1Fixture.schemaVersion = 1;
+  v1Fixture.player.cash = 888;
+  v1Fixture.jobs.callbacks = [
+    { faultId: 'worn-scraper-blades', clientId: 'burgertown-high-st', dueDay: '2026-06-10' },
+  ];
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v1Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assert(migrated.player.cash === 888, 'cash should be preserved');
+  assertEqual(migrated.jobs.callbacks.length, 1, 'callback entry should survive');
+  const cb = migrated.jobs.callbacks[0];
+  assert(cb.misses === 1, 'v1 entries were created by exactly one wrong fix');
+  assert(cb.faultId === 'worn-scraper-blades', 'entry fields should be untouched');
+  assert(cb.dueDay === '2026-06-10', 'dueDay should be untouched');
+});
+
 test('v0 migration applies through load() from storage', () => {
   const storage = memoryStorage();
   storage.setItem(SAVE_KEY, JSON.stringify({ cash: 321 }));

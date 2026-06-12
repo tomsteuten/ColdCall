@@ -23,7 +23,10 @@ export const JOBS = {
     partsCostMax: 60,
   },
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
-  callbackPayoutMult: 0.4,
+  // GDD §2.1 says "partial payout" with no number; this knob is ours to tune.
+  wrongFixPayoutMult: 0.4,
+  // The returned job's rate when fixed correctly — this is GDD §6's "Callback pays 40%".
+  callbackJobPayoutMult: 0.4,
   callbackDueDays: 1, // how many days until a callback job returns
 };
 
@@ -31,6 +34,15 @@ export const JOBS = {
 export const REPUTATION = {
   correctFix: 1,
   callbackPenalty: 2,
+  // Missing the same callback again costs less than the first miss — dampened,
+  // not free, so a repeat-miss spiral can't drain reputation forever.
+  repeatCallbackPenalty: 1,
+  // Reputation needed to unlock each tier (key = tier). Rep is +1 per clean job
+  // and a focused job runs ~60–75s, so 10 rep ≈ 10–12.5 minutes — inside GDD §6's
+  // "Tier 2 within 15 minutes", with slack for a couple of -2 misses.
+  tierThresholds: {
+    2: 10,
+  },
 };
 
 /** Hired techs (GDD §3.1). Hard rule: active play must always beat these per minute. */
