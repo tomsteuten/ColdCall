@@ -1,0 +1,45 @@
+/* Cold Call — base styles. Mobile-first (~380px), scales up. Theme via custom properties. */
+
+:root {
+  --bg: #10141c;
+  --surface: #1a2230;
+  --text: #e8edf5;
+  --text-dim: #8a96a8;
+  --accent: #7fd4f0; /* soft-serve mint-ice blue */
+  --space: 1rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.dev-title {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+}
+
+.dev-meta {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0;
+}
