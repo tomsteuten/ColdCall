@@ -1,0 +1,21 @@
+{
+  "id": "hopper-thermistor-drift",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Display says hopper temp is high.",
+    "Compressor running constantly.",
+    "Product tastes and pours fine."
+  ],
+  "tests": {
+    "error-log": "Recurring HOPPER TEMP HIGH alarm, several times a day for two weeks.",
+    "temp-probe": "Independent probe reads hopper at 3.2 °C — well in spec. Display still claims 9 °C.",
+    "continuity-test": "Thermistor resistance is way off the curve for its actual temperature. Sensor has drifted."
+  },
+  "correctFix": "replace-hopper-thermistor",
+  "wrongFixes": ["replace-compressor", "regas-refrigeration", "replace-controller-board"],
+  "payout": 130,
+  "partsCost": 25,
+  "flavour": "The machine wasn't warm. It was lying.",
+  "authenticityNote": "A drifted thermistor reads high while the product is actually fine, so the controller over-runs the compressor. Looks exactly like refrigeration failure — replacing the compressor is the expensive wrong answer (GDD §2.2)."
+}

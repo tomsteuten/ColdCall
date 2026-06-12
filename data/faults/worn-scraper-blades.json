@@ -1,0 +1,20 @@
+{
+  "id": "worn-scraper-blades",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product coming out icy and soft.",
+    "Beater motor pulling high amps."
+  ],
+  "tests": {
+    "error-log": "No active errors. One historical high-torque warning, three days old.",
+    "temp-probe": "Barrel temp in spec. Hopper temp in spec.",
+    "inspect-beater": "Scraper blades are worn down to nubs. Ice is building up on the barrel wall."
+  },
+  "correctFix": "replace-scraper-blades",
+  "wrongFixes": ["replace-beater-motor", "regas-refrigeration", "replace-barrel-seal"],
+  "payout": 110,
+  "partsCost": 15,
+  "flavour": "The $15 fix everyone overlooks while quoting a new compressor.",
+  "authenticityNote": "Worn scraper blades stop shaving the barrel wall, so ice accumulates and drags the beater — icy product plus high motor amps with refrigeration perfectly healthy. A genuinely classic cheap fix."
+}
