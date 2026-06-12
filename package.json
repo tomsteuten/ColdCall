@@ -1,0 +1,11 @@
+{
+  "name": "coldcall",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cold Call — repair-tycoon x incremental browser game. No build step; this file only lets node run the tests as ES modules.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/run.js"
+  }
+}
