@@ -3,6 +3,7 @@
 import { load, save } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
+import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import * as jobScreen from './ui/job.js';
 
@@ -22,11 +23,10 @@ let invoice = null;
 
 const actions = {
   nextTicket() {
-    // Random ticket for this slice; tier gating and real ticket generation come later.
+    // Random (fault, same-tier client) pair; tier gating comes with reputation later.
     const next = mulberry32(Date.now());
-    const ids = Object.keys(faults);
-    const fault = faults[ids[Math.floor(next() * ids.length)]];
-    startJob(state, fault, clients[0].id, next);
+    const { fault, client } = pickTicket(faults, clients, next);
+    startJob(state, fault, client.id, next);
     save(state);
     render();
   },
