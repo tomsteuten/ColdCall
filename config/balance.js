@@ -69,3 +69,8 @@ export const OFFLINE = {
 export const PRESTIGE = {
   lifetimeEarningsThreshold: 250000,
 };
+
+/** Machine of the Day. Day 1 = the launch date; used only for the share-card day number. */
+export const MOTD = {
+  epochDate: '2026-06-12', // Day 1 — change only on a fresh deploy, never mid-run
+};
