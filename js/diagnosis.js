@@ -53,9 +53,11 @@ export function shuffled(arr, next) {
  * @param {object} fault validated fault from the library
  * @param {string} clientId client this ticket came from
  * @param {function(): number} next PRNG in [0,1) for the option shuffle
+ * @param {{misses: number}|null} [callback] set when replaying a claimed
+ *   callback — carries the miss count so settlement can dampen repeat penalties
  * @returns {object} the new active job
  */
-export function startJob(state, fault, clientId, next) {
+export function startJob(state, fault, clientId, next, callback = null) {
   if (state.jobs.active) throw new Error('A job is already active');
   state.jobs.active = {
     faultId: fault.id,
@@ -64,6 +66,7 @@ export function startJob(state, fault, clientId, next) {
     startedAt: Date.now(), // for a later speed-bonus; not scored this session
     testsRun: [],
     fixOptions: shuffled([fault.correctFix, ...fault.wrongFixes], next),
+    callback,
   };
   return state.jobs.active;
 }
@@ -120,7 +123,8 @@ export function runTest(state, testId, faults) {
  * @param {object} state game state (mutated: job cleared, economy applied)
  * @param {string} fixId one of the job's fixOptions
  * @param {Object<string, object>} faults fault library keyed by id
- * @returns {{correct: boolean, fault: object, earned: number}} for the invoice screen
+ * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, unlockedTier: number|null}}
+ *   for the invoice screen
  */
 export function commitFix(state, fixId, faults) {
   const job = state.jobs.active;
@@ -128,9 +132,11 @@ export function commitFix(state, fixId, faults) {
   if (!job.fixOptions.includes(fixId)) throw new Error(`Fix "${fixId}" is not an option on this job`);
   const fault = faults[job.faultId];
   const correct = fixId === fault.correctFix;
-  const earned = settleJob(state, fault, correct, job.clientId);
+  // Old saves' active jobs predate the callback field; undefined means fresh job.
+  const callback = job.callback ?? null;
+  const { earned, unlockedTier } = settleJob(state, fault, correct, job.clientId, { callback });
   state.jobs.active = null;
-  return { correct, fault, earned };
+  return { correct, fault, earned, callback: callback !== null, unlockedTier };
 }
 
 /**

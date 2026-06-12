@@ -118,7 +118,7 @@ test('commitFix with a wrong fix pays the callback rate and queues a callback', 
   const cashBefore = state.player.cash;
   const { correct, earned } = commitFix(state, 'wrong-a', FAULTS);
   assert(!correct, 'should be wrong');
-  assertEqual(earned, Math.round(100 * JOBS.callbackPayoutMult));
+  assertEqual(earned, Math.round(100 * JOBS.wrongFixPayoutMult));
   assertEqual(state.player.cash, cashBefore + earned);
   assertEqual(state.jobs.active, null);
   assertEqual(state.jobs.callbacks.length, 1);
