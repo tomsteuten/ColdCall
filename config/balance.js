@@ -18,6 +18,13 @@ export const JOBS = {
   },
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
   callbackPayoutMult: 0.4,
+  callbackDueDays: 1, // how many days until a callback job returns
+};
+
+/** Reputation deltas (GDD §3.3: earned per clean job, lost on callbacks). */
+export const REPUTATION = {
+  correctFix: 1,
+  callbackPenalty: 2,
 };
 
 /** Hired techs (GDD §3.1). Hard rule: active play must always beat these per minute. */
