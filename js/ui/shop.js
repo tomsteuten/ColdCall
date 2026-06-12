@@ -1,8 +1,10 @@
 /** @file Tools shop screen: list TOOL_CATALOGUE, buy with cash, show owned state.
- * Render-from-state like every screen; the buy mutation lives in economy.buyTool.
+ * Also shows the staff (techs) section for hiring and route assignment.
+ * Render-from-state like every screen; mutations live in economy.js.
  */
 
 import { TOOL_CATALOGUE } from '../economy.js';
+import { TECHS } from '../../config/balance.js';
 import { statusBar } from './job.js';
 
 /**
@@ -10,11 +12,12 @@ import { statusBar } from './job.js';
  * @param {HTMLElement} root
  * @param {object} ctx
  * @param {object} ctx.state game state
- * @param {{buyTool: function(string), closeShop: function}} ctx.actions
+ * @param {{buyTool: function(string), hireTech: function, closeShop: function}} ctx.actions
  */
 export function render(root, ctx) {
   const { state, actions } = ctx;
-  const cards = Object.entries(TOOL_CATALOGUE)
+
+  const toolCards = Object.entries(TOOL_CATALOGUE)
     .map(([id, tool]) => {
       const owned = tool.owned(state);
       const affordable = state.player.cash >= tool.cost;
@@ -36,11 +39,14 @@ export function render(root, ctx) {
     })
     .join('');
 
+  const staffSection = staffHTML(state);
+
   root.innerHTML = `
     ${statusBar(state)}
     <section class="screen screen-shop">
       <h2 class="section-title">Tools shop</h2>
-      <ul class="shop-list">${cards}</ul>
+      <ul class="shop-list">${toolCards}</ul>
+      ${staffSection}
       <button class="btn btn-primary" data-action="close-shop">Back</button>
     </section>`;
 
@@ -50,4 +56,40 @@ export function render(root, ctx) {
   root.querySelectorAll('[data-action="close-shop"]').forEach((el) =>
     el.addEventListener('click', actions.closeShop)
   );
+  root.querySelectorAll('[data-action="hire-tech"]').forEach((el) =>
+    el.addEventListener('click', actions.hireTech)
+  );
+}
+
+function staffHTML(state) {
+  const tier2Locked = state.player.tierUnlocked < 2;
+  const atMax = state.techs.length >= TECHS.maxTechs;
+  const affordable = state.player.cash >= TECHS.firstHireCost;
+
+  const techList = state.techs.length > 0
+    ? state.techs.map((t) => {
+        const route = state.routes.find((r) => r.id === t.routeId);
+        const routeLabel = route ? 'Burgertown South Side' : 'Unassigned';
+        return `<li class="shop-card"><span class="shop-tool-name">${t.name}</span>
+          <span class="shop-tool-blurb">Skill ${t.skill} · ${routeLabel}</span></li>`;
+      }).join('')
+    : `<li class="shop-card"><p class="shop-tool-blurb">No techs hired yet.</p></li>`;
+
+  let hireButton;
+  if (tier2Locked) {
+    hireButton = `<button class="btn btn-buy" disabled>Hire tech — $${TECHS.firstHireCost}</button>
+      <p class="shop-locked">Unlock Tier 2 first (rep 10)</p>`;
+  } else if (atMax) {
+    hireButton = `<button class="btn btn-buy" disabled>Max techs hired</button>`;
+  } else if (!affordable) {
+    hireButton = `<button class="btn btn-buy" disabled>Hire tech — $${TECHS.firstHireCost}</button>
+      <p class="shop-locked">Not enough cash</p>`;
+  } else {
+    hireButton = `<button class="btn btn-buy" data-action="hire-tech">Hire tech — $${TECHS.firstHireCost}</button>`;
+  }
+
+  return `
+    <h2 class="section-title">Staff</h2>
+    <ul class="shop-list">${techList}</ul>
+    ${hireButton}`;
 }

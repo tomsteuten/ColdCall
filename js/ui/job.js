@@ -17,7 +17,9 @@ import { canPlayToday } from '../motd.js';
  * @param {object[]} ctx.clients from clients.json
  * @param {object|null} ctx.invoice transient result of the last commitFix, not persisted
  * @param {number|null} ctx.justUnlockedTier tier unlocked this session, for a one-time banner
- * @param {{nextTicket: function, runTest: function(string), commitFix: function(string), dismissInvoice: function}} ctx.actions
+ * @param {object|null} ctx.offlineReport result of simulateOfflineProgress on this load, transient
+ * @param {{nextTicket: function, runTest: function(string), commitFix: function(string),
+ *   dismissInvoice: function, dismissOfflineReport: function}} ctx.actions
  */
 export function render(root, ctx) {
   const { state, invoice } = ctx;
@@ -30,6 +32,7 @@ export function render(root, ctx) {
   }
   wire(root, ctx.actions);
 }
+
 
 /** Cash/reputation/van header shown on every view (shop.js imports it too). */
 export function statusBar(state) {
@@ -44,7 +47,7 @@ export function statusBar(state) {
     </header>`;
 }
 
-function homeView({ state, justUnlockedTier }) {
+function homeView({ state, justUnlockedTier, offlineReport }) {
   const streak = state.stats.cleanStreak;
   const due = dueCallbacks(state).length;
   const unlockBanner =
@@ -63,12 +66,21 @@ function homeView({ state, justUnlockedTier }) {
        </button>`
     : `<button class="btn btn-motd" data-action="start-motd">Machine of the Day</button>`;
 
+  const offlineBanner = offlineReport
+    ? `<div class="home-offline-report">
+         <p class="home-offline-title">While you were away</p>
+         <p class="home-offline-detail">${offlineReport.jobsDone} job${offlineReport.jobsDone !== 1 ? 's' : ''} done · $${offlineReport.totalEarned} earned${offlineReport.callbacksAdded > 0 ? ` · ${offlineReport.callbacksAdded} new callback${offlineReport.callbacksAdded !== 1 ? 's' : ''}` : ''}</p>
+         <button class="btn btn-sm" data-action="dismiss-offline-report">Dismiss</button>
+       </div>`
+    : '';
+
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
       <h1 class="dev-title">Cold Call</h1>
       <p class="dev-meta">${state.stats.jobsCompleted} jobs done${streak > 1 ? ` · ${streak} clean in a row` : ''}</p>
       ${unlockBanner}
+      ${offlineBanner}
       ${due > 0 ? `<p class="home-callbacks">${due} callback${due > 1 ? 's' : ''} waiting</p>` : ''}
       <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
       ${motdSection}
@@ -184,6 +196,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="restock-van"]').forEach((el) =>
     el.addEventListener('click', actions.restockVan)
+  );
+  root.querySelectorAll('[data-action="dismiss-offline-report"]').forEach((el) =>
+    el.addEventListener('click', actions.dismissOfflineReport)
   );
   root.querySelectorAll('[data-test]').forEach((el) =>
     el.addEventListener('click', () => actions.runTest(el.dataset.test))

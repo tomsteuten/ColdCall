@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, VAN, STARTING } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, VAN, STARTING, TECHS } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -160,6 +160,42 @@ export function restockVan(state) {
   if (state.player.cash < cost) return { ok: false, reason: 'Not enough cash' };
   state.player.cash -= cost;
   state.van.stock['generic-parts'] = state.van.slots;
+  return { ok: true, reason: null };
+}
+
+// The single contract route available at launch (GDD §9 v1.0: one route).
+const BURGERTOWN_ROUTE = { id: 'burgertown-south', clientId: 'burgertown-high-st' };
+const TECH_NAMES = ['Dave', 'Mike'];
+
+/**
+ * Hire a tech. Deducts the hire cost, creates the tech, and if tier 2 is
+ * unlocked creates (or reuses) the Burgertown route and assigns the tech to it.
+ * Refuses if unaffordable, already at max techs, or tier 2 not yet unlocked.
+ * @param {object} state game state (mutated on success)
+ * @param {number} [now] ms epoch, injectable for tests
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function hireTech(state, now = Date.now()) {
+  if (state.techs.length >= TECHS.maxTechs) return { ok: false, reason: 'Max techs already hired' };
+  if (state.player.cash < TECHS.firstHireCost) return { ok: false, reason: 'Not enough cash' };
+  if (state.player.tierUnlocked < 2) return { ok: false, reason: 'Unlock Tier 2 first' };
+
+  state.player.cash -= TECHS.firstHireCost;
+
+  // Ensure the contract route exists.
+  if (!state.routes.find((r) => r.id === BURGERTOWN_ROUTE.id)) {
+    state.routes.push({ ...BURGERTOWN_ROUTE });
+  }
+
+  const name = TECH_NAMES[state.techs.length] ?? `Tech ${state.techs.length + 1}`;
+  state.techs.push({
+    id: `tech-${state.techs.length + 1}`,
+    name,
+    skill: 1,
+    routeId: BURGERTOWN_ROUTE.id,
+    hiredAt: now,
+  });
+
   return { ok: true, reason: null };
 }
 

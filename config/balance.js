@@ -48,9 +48,11 @@ export const REPUTATION = {
 /** Hired techs (GDD §3.1). Hard rule: active play must always beat these per minute. */
 export const TECHS = {
   firstHireCost: 2000,
-  dailyWage: 300,
+  dailyWage: 300,       // tracked in balance.js for v1.x; not yet deducted at runtime
   earningsPerJob: 50,
   baseSuccessRate: 0.75,
+  jobsPerHour: 2,       // idle jobs completed per tech per hour on a route
+  maxTechs: 2,          // GDD §9 v1.0 cap
 };
 
 /** Tool upgrade costs. Tools unlock test types, they don't just inflate numbers. */

@@ -3,12 +3,13 @@
 import { load, save } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimDueCallback, restockVan } from './economy.js';
+import { buyTool, claimDueCallback, restockVan, hireTech } from './economy.js';
+import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import * as jobScreen from './ui/job.js';
-import * as shopScreen from './ui/shop.js';
+import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
 
 const { state, error } = load();
@@ -24,6 +25,10 @@ const app = document.getElementById('app');
 // Result of the last commitFix, shown on the invoice screen. Transient by
 // design: a refresh mid-invoice lands on home with the money already banked.
 let invoice = null;
+
+// Offline progress report from this load (techs earned while away). Transient:
+// shown once, dismissed by the player, gone on next refresh.
+let offlineReport = null;
 
 // Result of a completed MotD run. Transient: a refresh lands on home, and the
 // result is still recoverable via state.motd.lastResult if played today.
@@ -93,6 +98,16 @@ const actions = {
     else console.warn(`Cold Call: van not restocked: ${reason}`);
     render();
   },
+  hireTech() {
+    const { ok, reason } = hireTech(state);
+    if (ok) save(state);
+    else console.warn(`Cold Call: tech not hired: ${reason}`);
+    render();
+  },
+  dismissOfflineReport() {
+    offlineReport = null;
+    render();
+  },
   startMotd() {
     if (!canPlayToday(state)) return; // guard: already played today
     if (state.jobs.active) return;    // guard: finish current job first
@@ -137,7 +152,7 @@ function render() {
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions });
   } else {
-    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, actions });
+    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, actions });
   }
 }
 
@@ -147,6 +162,9 @@ if (state.jobs.active && !faults[state.jobs.active.faultId]) {
   console.error(`Cold Call: active job references unknown fault "${state.jobs.active.faultId}"; abandoning the job.`);
   state.jobs.active = null;
 }
+
+// Simulate offline progress before first render so the report is visible on home.
+offlineReport = simulateOfflineProgress(state, faults);
 
 render();
 save(state);
