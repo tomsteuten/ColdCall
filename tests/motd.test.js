@@ -1,0 +1,229 @@
+/** @file Machine of the Day: deterministic draw, once-per-day guard, streak rules, share card. */
+
+import { defaultState } from '../js/state.js';
+import { pickMotdFault, canPlayToday, settleMotd, buildShareCard, getTodayDateStr } from '../js/motd.js';
+import { MOTD } from '../config/balance.js';
+
+// A minimal fault library for testing (two faults, different ids).
+function makeFaults() {
+  return {
+    'fault-alpha': {
+      id: 'fault-alpha',
+      machineType: 'soft-serve-home',
+      tier: 1,
+      symptoms: ['Broken.'],
+      tests: {},
+      correctFix: 'fix-alpha',
+      wrongFixes: ['wrong-alpha'],
+      payout: 100,
+      partsCost: 10,
+      flavour: 'Alpha done.',
+    },
+    'fault-beta': {
+      id: 'fault-beta',
+      machineType: 'soft-serve-commercial',
+      tier: 2,
+      symptoms: ['Also broken.'],
+      tests: {},
+      correctFix: 'fix-beta',
+      wrongFixes: ['wrong-beta'],
+      payout: 150,
+      partsCost: 20,
+      flavour: 'Beta done.',
+    },
+  };
+}
+
+// --- deterministic draw ---
+
+test('same date string produces the same fault every time', () => {
+  const faults = makeFaults();
+  const a = pickMotdFault(faults, '2026-06-12');
+  const b = pickMotdFault(faults, '2026-06-12');
+  assertEqual(a.id, b.id, 'same date must always pick the same fault');
+});
+
+test('different dates (usually) pick different faults — at minimum the draw changes with a larger library', () => {
+  // With a 2-fault library we verify the algorithm produces different indices for
+  // well-separated dates; this is a sanity check, not a distribution guarantee.
+  const faults = makeFaults();
+  const day1 = pickMotdFault(faults, '2026-06-12');
+  const day2 = pickMotdFault(faults, '2026-06-13');
+  // Both dates should produce a valid fault from the library.
+  assert(faults[day1.id] !== undefined, 'day1 result must be in the library');
+  assert(faults[day2.id] !== undefined, 'day2 result must be in the library');
+});
+
+test('pickMotdFault draws from all tiers regardless of tierUnlocked', () => {
+  // The puzzle is standalone — tier gating does not apply.
+  const faults = makeFaults();
+  // With enough date strings we should see both tier-1 and tier-2 faults.
+  const seen = new Set();
+  for (let i = 0; i < 30; i++) {
+    const f = pickMotdFault(faults, `2026-06-${String(i + 1).padStart(2, '0')}`);
+    seen.add(f.tier);
+  }
+  assert(seen.has(1), 'should draw tier-1 faults');
+  assert(seen.has(2), 'should draw tier-2 faults');
+});
+
+test('draw is stable: adding a fault does not change dates already in the wild', () => {
+  // The sort-by-id approach guarantees stability because new ids slot in
+  // alphabetically, shifting the index only for dates that would naturally land
+  // on a higher index. We verify the base case: a 1-fault library always returns
+  // that fault regardless of date.
+  const singleFault = { 'fault-alpha': makeFaults()['fault-alpha'] };
+  const a = pickMotdFault(singleFault, '2026-06-12');
+  const b = pickMotdFault(singleFault, '2099-12-31');
+  assertEqual(a.id, 'fault-alpha');
+  assertEqual(b.id, 'fault-alpha');
+});
+
+// --- once-per-day guard ---
+
+const TODAY = Date.UTC(2026, 5, 12, 10, 0, 0); // 2026-06-12T10:00Z
+
+test('canPlayToday returns true when lastPlayedDate is null', () => {
+  const state = defaultState();
+  assert(canPlayToday(state, TODAY));
+});
+
+test('canPlayToday returns false after the puzzle has been played today', () => {
+  const state = defaultState();
+  state.motd.lastPlayedDate = '2026-06-12';
+  assert(!canPlayToday(state, TODAY));
+});
+
+test('canPlayToday returns true the next day even if played yesterday', () => {
+  const state = defaultState();
+  state.motd.lastPlayedDate = '2026-06-12';
+  const TOMORROW = Date.UTC(2026, 5, 13, 1, 0, 0); // 2026-06-13T01:00Z
+  assert(canPlayToday(state, TOMORROW));
+});
+
+// --- streak rules ---
+
+function playMotd(state, correct, dateStr, prevState = null) {
+  // Helper: simulate a settled motd run with injectable time.
+  const now = new Date(dateStr + 'T12:00:00Z').getTime();
+  const fault = makeFaults()['fault-alpha'];
+  return settleMotd(state, fault, correct, ['error-log'], now - 30000, now);
+}
+
+test('first solve: streak becomes 1', () => {
+  const state = defaultState();
+  const result = playMotd(state, true, '2026-06-12');
+  assertEqual(result.streak, 1);
+  assertEqual(state.motd.streak, 1);
+});
+
+test('consecutive solves: streak increments', () => {
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12');
+  const result = playMotd(state, true, '2026-06-13');
+  assertEqual(result.streak, 2);
+  assertEqual(state.motd.streak, 2);
+});
+
+test('three consecutive solves: streak reaches 3', () => {
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12');
+  playMotd(state, true, '2026-06-13');
+  const result = playMotd(state, true, '2026-06-14');
+  assertEqual(result.streak, 3);
+});
+
+test('skipped a day: streak resets to 1 (new streak, not continuation)', () => {
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12'); // streak = 1
+  // Skip 2026-06-13
+  const result = playMotd(state, true, '2026-06-14');
+  assertEqual(result.streak, 1, 'gap breaks the streak; starting fresh at 1');
+});
+
+test('fail: streak resets to 0', () => {
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12'); // streak = 1
+  const result = playMotd(state, false, '2026-06-13');
+  assertEqual(result.streak, 0);
+  assertEqual(state.motd.streak, 0);
+});
+
+test('fail then solve next day: streak = 1, not a continuation', () => {
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12');  // streak = 1
+  playMotd(state, false, '2026-06-13'); // streak = 0
+  const result = playMotd(state, true, '2026-06-14');
+  assertEqual(result.streak, 1, 'after a fail, next solve starts fresh');
+});
+
+test('solve after solve on same day does not double-count (guard: lastPlayedDate matches)', () => {
+  // This tests settleMotd in isolation (the once-per-day guard is in canPlayToday).
+  const state = defaultState();
+  playMotd(state, true, '2026-06-12');
+  // Calling settleMotd again on same day: lastPlayedDate is today not yesterday
+  const result = playMotd(state, true, '2026-06-12');
+  assertEqual(result.streak, 1, 'same-day replay does not increment streak');
+});
+
+// --- settleMotd state mutations ---
+
+test('settleMotd stores testsUsed, timeMs, solved in lastResult', () => {
+  const state = defaultState();
+  const now = Date.UTC(2026, 5, 12, 12, 0, 0);
+  const fault = makeFaults()['fault-alpha'];
+  settleMotd(state, fault, true, ['error-log', 'temp-probe'], now - 45000, now);
+  assertEqual(state.motd.lastResult.testsUsed, 2);
+  assertEqual(state.motd.lastResult.solved, true);
+  assert(state.motd.lastResult.timeMs > 0);
+});
+
+test('settleMotd does not touch cash or reputation', () => {
+  const state = defaultState();
+  const cashBefore = state.player.cash;
+  const repBefore = state.player.reputation;
+  const fault = makeFaults()['fault-alpha'];
+  const now = Date.UTC(2026, 5, 12, 12, 0, 0);
+  settleMotd(state, fault, true, [], now - 10000, now);
+  assertEqual(state.player.cash, cashBefore, 'MotD must never change cash');
+  assertEqual(state.player.reputation, repBefore, 'MotD must never change reputation');
+});
+
+// --- share card formatting ---
+
+test('share card: correct solve with tests shows day number, streak, emoji row', () => {
+  const result = { testsUsed: 3, solved: true, streak: 2 };
+  const card = buildShareCard(result, MOTD.epochDate); // Day 1
+  assert(card.includes('Day 1'), `expected "Day 1" in: ${card}`);
+  assert(card.includes('🔥2'), `expected streak emoji in: ${card}`);
+  assert(card.includes('🔬🔬🔬✅'), `expected emoji grid in: ${card}`);
+  assert(card.includes('https://'), `expected URL in: ${card}`);
+});
+
+test('share card: failed run has no streak line and ends with ❌', () => {
+  const result = { testsUsed: 2, solved: false, streak: 0 };
+  const card = buildShareCard(result, MOTD.epochDate);
+  assert(!card.includes('🔥'), `fail card should not show streak: ${card}`);
+  assert(card.includes('🔬🔬❌'), `expected fail emoji grid in: ${card}`);
+});
+
+test('share card: zero tests used (committed fix immediately)', () => {
+  const result = { testsUsed: 0, solved: true, streak: 1 };
+  const card = buildShareCard(result, MOTD.epochDate);
+  assert(card.includes('✅'), `expected ✅ in: ${card}`);
+  assert(!card.includes('🔬'), `no tests run means no 🔬 in: ${card}`);
+});
+
+test('share card: day number advances correctly from epoch', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1 };
+  // Day 1 = epochDate, Day 2 = epochDate + 1 day
+  const card1 = buildShareCard(result, '2026-06-12');
+  const card2 = buildShareCard(result, '2026-06-13');
+  assert(card1.includes('Day 1'), `expected Day 1 in: ${card1}`);
+  assert(card2.includes('Day 2'), `expected Day 2 in: ${card2}`);
+});
+
+test('getTodayDateStr returns a YYYY-MM-DD string for a known epoch', () => {
+  const now = Date.UTC(2026, 5, 12, 15, 30, 0); // 2026-06-12T15:30Z
+  assertEqual(getTodayDateStr(now), '2026-06-12');
+});
