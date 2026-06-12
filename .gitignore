@@ -1,0 +1,16 @@
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Dev tooling (never required at runtime — see CLAUDE.md)
+node_modules/
+npm-debug.log*
+
+# Local scratch
+*.local.*

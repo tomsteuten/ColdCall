@@ -1,0 +1,163 @@
+# COLD CALL — Game Design Document
+
+**Working title:** Cold Call (alternates: Soft Served, Frozen Assets, Machine Down)
+**Genre:** Repair tycoon × incremental/idle hybrid
+**Platform:** Browser (PWA, installable on mobile), GitHub Pages
+**Price:** Free, open source (MIT)
+**One-sentence pitch:** You're the field tech who fixes the burger chain's eternally broken ice cream machines — diagnose faults by hand for big money, then build a service empire that grinds jobs while you sleep.
+
+---
+
+## 1. Design Pillars
+
+1. **Diagnosis is the game.** The active minigame must always be the most profitable and most interesting thing you can do. Idle income is the convenience layer, never the star.
+2. **Real faults, funny framing.** Fault scenarios are grounded in how this equipment actually fails (scale, sensors, seals, the infamous overnight heat-treat cycle). Comedy comes from the world, not from fake slapstick failures.
+3. **Specific beats generic.** Soft serve machines are the icon and the recurring villain. Variety comes from the cold-side ladder, not from "repair anything."
+4. **Respect the player's time.** No energy systems, no ads, no dark patterns. Offline progress is generous. Sessions of 2 minutes or 2 hours both feel rewarding.
+
+---
+
+## 2. Core Loop (60–90 second active job)
+
+```
+Ticket arrives → Accept job → DIAGNOSE → Repair → Invoice → Spend
+     ↑                                                        |
+     └──────────── reputation unlocks bigger clients ─────────┘
+```
+
+### 2.1 The Diagnosis Minigame (the make-or-break mechanic)
+
+A deduction puzzle. Each machine has a hidden fault drawn from its fault tree. The player sees **symptoms**, runs **tests**, and commits to a **fix**.
+
+**Flow:**
+1. **Symptoms shown free** — e.g. *"Mix icy at barrel. Hopper temp reads high. Compressor running constantly."*
+2. **Run tests** — each test costs job time (and sometimes a consumable). Tests reveal clues that eliminate branches of the fault tree:
+   - Check error log (cheap, vague)
+   - Temp probe readings (medium)
+   - Pull and inspect beater assembly (slow, very informative)
+   - Megger/continuity test on motor (requires Multimeter Tier 2)
+3. **Commit to a fix** — pick the part/procedure. Correct → full payout + speed bonus. Wrong → "callback" penalty: partial payout, reputation hit, and the job returns tomorrow at reduced rate.
+
+**Why it works:** It's Wordle-shaped — narrow a hidden answer with limited probes. Skilled players learn real-ish fault patterns and get faster, which makes mastery feel earned rather than stat-gated.
+
+**Difficulty levers:** number of plausible faults per machine, ambiguous/overlapping symptoms, intermittent faults (symptom only appears on a re-test), red herrings ("operator error — the staff just didn't run the cleaning cycle," a free fix and a joke that doubles as the meme payoff).
+
+### 2.2 Fault Library (launch content)
+
+Faults are data, not code — JSON entries with: id, machine type, symptoms, test results table, correct fix, plausible wrong fixes, payout, flavour text.
+
+Launch target: **40–60 faults** across the Tier 1–2 machines. Authenticity examples to seed:
+
+| Fault | Symptoms | The trap |
+|---|---|---|
+| Failed overnight heat-treat cycle | "Machine locked out, cryptic error at open" | The meme made mechanical — it's often just a re-run, but sometimes a real sensor fault |
+| Hopper thermistor drift | Temp reads high, product fine | Looks like refrigeration failure; replacing the compressor is the expensive wrong answer |
+| Worn scraper blades | Icy/soft product, motor amps high | Cheap fix everyone overlooks |
+| Scale-blocked mix line | Low mix alarm with full hopper | Coffee-tech crossover joke |
+| Door O-ring gone | Leaking from dispense door | Trivially cheap; greedy players run tests they don't need |
+| Beater motor capacitor | Hums, won't start | Classic — test before you swap the motor |
+| Staff didn't prime it | "It's broken again" | Free fix, reputation bonus, comedy |
+
+### 2.3 Repair & Parts
+
+After correct diagnosis, repair is a quick satisfying interaction (hold-to-tighten, sequence taps — light, not a second minigame). Parts come from **van stock**; out-of-stock means a supplier run (time cost) or paying express markup. Inventory management is deliberately shallow at launch: a van with N slots, restocked between jobs.
+
+---
+
+## 3. Idle Layer (the tycoon empire)
+
+### 3.1 Hired Techs
+- Hire techs and assign them to **contract routes** (a client cluster, e.g. "Burgertown South Side — 6 stores").
+- Each tech has a skill level → success rate and jobs/hour. Failed idle jobs become callbacks the *player* can rescue for bonus pay (feeds idle back into active play).
+- Techs earn ~40–60% of what active play earns per job. **Hard rule: active play is always the best $/min.**
+
+### 3.2 Offline Progress
+- Simulated on load from elapsed time (no background timers). Capped at 8h base, upgradeable to 24h ("Answering Service" upgrade).
+- Welcome-back screen shows a tabloid-style report: jobs done, cash earned, "Tech Dave got stuck behind a delivery truck for 2 hours."
+
+### 3.3 Upgrade Tracks
+1. **Tools** — unlock new test types (better multimeter, thermal camera, laptop with service software). Tools deepen diagnosis, not just numbers.
+2. **Van** — stock slots, travel speed (more jobs/day), eventually a second van.
+3. **Workshop** — refurbish ruined machines bought cheap, sell refurbed (idle money sink/converter).
+4. **Techs** — hire, train (raises success rate), specialise (soft serve / coffee / ovens).
+5. **Reputation** — earned per clean job, lost on callbacks. Gates client tiers and contract offers.
+
+### 3.4 Prestige: "Sell the Business"
+- Sell the company, keep a **Founder Bonus** (permanent multiplier from lifetime reputation), restart in a new region with a new client mix and remixed fault frequencies.
+- Unlocks at first ~2–4 hours of play. Classic incremental hook: each run is faster and pushes one tier deeper.
+
+---
+
+## 4. Progression Ladder (machine tiers)
+
+| Tier | Machines | Clients | Notes |
+|---|---|---|---|
+| 1 | Home soft serve units, slushie machines | Corner shops, school fetes | Tutorial tier, 2–3 step fault trees |
+| 2 | **Commercial soft serve** (the star), shake machines | **Burgertown** franchise | The meme tier — Burgertown calls *constantly* |
+| 3 | Frozen yoghurt multiheads, granita, ice machines | Froyo chains, pubs, servos | Intermittent faults introduced |
+| 4 | Espresso machines, grinders | Café chains | Coffee crossover tier, scale faults everywhere |
+| 5 | Blast chillers, walk-in freezers, combi ovens | Supermarkets, commercial kitchens | "The Cursed Combi" endgame boss machine |
+
+**Burgertown** (fictional parody chain — no real branding anywhere in art or text) is the narrative spine: their machines break weekly, their store managers have recurring personalities, and an over-arching joke-mystery ("why do they *always* break?") pays off in late game when you discover the heat-treat lockout design and can finally sell them the fix.
+
+---
+
+## 5. Viral / Retention Hooks
+
+- **Machine of the Day:** one daily seeded diagnosis puzzle, same for all players, scored on tests used + time. Shareable emoji-grid result (Wordle pattern). This is the single cheapest growth mechanic available — prioritise it for launch.
+- **Callback shame / clean-streak stats** on the share card.
+- **Pun-heavy job flavour text** — screenshot bait.
+
+---
+
+## 6. Economy (starting numbers — all live in `config/balance.js`)
+
+- Start: $500, basic multimeter, 4 van slots, Tier 1 clients only.
+- Tier 1 job payout: $80–150 (correct first time), minus parts cost ($10–40). Callback pays 40%.
+- First tech hire: $2,000 + $300/day wage; earns ~$50/job at 75% success.
+- Tool Tier 2 (proper multimeter): $1,500. Thermal camera: $8,000.
+- Prestige available around lifetime earnings of $250k.
+- Tuning rule: a focused player should hit Tier 2 (Burgertown unlock) inside the **first 15 minutes** — the meme is the hook, don't gate it deep.
+
+All numbers are first guesses; balance via config, never hard-coded.
+
+---
+
+## 7. Art & Audio Direction
+
+- **Pixel art, 2x scale, limited palette** (e.g. 32-colour). Machines are the art priority: each machine type gets one detailed sprite with state variants (working / fault / open panel). Characters are simple portraits in ticket dialogs — cheap to produce, big personality return.
+- UI is clean DOM/CSS, not pixel-rendered — readable on mobile, fast to build.
+- Audio: light. Satisfying clicks, a soft-serve swirl jingle on perfect jobs, one chiptune loop. Use generated/CC0 assets; audio is a polish-phase task, not a launch blocker.
+
+---
+
+## 8. Technical Summary (details in CLAUDE.md)
+
+- Vanilla JS, DOM-first UI (canvas only if a machine-panel view needs it later)
+- PWA: manifest + service worker, installable, fully offline
+- Saves: versioned JSON in localStorage with migration functions
+- Hosted on GitHub Pages, zero build step preferred (ES modules)
+
+---
+
+## 9. Scope: Launch (v1.0) vs Later
+
+**v1.0 (the smallest game that's actually fun):**
+- Active loop with diagnosis minigame, Tiers 1–2, 40+ faults
+- Van stock + parts, tools track to Tier 2
+- 2 hireable techs, one contract route, offline progress
+- Machine of the Day with shareable result
+- PWA install + save migration scaffolding
+
+**v1.x:** Tiers 3–4, prestige, workshop refurbs, tech specialisation
+**v2 dreams:** Tier 5 + Cursed Combi storyline, regional prestige maps, community-contributed fault packs (it's open source — the fault library as JSON makes player-authored content trivially possible)
+
+**Cut list (explicitly not doing):** multiplayer, real-money anything, energy systems, ad SDKs, account systems. Saves are local; an export-save-as-text button covers device transfer.
+
+---
+
+## 10. Success Criteria
+
+- A first-time player understands the loop and laughs at least once within 3 minutes.
+- Day-2 return driven by Machine of the Day, not guilt mechanics.
+- The diagnosis minigame is fun *with all numbers set to 1* — if it only works because of upgrade dopamine, redesign it.
