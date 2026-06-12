@@ -5,6 +5,12 @@ Instructions for Claude Code working in this repo. Read GDD.md first for game de
 ## What this is
 A free, open-source (MIT) browser game: repair-tycoon × incremental hybrid about fixing commercial ice cream machines. PWA on GitHub Pages. Solo dev (Tom), vibe-coded; optimise for code he can read and modify, not for cleverness.
 
+## Dev quickstart
+- Tests: `node tests/run.js` (or `npm test`). Runner injects `test`/`assert`/`assertEqual` globals; test files are `tests/*.test.js`. package.json exists only for `"type": "module"` — never add dependencies.
+- Serve locally: `python -m http.server 8123` (or any static server), then open http://localhost:8123. `.claude/launch.json` has this configured for the Claude Code preview panel.
+- Branch is `main`, remote `https://github.com/tomsteuten/ColdCall`. Don't push without Tom's say-so.
+- Save lives in localStorage key `coldcall_save`. Migration convention: `MIGRATIONS[n]` in state.js migrates a save FROM version n TO n+1, applied sequentially; corrupt saves are reported but never overwritten. State shape decisions of record are the JSDoc in state.js — read it before touching state.
+
 ## Stack — hard constraints
 - **Vanilla JS (ES modules), HTML, CSS. No framework, no bundler, no build step.** The repo must run by opening index.html via any static server and deploy to GitHub Pages as-is.
 - No npm dependencies at runtime. Dev-only tooling (e.g. a test runner) is acceptable but must never be required to play or deploy.
