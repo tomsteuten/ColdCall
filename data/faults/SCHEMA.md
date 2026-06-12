@@ -4,6 +4,9 @@ Faults are data, not code (GDD §2.2, CLAUDE.md rule 4). One fault per file in
 `data/faults/`, filename matching the `id`. Files are validated on load; a bad
 file produces a clear console error naming the file and field.
 
+**New faults must also be listed in `data/faults/index.json`** — static hosting
+can't list a directory, so that manifest is how the loader finds fault files.
+
 ## Fields
 
 | Field | Type | Required | Description |

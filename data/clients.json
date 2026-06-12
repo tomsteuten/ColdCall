@@ -1,4 +1,10 @@
 {
-  "_comment": "Client definitions (corner shops, Burgertown, ...). Populated in a later session.",
-  "clients": []
+  "_comment": "Client definitions. Burgertown is the narrative spine (GDD §4). More clients in a later session.",
+  "clients": [
+    {
+      "id": "burgertown-high-st",
+      "name": "Burgertown — High Street",
+      "tier": 2
+    }
+  ]
 }

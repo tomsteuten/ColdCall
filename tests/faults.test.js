@@ -1,0 +1,123 @@
+/** @file Fault validator tests: good fixture passes, bad fixtures fail naming the right field, real library is clean. */
+
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { validateFault, loadGameData } from '../js/faults.js';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** A known-good fault; bad fixtures are made by breaking one field at a time. */
+function goodFault() {
+  return {
+    id: 'door-o-ring-gone',
+    machineType: 'soft-serve-commercial',
+    tier: 2,
+    symptoms: ['Mix leaking from the dispense door.'],
+    tests: { 'inspect-beater': 'Door O-ring is flattened and cracked.' },
+    correctFix: 'replace-door-o-ring',
+    wrongFixes: ['replace-dispense-door', 'replace-barrel-seal'],
+    payout: 90,
+    partsCost: 10,
+    flavour: 'Sealed the deal for the price of a rubber band.',
+  };
+}
+const FILE = 'door-o-ring-gone.json';
+const MACHINES = ['soft-serve-commercial'];
+
+test('good fault passes validation', () => {
+  assertEqual(validateFault(goodFault(), FILE, MACHINES), []);
+});
+
+test('missing required field is named', () => {
+  const f = goodFault();
+  delete f.payout;
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.length === 1, `expected 1 error, got: ${errors.join(' | ')}`);
+  assert(errors[0].includes('"payout"'), `error should name "payout": ${errors[0]}`);
+});
+
+test('id not matching filename is named', () => {
+  const errors = validateFault(goodFault(), 'something-else.json', MACHINES);
+  assert(errors.some((e) => e.includes('"id"') && e.includes('something-else')), errors.join(' | '));
+});
+
+test('unknown machineType is named', () => {
+  const f = goodFault();
+  f.machineType = 'espresso-machine';
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"machineType"') && e.includes('espresso-machine')), errors.join(' | '));
+});
+
+test('unknown test id is named', () => {
+  const f = goodFault();
+  f.tests['x-ray-vision'] = 'You see everything.';
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"tests"') && e.includes('x-ray-vision')), errors.join(' | '));
+});
+
+test('correctFix appearing in wrongFixes is named', () => {
+  const f = goodFault();
+  f.wrongFixes.push(f.correctFix);
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"wrongFixes"') && e.includes('correctFix')), errors.join(' | '));
+});
+
+test('empty wrongFixes is named', () => {
+  const f = goodFault();
+  f.wrongFixes = [];
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"wrongFixes"')), errors.join(' | '));
+});
+
+test('non-positive payout and negative partsCost are named', () => {
+  const f = goodFault();
+  f.payout = 0;
+  f.partsCost = -5;
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"payout"')), errors.join(' | '));
+  assert(errors.some((e) => e.includes('"partsCost"')), errors.join(' | '));
+});
+
+test('non-object input fails without throwing', () => {
+  assert(validateFault(null, FILE, MACHINES).length > 0, 'null should fail');
+  assert(validateFault([], FILE, MACHINES).length > 0, 'array should fail');
+});
+
+test('every real fault file validates clean and is in the index', () => {
+  const machineIds = JSON.parse(readFileSync(join(root, 'data/machines.json'), 'utf8')).machines.map((m) => m.id);
+  const index = JSON.parse(readFileSync(join(root, 'data/faults/index.json'), 'utf8'));
+  const files = readdirSync(join(root, 'data/faults')).filter((f) => f.endsWith('.json') && f !== 'index.json');
+  for (const file of files) {
+    assert(index.includes(file), `${file} missing from data/faults/index.json`);
+    const fault = JSON.parse(readFileSync(join(root, 'data/faults', file), 'utf8'));
+    const errors = validateFault(fault, file, machineIds);
+    assertEqual(errors, [], `${file} should validate clean`);
+  }
+  assertEqual(index.length, files.length, 'index lists a file that does not exist');
+});
+
+test('loadGameData excludes a bad fault and console.errors the file and field', async () => {
+  const badFault = goodFault();
+  delete badFault.flavour;
+  const responses = {
+    'data/faults/index.json': ['door-o-ring-gone.json'],
+    'data/machines.json': { machines: [{ id: 'soft-serve-commercial', name: 'X', tier: 2 }] },
+    'data/clients.json': { clients: [] },
+    'data/faults/door-o-ring-gone.json': badFault,
+  };
+  const fakeFetch = async (url) => ({ json: async () => responses[url] });
+  const logged = [];
+  const realError = console.error;
+  console.error = (msg) => logged.push(String(msg));
+  try {
+    const { faults } = await loadGameData('data/', fakeFetch);
+    assertEqual(Object.keys(faults), [], 'bad fault should be excluded');
+  } finally {
+    console.error = realError;
+  }
+  assert(
+    logged.some((m) => m.includes('door-o-ring-gone.json') && m.includes('"flavour"')),
+    `console.error should name file and field, got: ${logged.join(' | ')}`
+  );
+});

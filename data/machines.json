@@ -1,4 +1,10 @@
 {
-  "_comment": "Machine type definitions (Tier 1-2 at launch). Populated in a later session.",
-  "machines": []
+  "_comment": "Machine type definitions. Tier ladder in GDD §4. Names are fictional parody — no real branding.",
+  "machines": [
+    {
+      "id": "soft-serve-commercial",
+      "name": "FrostKing 4500 Soft Serve",
+      "tier": 2
+    }
+  ]
 }
