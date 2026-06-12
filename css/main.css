@@ -82,7 +82,26 @@ body {
   text-align: center;
 }
 
+.home-callbacks {
+  margin: 0;
+  color: #f0917f; /* matches the callback invoice heading */
+  font-weight: 600;
+}
+
+.home-unlock,
+.invoice-unlock {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* --- job --- */
+
+.job-callback-tag {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #f0917f;
+}
 
 .job-client {
   margin: 0;

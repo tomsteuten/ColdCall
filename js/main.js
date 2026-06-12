@@ -3,7 +3,7 @@
 import { load, save } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool } from './economy.js';
+import { buyTool, claimDueCallback } from './economy.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import * as jobScreen from './ui/job.js';
@@ -27,12 +27,22 @@ let invoice = null;
 // browsing isn't game state, so a refresh lands back on home.
 let screen = 'home';
 
+// Tier just unlocked, for a one-time home-screen banner. Transient: the unlock
+// itself is in state (player.tierUnlocked); only the fanfare is lost on refresh.
+let justUnlockedTier = null;
+
 const actions = {
   nextTicket() {
-    // Random (fault, same-tier client) pair; tier gating comes with reputation later.
+    justUnlockedTier = null;
     const next = mulberry32(Date.now());
-    const { fault, client } = pickTicket(faults, clients, next);
-    startJob(state, fault, client.id, next);
+    // Due callbacks jump the queue (GDD §2.1: the job returns tomorrow).
+    const cb = claimDueCallback(state, faults);
+    if (cb) {
+      startJob(state, faults[cb.faultId], cb.clientId, next, { misses: cb.misses });
+    } else {
+      const { fault, client } = pickTicket(faults, clients, state.player.tierUnlocked, next);
+      startJob(state, fault, client.id, next);
+    }
     save(state);
     render();
   },
@@ -43,6 +53,7 @@ const actions = {
   },
   commitFix(fixId) {
     invoice = commitFix(state, fixId, faults);
+    if (invoice.unlockedTier) justUnlockedTier = invoice.unlockedTier;
     save(state);
     render();
   },
@@ -71,7 +82,7 @@ function render() {
   if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions });
   } else {
-    jobScreen.render(app, { state, faults, machines, clients, invoice, actions });
+    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, actions });
   }
 }
 

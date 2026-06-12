@@ -4,6 +4,7 @@
  */
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
+import { dueCallbacks } from '../economy.js';
 
 /**
  * Render the job flow into root.
@@ -14,6 +15,7 @@ import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
  * @param {object[]} ctx.machines from machines.json
  * @param {object[]} ctx.clients from clients.json
  * @param {object|null} ctx.invoice transient result of the last commitFix, not persisted
+ * @param {number|null} ctx.justUnlockedTier tier unlocked this session, for a one-time banner
  * @param {{nextTicket: function, runTest: function(string), commitFix: function(string), dismissInvoice: function}} ctx.actions
  */
 export function render(root, ctx) {
@@ -37,14 +39,23 @@ export function statusBar(state) {
     </header>`;
 }
 
-function homeView({ state }) {
+function homeView({ state, justUnlockedTier }) {
   const streak = state.stats.cleanStreak;
+  const due = dueCallbacks(state).length;
+  const unlockBanner =
+    justUnlockedTier === 2
+      ? `<p class="home-unlock">Tier 2 unlocked — Burgertown is calling.</p>`
+      : justUnlockedTier
+        ? `<p class="home-unlock">Tier ${justUnlockedTier} clients unlocked.</p>`
+        : '';
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
       <h1 class="dev-title">Cold Call</h1>
       <p class="dev-meta">${state.stats.jobsCompleted} jobs done${streak > 1 ? ` · ${streak} clean in a row` : ''}</p>
-      <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
+      ${unlockBanner}
+      ${due > 0 ? `<p class="home-callbacks">${due} callback${due > 1 ? 's' : ''} waiting</p>` : ''}
+      <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
       <button class="btn" data-action="open-shop">Tools shop</button>
     </section>`;
 }
@@ -88,6 +99,7 @@ function jobView({ state, faults, machines, clients }) {
     <section class="screen screen-job">
       <h2 class="job-client">${client ? client.name : job.clientId}</h2>
       <p class="job-machine">${machine ? machine.name : job.machineType}</p>
+      ${job.callback ? `<p class="job-callback-tag">Callback — reduced rate, same machine</p>` : ''}
 
       <h3 class="section-head">Reported symptoms</h3>
       <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
@@ -101,17 +113,28 @@ function jobView({ state, faults, machines, clients }) {
 }
 
 function invoiceView({ state, invoice }) {
-  const { correct, fault, earned } = invoice;
-  const lines = correct
-    ? `<p class="invoice-line">Job payout <span>$${fault.payout}</span></p>
-       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`
-    : `<p class="invoice-line">Callback rate applied <span>$${earned}</span></p>
+  const { correct, fault, earned, callback, unlockedTier } = invoice;
+  let lines;
+  if (correct && callback) {
+    // earned = callback rate minus parts, so the rate line is reconstructable.
+    lines = `<p class="invoice-line">Callback rate <span>$${earned + fault.partsCost}</span></p>
+       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`;
+  } else if (correct) {
+    lines = `<p class="invoice-line">Job payout <span>$${fault.payout}</span></p>
+       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`;
+  } else if (callback) {
+    lines = `<p class="invoice-line">Repeat miss <span>$0</span></p>
+       <p class="invoice-note">Wrong again — that machine is back on the board tomorrow, and they're not paying twice.</p>`;
+  } else {
+    lines = `<p class="invoice-line">Partial payout <span>$${earned}</span></p>
        <p class="invoice-note">Wrong call — that machine will be back on the board tomorrow.</p>`;
+  }
   return `
     ${statusBar(state)}
     <section class="screen screen-invoice ${correct ? 'invoice-good' : 'invoice-bad'}">
       <h2>${correct ? 'Fixed!' : 'Callback.'}</h2>
       ${lines}
+      ${unlockedTier ? `<p class="invoice-unlock">Reputation milestone — Tier ${unlockedTier} clients unlocked!</p>` : ''}
       <p class="invoice-total">You earned <strong>$${earned}</strong></p>
       ${correct ? `<p class="invoice-flavour">“${fault.flavour}”</p>` : ''}
       <button class="btn btn-primary" data-action="dismiss-invoice">Done</button>
