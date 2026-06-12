@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { validateFault, loadGameData } from '../js/faults.js';
+import { JOBS } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -95,6 +96,26 @@ test('every real fault file validates clean and is in the index', () => {
     assertEqual(errors, [], `${file} should validate clean`);
   }
   assertEqual(index.length, files.length, 'index lists a file that does not exist');
+});
+
+test('every fault payout and partsCost sits within its tier range in balance.js', () => {
+  // SCHEMA.md: payout "stays within the tier's range in config/balance.js".
+  // partsCost 0 is always allowed (procedure-only fixes); otherwise in range.
+  const index = JSON.parse(readFileSync(join(root, 'data/faults/index.json'), 'utf8'));
+  for (const file of index) {
+    const fault = JSON.parse(readFileSync(join(root, 'data/faults', file), 'utf8'));
+    const range = JOBS[`tier${fault.tier}`];
+    assert(range, `${file}: no JOBS.tier${fault.tier} range in config/balance.js`);
+    assert(
+      fault.payout >= range.payoutMin && fault.payout <= range.payoutMax,
+      `${file}: payout ${fault.payout} outside tier ${fault.tier} range ${range.payoutMin}-${range.payoutMax}`
+    );
+    assert(
+      fault.partsCost === 0 ||
+        (fault.partsCost >= range.partsCostMin && fault.partsCost <= range.partsCostMax),
+      `${file}: partsCost ${fault.partsCost} outside tier ${fault.tier} range ${range.partsCostMin}-${range.partsCostMax} (or 0)`
+    );
+  }
 });
 
 test('loadGameData excludes a bad fault and console.errors the file and field', async () => {

@@ -1,0 +1,15 @@
+{
+  "id": "door-o-ring-gone",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": ["Mix leaking from the dispense door."],
+  "tests": {
+    "inspect-beater": "Door O-ring is flattened and cracked. That'll do it."
+  },
+  "correctFix": "replace-door-o-ring",
+  "wrongFixes": ["replace-dispense-door", "replace-barrel-seal"],
+  "payout": 90,
+  "partsCost": 10,
+  "flavour": "Sealed the deal for the price of a rubber band.",
+  "authenticityNote": "Door O-rings are a routine wear item; leaks at the door are almost never anything else. The design trap is greed: players who run tests they don't need on a trivially obvious fault are wasting future job-time (GDD §2.2)."
+}

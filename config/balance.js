@@ -16,6 +16,12 @@ export const JOBS = {
     partsCostMin: 10,
     partsCostMax: 40,
   },
+  tier2: {
+    payoutMin: 80, // low end stays cheap: trivial fixes (door O-ring) are part of the joke
+    payoutMax: 200,
+    partsCostMin: 5,
+    partsCostMax: 60,
+  },
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
   callbackPayoutMult: 0.4,
   callbackDueDays: 1, // how many days until a callback job returns

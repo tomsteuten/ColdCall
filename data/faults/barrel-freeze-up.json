@@ -1,0 +1,22 @@
+{
+  "id": "barrel-freeze-up",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Beater hums but won't turn.",
+    "Trips out after a few seconds.",
+    "First start of the morning."
+  ],
+  "tests": {
+    "error-log": "BEATER OVERCURRENT trip on first start. Last night's shutdown skipped the standby cycle.",
+    "temp-probe": "Barrel at −15 °C. That's not soft serve, that's a glacier.",
+    "inspect-beater": "Barrel is frozen into a solid cylinder of ice around the beater.",
+    "continuity-test": "Motor windings and run capacitor all read healthy."
+  },
+  "correctFix": "run-defrost-cycle",
+  "wrongFixes": ["replace-run-capacitor", "replace-beater-motor"],
+  "payout": 115,
+  "partsCost": 0,
+  "flavour": "The machine wasn't broken. It was hibernating.",
+  "authenticityNote": "Skip the overnight standby mode and the barrel freezes into a block; the stalled beater presents exactly like a dead run capacitor until you look inside or meter the motor. Defrost and a stern word with the closing shift."
+}

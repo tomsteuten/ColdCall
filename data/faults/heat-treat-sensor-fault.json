@@ -1,0 +1,21 @@
+{
+  "id": "heat-treat-sensor-fault",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Machine locked out at open.",
+    "Display says HTR FAIL 12 and nothing else.",
+    "Manager says this is the third morning in a row."
+  ],
+  "tests": {
+    "error-log": "Heat-treat aborted three nights running — mix temp never registered above 40 °C even with the heater on.",
+    "temp-probe": "Independent probe says the mix hits temperature fine. The machine's own sensor disagrees.",
+    "continuity-test": "Mix temp sensor goes open-circuit above 40 °C — it fails exactly when the cycle needs it most."
+  },
+  "correctFix": "replace-mix-temp-sensor",
+  "wrongFixes": ["rerun-heat-treat-cycle", "replace-heater-element", "replace-controller-board"],
+  "payout": 150,
+  "partsCost": 30,
+  "flavour": "The heat was real. The sensor was in denial.",
+  "authenticityNote": "Sometimes the heat-treat lockout is genuine: a mix temp sensor that drops out when hot aborts every cycle. Re-running just burns another night — which is the trap, because re-running is the right call for the other HTR FAIL. The continuity test is what tells these twins apart."
+}

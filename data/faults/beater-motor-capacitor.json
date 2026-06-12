@@ -1,0 +1,21 @@
+{
+  "id": "beater-motor-capacitor",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Beater hums but won't turn.",
+    "Trips out after a few seconds.",
+    "Started doing it this morning."
+  ],
+  "tests": {
+    "error-log": "BEATER OVERCURRENT trip on every start attempt since 6 am.",
+    "inspect-beater": "Beater spins freely by hand. No ice, no seizure, nothing jammed.",
+    "continuity-test": "Motor windings read perfect. The run capacitor reads dead — it's gone."
+  },
+  "correctFix": "replace-run-capacitor",
+  "wrongFixes": ["replace-beater-motor", "run-defrost-cycle", "replace-controller-board"],
+  "payout": 140,
+  "partsCost": 20,
+  "flavour": "Saved a nine-hundred-dollar motor with a twenty-dollar can of electrons.",
+  "authenticityNote": "A dead run capacitor makes a perfectly healthy single-phase motor hum, stall and trip — the textbook test-before-you-swap fault (GDD §2.2). Condemning the motor is the classic expensive wrong answer."
+}

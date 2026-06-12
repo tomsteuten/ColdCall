@@ -1,0 +1,20 @@
+{
+  "id": "scale-blocked-mix-line",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "LOW MIX alarm blaring.",
+    "Hopper is visibly full."
+  ],
+  "tests": {
+    "error-log": "LOW MIX alarms increasing in frequency over the past month.",
+    "temp-probe": "All temperatures in spec.",
+    "inspect-beater": "Mix feed line is furred shut with white scale. Like a kettle, but load-bearing."
+  },
+  "correctFix": "descale-mix-line",
+  "wrongFixes": ["replace-mix-level-sensor", "replace-mix-pump", "refill-hopper"],
+  "payout": 110,
+  "partsCost": 5,
+  "flavour": "Hard water, soft serve, hardest part was not laughing.",
+  "authenticityNote": "Scale builds wherever water flows — mix lines fur up exactly like espresso machine boilers (the GDD §2.2 coffee-tech crossover). The tell versus a dead level sensor is the gradual onset: scale chokes the line over weeks, a sensor dies overnight."
+}

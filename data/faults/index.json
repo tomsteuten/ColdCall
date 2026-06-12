@@ -1,4 +1,16 @@
 [
+  "barrel-freeze-up.json",
+  "beater-motor-capacitor.json",
+  "door-o-ring-gone.json",
+  "heat-treat-cycle-failed.json",
+  "heat-treat-sensor-fault.json",
   "hopper-thermistor-drift.json",
+  "mix-level-sensor-failed.json",
+  "scale-blocked-mix-line.json",
+  "slushie-bowl-gasket-leak.json",
+  "slushie-condenser-clogged.json",
+  "slushie-mix-too-weak.json",
+  "slushie-thermostat-stuck.json",
+  "staff-didnt-prime-it.json",
   "worn-scraper-blades.json"
 ]

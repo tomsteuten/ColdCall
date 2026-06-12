@@ -1,0 +1,20 @@
+{
+  "id": "mix-level-sensor-failed",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "LOW MIX alarm blaring.",
+    "Hopper is visibly full."
+  ],
+  "tests": {
+    "error-log": "LOW MIX alarm came on overnight and never cleared, no matter what the staff topped up.",
+    "inspect-beater": "Mix line is clear and flowing freely. Nothing blocking the feed.",
+    "continuity-test": "Mix level sensor reads open-circuit regardless of level. It's dead."
+  },
+  "correctFix": "replace-mix-level-sensor",
+  "wrongFixes": ["descale-mix-line", "replace-mix-pump"],
+  "payout": 125,
+  "partsCost": 22,
+  "flavour": "The hopper was full. The sensor was full of it.",
+  "authenticityNote": "Level probes fail open and report empty forever. Same alarm as a scale-blocked line, but sudden onset and a clear feed line — and the continuity test settles it outright."
+}
