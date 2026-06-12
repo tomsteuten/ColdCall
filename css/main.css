@@ -265,3 +265,62 @@ body {
   font-size: 0.9rem;
   margin: 0;
 }
+
+/* --- machine of the day --- */
+
+.btn-motd {
+  border-color: #a8d8a8; /* soft green — distinct from the main accent blue */
+  color: var(--text);
+  text-align: center;
+}
+
+.job-motd-tag {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #a8d8a8;
+}
+
+.screen-motd-result {
+  justify-content: center;
+  text-align: center;
+  gap: 0.6rem;
+}
+
+.motd-good h2 { color: #a8d8a8; }
+.motd-bad h2  { color: #f0917f; }
+
+.motd-label {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.motd-emoji {
+  font-size: 1.6rem;
+  margin: 0.25rem 0;
+  letter-spacing: 0.1em;
+}
+
+.motd-score {
+  margin: 0;
+  font-weight: 600;
+}
+
+.motd-streak {
+  margin: 0;
+  color: #a8d8a8;
+}
+
+.motd-flavour {
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 0;
+}
+
+.motd-note {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0;
+}

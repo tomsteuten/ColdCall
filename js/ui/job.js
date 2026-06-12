@@ -5,6 +5,7 @@
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks } from '../economy.js';
+import { canPlayToday } from '../motd.js';
 
 /**
  * Render the job flow into root.
@@ -48,6 +49,16 @@ function homeView({ state, justUnlockedTier }) {
       : justUnlockedTier
         ? `<p class="home-unlock">Tier ${justUnlockedTier} clients unlocked.</p>`
         : '';
+
+  const motdPlayed = !canPlayToday(state);
+  const motdResult = state.motd.lastResult;
+  const motdSection = motdPlayed && motdResult
+    ? `<button class="btn btn-motd" data-action="open-motd-result">
+         Machine of the Day ${motdResult.solved ? '✅' : '❌'}
+         ${state.motd.streak > 1 ? ` · 🔥${state.motd.streak}` : ''}
+       </button>`
+    : `<button class="btn btn-motd" data-action="start-motd">Machine of the Day</button>`;
+
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
@@ -56,6 +67,7 @@ function homeView({ state, justUnlockedTier }) {
       ${unlockBanner}
       ${due > 0 ? `<p class="home-callbacks">${due} callback${due > 1 ? 's' : ''} waiting</p>` : ''}
       <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
+      ${motdSection}
       <button class="btn" data-action="open-shop">Tools shop</button>
     </section>`;
 }
@@ -97,7 +109,8 @@ function jobView({ state, faults, machines, clients }) {
   return `
     ${statusBar(state)}
     <section class="screen screen-job">
-      <h2 class="job-client">${client ? client.name : job.clientId}</h2>
+      ${job.motd ? `<p class="job-motd-tag">Machine of the Day — no cash, just bragging rights</p>` : ''}
+      <h2 class="job-client">${job.motd ? 'Machine of the Day' : (client ? client.name : job.clientId)}</h2>
       <p class="job-machine">${machine ? machine.name : job.machineType}</p>
       ${job.callback ? `<p class="job-callback-tag">Callback — reduced rate, same machine</p>` : ''}
 
@@ -151,6 +164,12 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="open-shop"]').forEach((el) =>
     el.addEventListener('click', actions.openShop)
+  );
+  root.querySelectorAll('[data-action="start-motd"]').forEach((el) =>
+    el.addEventListener('click', actions.startMotd)
+  );
+  root.querySelectorAll('[data-action="open-motd-result"]').forEach((el) =>
+    el.addEventListener('click', actions.openMotdResult)
   );
   root.querySelectorAll('[data-test]').forEach((el) =>
     el.addEventListener('click', () => actions.runTest(el.dataset.test))
