@@ -28,8 +28,159 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* --- shared chrome --- */
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: var(--space);
+  font-weight: 600;
+}
+
+.stat-dim {
+  color: var(--text-dim);
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  font: inherit;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.btn:disabled {
+  border-color: var(--text-dim);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  text-align: center;
+  padding: 0.9rem 1rem;
+}
+
+/* --- home --- */
+
+.screen-home {
   justify-content: center;
   text-align: center;
+}
+
+/* --- job --- */
+
+.job-client {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.job-machine {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.section-head {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.symptoms,
+.tests {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+}
+
+.tests {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-test {
+  width: 100%;
+}
+
+.test-label {
+  font-weight: 600;
+}
+
+.test-result {
+  margin: 0.2rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+
+.test-locked {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.fixes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: var(--space);
+}
+
+/* --- invoice --- */
+
+.screen-invoice {
+  justify-content: center;
+  text-align: center;
+}
+
+.invoice-good h2 {
+  color: var(--accent);
+}
+
+.invoice-bad h2 {
+  color: #f0917f; /* callback salmon — the colour of a warm milkshake */
+}
+
+.invoice-line {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-dim);
+}
+
+.invoice-total {
+  font-size: 1.2rem;
+  margin: 0.5rem 0 0;
+}
+
+.invoice-flavour {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.invoice-note {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .dev-title {
