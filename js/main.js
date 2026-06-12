@@ -6,8 +6,10 @@ import { startJob, runTest, commitFix } from './diagnosis.js';
 import { buyTool, claimDueCallback } from './economy.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
+import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js';
+import * as motdScreen from './ui/motd.js';
 
 const { state, error } = load();
 if (error) {
@@ -22,6 +24,10 @@ const app = document.getElementById('app');
 // Result of the last commitFix, shown on the invoice screen. Transient by
 // design: a refresh mid-invoice lands on home with the money already banked.
 let invoice = null;
+
+// Result of a completed MotD run. Transient: a refresh lands on home, and the
+// result is still recoverable via state.motd.lastResult if played today.
+let motdResult = null;
 
 // Which top-level screen is showing. Transient on purpose — where you were
 // browsing isn't game state, so a refresh lands back on home.
@@ -52,8 +58,14 @@ const actions = {
     render();
   },
   commitFix(fixId) {
-    invoice = commitFix(state, fixId, faults);
-    if (invoice.unlockedTier) justUnlockedTier = invoice.unlockedTier;
+    const result = commitFix(state, fixId, faults);
+    if (result.motd) {
+      motdResult = result;
+      screen = 'motd';
+    } else {
+      invoice = result;
+      if (result.unlockedTier) justUnlockedTier = result.unlockedTier;
+    }
     save(state);
     render();
   },
@@ -75,11 +87,48 @@ const actions = {
     else console.warn(`Cold Call: tool not bought: ${reason}`);
     render();
   },
+  startMotd() {
+    if (!canPlayToday(state)) return; // guard: already played today
+    if (state.jobs.active) return;    // guard: finish current job first
+    const todayStr = getTodayDateStr();
+    const fault = pickMotdFault(faults, todayStr);
+    const prng = mulberry32(todayStr + '-shuffle');
+    startJob(state, fault, 'motd', prng, null, true);
+    save(state);
+    render();
+  },
+  openMotdResult() {
+    // Re-open today's result from the home screen after it's been played.
+    if (state.motd.lastResult) {
+      // Recover the fault by re-running the same seeded draw for today's date.
+      const fault = pickMotdFault(faults, state.motd.lastPlayedDate);
+      motdResult = { ...state.motd.lastResult, streak: state.motd.streak, fault };
+      screen = 'motd';
+      render();
+    }
+  },
+  dismissMotdResult() {
+    motdResult = null;
+    screen = 'home';
+    render();
+  },
+  async shareMotd() {
+    const dateStr = getTodayDateStr();
+    const result = motdResult ?? { ...state.motd.lastResult, streak: state.motd.streak };
+    const text = buildShareCard(result, dateStr);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard API unavailable (non-secure context) — fall back to a prompt.
+      window.prompt('Copy this result:', text);
+    }
+  },
 };
 
 function render() {
-  // An active job or pending invoice always wins over the shop.
-  if (screen === 'shop' && !state.jobs.active && !invoice) {
+  if (screen === 'motd') {
+    motdScreen.render(app, { state, motdResult, actions });
+  } else if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions });
   } else {
     jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, actions });
