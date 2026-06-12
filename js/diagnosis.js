@@ -3,6 +3,7 @@
  */
 
 import { settleJob } from './economy.js';
+import { settleMotd } from './motd.js';
 
 /**
  * The test catalogue (GDD §2.1, SCHEMA.md "Test ids"). Faults may only reference
@@ -55,18 +56,20 @@ export function shuffled(arr, next) {
  * @param {function(): number} next PRNG in [0,1) for the option shuffle
  * @param {{misses: number}|null} [callback] set when replaying a claimed
  *   callback — carries the miss count so settlement can dampen repeat penalties
+ * @param {boolean} [motd] true when this is a Machine of the Day run
  * @returns {object} the new active job
  */
-export function startJob(state, fault, clientId, next, callback = null) {
+export function startJob(state, fault, clientId, next, callback = null, motd = false) {
   if (state.jobs.active) throw new Error('A job is already active');
   state.jobs.active = {
     faultId: fault.id,
     clientId,
     machineType: fault.machineType,
-    startedAt: Date.now(), // for a later speed-bonus; not scored this session
+    startedAt: Date.now(),
     testsRun: [],
     fixOptions: shuffled([fault.correctFix, ...fault.wrongFixes], next),
     callback,
+    motd,
   };
   return state.jobs.active;
 }
@@ -132,6 +135,13 @@ export function commitFix(state, fixId, faults) {
   if (!job.fixOptions.includes(fixId)) throw new Error(`Fix "${fixId}" is not an option on this job`);
   const fault = faults[job.faultId];
   const correct = fixId === fault.correctFix;
+
+  if (job.motd) {
+    const result = settleMotd(state, fault, correct, job.testsRun, job.startedAt);
+    state.jobs.active = null;
+    return { motd: true, ...result };
+  }
+
   // Old saves' active jobs predate the callback field; undefined means fresh job.
   const callback = job.callback ?? null;
   const { earned, unlockedTier } = settleJob(state, fault, correct, job.clientId, { callback });
