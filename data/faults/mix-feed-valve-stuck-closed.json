@@ -1,0 +1,21 @@
+{
+  "id": "mix-feed-valve-stuck-closed",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Barrel running out of mix quickly.",
+    "MIX LOW alarm despite a full hopper.",
+    "Mix pump can be heard running."
+  ],
+  "tests": {
+    "error-log": "MIX LOW alarm active. Pump runtime logs normal.",
+    "temp-probe": "Barrel temp rising — no mix replenishment. Hopper full.",
+    "inspect-beater": "Mix feed solenoid valve from hopper to barrel actuates but won't open — debris lodged in the valve seat."
+  },
+  "correctFix": "replace-mix-inlet-valve",
+  "wrongFixes": ["replace-mix-pump", "replace-mix-level-sensor", "replace-mix-temp-sensor"],
+  "payout": 125,
+  "partsCost": 35,
+  "flavour": "The pump was keen. The valve had other ideas.",
+  "authenticityNote": "Mix feed solenoid valves stick closed when debris lodges in the seat; the pump runs but delivers nothing to the barrel. Easy to confuse with pump failure until you confirm the pump is actually running."
+}

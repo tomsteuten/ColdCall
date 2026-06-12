@@ -1,0 +1,21 @@
+{
+  "id": "heat-exchanger-scaled",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Heat-treat cycle taking twice as long as usual.",
+    "HTR SLOW alarm at the end of the cycle.",
+    "Product quality fine during service."
+  ],
+  "tests": {
+    "error-log": "HTR SLOW warnings logged for three weeks. Cycle completing but well outside spec time.",
+    "temp-probe": "Mix heats up but very slowly. Heater element draws correct current.",
+    "inspect-beater": "Internal heat exchanger surfaces visible through barrel access — coated in a 3–4 mm layer of white calcite scale."
+  },
+  "correctFix": "descale-heat-exchanger",
+  "wrongFixes": ["replace-heater-element", "replace-mix-temp-sensor", "fit-inline-water-filter"],
+  "payout": 125,
+  "partsCost": 10,
+  "flavour": "Three weeks of slow baking on the company dime.",
+  "authenticityNote": "Scale on heat exchanger surfaces reduces thermal transfer dramatically; the heater element is perfectly healthy but pushing heat through 4 mm of calcite takes twice as long. A descale run restores full performance."
+}

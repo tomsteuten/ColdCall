@@ -1,0 +1,21 @@
+{
+  "id": "slushie-agitator-belt-worn",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Product stratifying — ice sinking, syrup floating.",
+    "Agitator noticeably slower than usual.",
+    "No alarms."
+  ],
+  "tests": {
+    "error-log": "No faults logged. Agitator runtime normal.",
+    "temp-probe": "Bowl temps in spec. Refrigeration fine.",
+    "inspect-beater": "Agitator turns but the drive belt is glazed and slipping. Mix barely moving."
+  },
+  "correctFix": "replace-agitator-belt",
+  "wrongFixes": ["replace-agitator-motor", "replace-slushie-thermostat", "clean-condenser-coil"],
+  "payout": 85,
+  "partsCost": 10,
+  "flavour": "A five-dollar belt was standing between this syrup and a uniform mixture.",
+  "authenticityNote": "Slushie agitator drive belts glaze and slip with age, causing stratification before they fail completely. The motor is usually perfectly healthy."
+}

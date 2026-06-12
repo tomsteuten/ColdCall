@@ -1,0 +1,21 @@
+{
+  "id": "brushless-drive-position-fault",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "BEATER FAULT on the display.",
+    "Beater makes a grinding attempt then stops.",
+    "Fault clears and immediately returns."
+  ],
+  "tests": {
+    "error-log": "BEATER POSITION FAULT — controller can't read rotor position. Logged since Wednesday.",
+    "inspect-beater": "Beater spins freely by hand. No ice, no seizure, nothing jammed.",
+    "continuity-test": "Motor windings healthy. Hall effect position sensor reads erratic — signal wire has a hairline break near the connector."
+  },
+  "correctFix": "replace-beater-position-sensor",
+  "wrongFixes": ["replace-beater-motor", "replace-run-capacitor", "replace-controller-board"],
+  "payout": 140,
+  "partsCost": 30,
+  "flavour": "Couldn't tell where it was. The motor agreed.",
+  "authenticityNote": "Modern brushless beater drives rely on Hall effect sensors for commutation; a broken sensor wire presents as a BEATER FAULT with a completely healthy motor. The classic cap-start fault is the obvious trap for techs who learned on older machines."
+}

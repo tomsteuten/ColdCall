@@ -1,0 +1,21 @@
+{
+  "id": "slushie-lid-interlock-fault",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Machine won't start.",
+    "LID OPEN alarm on display.",
+    "Lid is closed."
+  ],
+  "tests": {
+    "error-log": "LID OPEN fault since last night. Machine never ran.",
+    "inspect-beater": "Lid and bowl look fine. Magnetic reed switch on the lid frame has drifted out of alignment with the lid magnet.",
+    "continuity-test": "Reed switch reads open even with lid fully closed. Magnet is 5 mm off centre."
+  },
+  "correctFix": "realign-lid-interlock-magnet",
+  "wrongFixes": ["replace-controller-board", "replace-lid-assembly", "replace-float-switch"],
+  "payout": 80,
+  "partsCost": 0,
+  "flavour": "Fixed with a 2 mm shift and zero parts. Invoice reflects the knowledge, not the movement.",
+  "authenticityNote": "Lid interlock reed switches fail to read 'closed' when the magnet drifts through vibration or the lid warps slightly. Looks like a board fault until you check whether the magnet is actually aligned."
+}

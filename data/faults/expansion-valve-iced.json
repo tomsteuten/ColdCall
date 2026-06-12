@@ -1,0 +1,21 @@
+{
+  "id": "expansion-valve-iced",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Poor cooling — product soft at barrel.",
+    "Suction line heavily frosted all the way to the compressor.",
+    "Machine running but struggling."
+  ],
+  "tests": {
+    "error-log": "Low suction pressure alarm, intermittent.",
+    "temp-probe": "Suction line at −20 °C — far too cold. Superheat reading near zero.",
+    "continuity-test": "Refrigeration electrical side all healthy. Expansion valve position sensor reads stuck closed."
+  },
+  "correctFix": "replace-expansion-valve",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-barrel-seal"],
+  "payout": 145,
+  "partsCost": 55,
+  "flavour": "The valve was frozen with indecision. Replaced.",
+  "authenticityNote": "A stuck-closed expansion valve starves the evaporator and drives superheat to near-zero, frosting the suction line back to the compressor. The symptom pattern looks like overcharge until you check superheat."
+}

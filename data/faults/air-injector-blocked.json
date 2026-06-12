@@ -1,0 +1,21 @@
+{
+  "id": "air-injector-blocked",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product very dense and heavy — no light texture.",
+    "Pours slowly.",
+    "Machine otherwise seems fine."
+  ],
+  "tests": {
+    "error-log": "No active faults. Overrun percentage in service menu reads 3% — should be 30–50%.",
+    "inspect-beater": "Barrel and scraper blades fine. Air injector port in the mix inlet completely blocked with calcified scale.",
+    "temp-probe": "Mix and barrel temps in spec."
+  },
+  "correctFix": "descale-air-injector",
+  "wrongFixes": ["replace-mix-pump", "replace-scraper-blades", "fit-inline-water-filter"],
+  "payout": 115,
+  "partsCost": 5,
+  "flavour": "Restored the overrun. The manager called it 'fluffiness'. Close enough.",
+  "authenticityNote": "The air injector port introduces overrun (entrained air) that gives soft serve its characteristic light texture. Scale blocks it completely and the product comes out like hard-pack ice cream. Only visible by checking overrun % in the service menu."
+}

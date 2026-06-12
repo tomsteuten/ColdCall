@@ -1,0 +1,21 @@
+{
+  "id": "overheat-cutout-tripped",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Machine completely dead — no display, no response.",
+    "Was working fine this morning.",
+    "Machine is in a warm, enclosed corner of the kitchen."
+  ],
+  "tests": {
+    "error-log": "Can't access — machine fully off.",
+    "temp-probe": "Rear of machine hot to touch. Compressor motor body very warm.",
+    "inspect-beater": "Thermal cutout button on the compressor motor has physically popped out. Reset it: machine powers straight back on."
+  },
+  "correctFix": "reset-thermal-cutout",
+  "wrongFixes": ["replace-compressor", "replace-controller-board", "replace-condenser-fan-motor"],
+  "payout": 110,
+  "partsCost": 0,
+  "flavour": "Machine was fine. Machine was hot. Machine is fine again.",
+  "authenticityNote": "Thermal cutouts on compressor motors trip when ventilation is blocked by the machine's location. Resetting without improving airflow means it trips again — find and fix the root cause before leaving."
+}

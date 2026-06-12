@@ -1,0 +1,21 @@
+{
+  "id": "dispense-valve-weeping",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product dripping from the spout between serves.",
+    "Puddle forms on the drip tray within minutes.",
+    "No alarms."
+  ],
+  "tests": {
+    "error-log": "No faults. Normal operation logged.",
+    "inspect-beater": "Dispense valve piston seal is torn — valve not seating fully between portions.",
+    "temp-probe": "Barrel and hopper temps both in spec."
+  },
+  "correctFix": "replace-dispense-valve-seal",
+  "wrongFixes": ["replace-door-o-ring", "replace-dispense-door", "replace-barrel-seal"],
+  "payout": 100,
+  "partsCost": 18,
+  "flavour": "Sealed the slow financial drain in the drip tray.",
+  "authenticityNote": "Dispense valve piston seals wear with use and begin to weep between portions. Visually similar to a door O-ring leak but originating higher up inside the valve body — inspect-beater confirms it."
+}

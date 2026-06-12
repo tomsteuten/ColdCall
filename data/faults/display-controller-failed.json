@@ -1,0 +1,21 @@
+{
+  "id": "display-controller-failed",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Display completely blank.",
+    "Machine running — cold barrel, product dispensing fine.",
+    "Can't see any settings or access service menu."
+  ],
+  "tests": {
+    "error-log": "Can't access — display is dead.",
+    "temp-probe": "Barrel and hopper temps correct. Refrigeration working.",
+    "continuity-test": "Display board 12V supply rail present. Data bus to the display microcontroller reads dead — chip has failed."
+  },
+  "correctFix": "replace-display-board",
+  "wrongFixes": ["replace-controller-board", "replace-mix-temp-sensor", "run-defrost-cycle"],
+  "payout": 140,
+  "partsCost": 60,
+  "flavour": "It works. You just can't see that it works.",
+  "authenticityNote": "Display boards on commercial soft serve machines can fail independently of the main controller board. The machine runs perfectly blind until you replace the display."
+}

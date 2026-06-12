@@ -1,0 +1,21 @@
+{
+  "id": "slushie-evaporator-iced-over",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Product runny and warm — nowhere near frozen.",
+    "Compressor running constantly.",
+    "Bowl barely cold to the touch."
+  ],
+  "tests": {
+    "error-log": "TEMP HIGH alarm active. Very high compressor run time.",
+    "temp-probe": "Bowl at 8 °C. Suction line unusually cold and sweating heavily.",
+    "inspect-beater": "Evaporator coils behind the bowl are solid with ice. Airflow completely blocked."
+  },
+  "correctFix": "defrost-and-clean-evaporator",
+  "wrongFixes": ["regas-refrigeration", "replace-slushie-thermostat", "replace-condenser-fan-motor"],
+  "payout": 90,
+  "partsCost": 0,
+  "flavour": "The irony of a slushie machine dying from too much ice.",
+  "authenticityNote": "Evaporator ice-over blocks heat exchange entirely; the compressor works harder and achieves nothing. Usually caused by a blocked air filter or a door left open allowing humid air in."
+}

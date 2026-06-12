@@ -1,0 +1,20 @@
+{
+  "id": "slushie-float-switch-stuck-high",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Machine stops refilling mid-service.",
+    "MIX LOW alarm even with a full concentrate bag.",
+    "Bowl looks low but stock is definitely there."
+  ],
+  "tests": {
+    "error-log": "MIX LOW alarm repeating despite restocks.",
+    "inspect-beater": "Float switch is stuck in the raised position — telling the machine the bowl is full when it isn't."
+  },
+  "correctFix": "replace-float-switch",
+  "wrongFixes": ["replace-mix-inlet-valve", "replace-mix-level-sensor", "replace-controller-board"],
+  "payout": 80,
+  "partsCost": 12,
+  "flavour": "Technically, the machine was an optimist.",
+  "authenticityNote": "Float switches on slushie mix reservoirs can stick in the raised position due to syrup residue, falsely reporting 'full' and cutting feed to the bowl."
+}

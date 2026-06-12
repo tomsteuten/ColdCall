@@ -1,0 +1,21 @@
+{
+  "id": "slushie-motor-brushes-worn",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Agitator works fine at the start, slows down and stops after 30 minutes.",
+    "Faint sparking visible through the motor vent slots.",
+    "Resets and does the same thing again."
+  ],
+  "tests": {
+    "error-log": "AGITATOR FAULT trips logged every 30–40 minutes since Tuesday.",
+    "inspect-beater": "Drive motor brushes are worn down to stubs, making intermittent contact and arcing.",
+    "continuity-test": "Motor windings healthy. Carbon brushes measured at 2 mm — well below the 8 mm minimum."
+  },
+  "correctFix": "replace-motor-brushes",
+  "wrongFixes": ["replace-agitator-motor", "replace-agitator-belt", "replace-controller-board"],
+  "payout": 90,
+  "partsCost": 15,
+  "flavour": "The sparks were complimentary. The diagnosis was not.",
+  "authenticityNote": "Brushed DC agitator motors in older slushie units fail progressively as brushes wear — they arc and drop out intermittently rather than failing all at once, which makes them an intermittent-fault trap."
+}

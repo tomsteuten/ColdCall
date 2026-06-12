@@ -1,0 +1,21 @@
+{
+  "id": "voltage-sag-resets",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Machine randomly reboots during busy periods.",
+    "Display flashes and restarts.",
+    "Only happens when the kitchen is really flat out."
+  ],
+  "tests": {
+    "error-log": "Power reset events logged at peak service times — 12:10, 12:43, 13:02 today.",
+    "temp-probe": "All temps fine between resets.",
+    "continuity-test": "Supply voltage at the machine terminal measures 196 V during a reset event — spec is 220–240 V. Supply cable run is undersized."
+  },
+  "correctFix": "upgrade-supply-cable",
+  "wrongFixes": ["replace-controller-board", "replace-compressor", "replace-display-board"],
+  "payout": 130,
+  "partsCost": 40,
+  "flavour": "The machine wasn't faulty. The electrician was.",
+  "authenticityNote": "An undersized supply cable causes voltage sag when the compressor starts under load; the controller brownouts and reboots. An electrician's install problem wearing a machine-fault disguise."
+}

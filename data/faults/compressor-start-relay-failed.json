@@ -1,0 +1,21 @@
+{
+  "id": "compressor-start-relay-failed",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product completely liquid — no freezing at all.",
+    "Clicking sound from the compressor bay every few seconds.",
+    "Compressor never actually runs."
+  ],
+  "tests": {
+    "error-log": "REFRIGERATION FAULT — compressor failed to start, 47 attempts logged.",
+    "temp-probe": "Barrel at ambient temperature. No refrigeration activity.",
+    "continuity-test": "Compressor windings read perfectly healthy. Start relay is open-circuit — no contact."
+  },
+  "correctFix": "replace-compressor-start-relay",
+  "wrongFixes": ["replace-compressor", "regas-refrigeration", "replace-controller-board"],
+  "payout": 135,
+  "partsCost": 25,
+  "flavour": "The compressor was fine. The relay was just an understudy.",
+  "authenticityNote": "A failed start relay prevents the compressor from energising; the clicking is the controller retrying. Very commonly condemned as compressor failure — meter the relay first, it's a $25 fix versus a $900 one."
+}

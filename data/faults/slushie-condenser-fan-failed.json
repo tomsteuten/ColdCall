@@ -1,0 +1,21 @@
+{
+  "id": "slushie-condenser-fan-failed",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Machine trips out after running for a while.",
+    "Product soft when it trips.",
+    "Resets fine but trips again after 20 minutes."
+  ],
+  "tests": {
+    "error-log": "COMPRESSOR OVERTEMP trip recurring every 15–25 minutes.",
+    "temp-probe": "Condenser outlet running very hot. Intake cool.",
+    "inspect-beater": "Bowl and agitator fine. Condenser fan at the rear not spinning — motor seized."
+  },
+  "correctFix": "replace-condenser-fan-motor",
+  "wrongFixes": ["clean-condenser-coil", "regas-refrigeration", "replace-compressor"],
+  "payout": 95,
+  "partsCost": 30,
+  "flavour": "Hot and bothered for reasons unrelated to the product.",
+  "authenticityNote": "A seized condenser fan starves the system of cooling; the compressor thermal overload trips on a timer. Often misdiagnosed as low refrigerant — look at the fan before reaching for the gauges."
+}

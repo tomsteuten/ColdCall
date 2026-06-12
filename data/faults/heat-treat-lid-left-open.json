@@ -1,0 +1,21 @@
+{
+  "id": "heat-treat-lid-left-open",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Machine locked out, HTR FAIL on display.",
+    "Last visit was a full clean and refill.",
+    "Night manager says everything was fine at close."
+  ],
+  "tests": {
+    "error-log": "Heat-treat cycle aborted 2:55 am — hopper lid-open event detected mid-cycle. Pasteurisation incomplete.",
+    "temp-probe": "Mix and barrel temps in spec now. Heater element working.",
+    "inspect-beater": "Barrel and beater clean and fine. Hopper lid latch is not fully clicked — left slightly ajar after the refill."
+  },
+  "correctFix": "latch-hopper-lid-and-rerun-heat-treat",
+  "wrongFixes": ["rerun-heat-treat-cycle", "replace-hopper-lid-magnet", "replace-heater-element"],
+  "payout": 115,
+  "partsCost": 0,
+  "flavour": "Clicked the lid. Re-ran the cycle. Sent the invoice.",
+  "authenticityNote": "A lid left slightly open from a refill aborts the overnight heat-treat cycle and locks the machine. Superficially identical to heat-treat-cycle-failed, but re-running without closing the lid just fails again — inspect the latch first."
+}

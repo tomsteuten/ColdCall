@@ -1,0 +1,21 @@
+{
+  "id": "door-gasket-deteriorated",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Condensation forming on the machine exterior.",
+    "Hopper temperature running slightly high in warm weather.",
+    "Product fine; alarms only in the afternoon."
+  ],
+  "tests": {
+    "error-log": "Intermittent HOPPER TEMP HIGH warnings during afternoon service.",
+    "temp-probe": "Hopper runs 1–2 °C above spec on hot days.",
+    "inspect-beater": "Hopper access door gasket is cracked and no longer sealing. Warm ambient air infiltrating the hopper cavity."
+  },
+  "correctFix": "replace-hopper-door-gasket",
+  "wrongFixes": ["replace-hopper-thermistor", "replace-compressor", "regas-refrigeration"],
+  "payout": 100,
+  "partsCost": 20,
+  "flavour": "The weather got in. Now it's been evicted.",
+  "authenticityNote": "A deteriorated hopper door gasket allows warm ambient air infiltration; on hot days this can trigger HOPPER TEMP HIGH alarms while the refrigeration system is completely healthy — a thermistor replacement would fix nothing."
+}

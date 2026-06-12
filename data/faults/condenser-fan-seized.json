@@ -1,0 +1,21 @@
+{
+  "id": "condenser-fan-seized",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product too soft — won't freeze to serve consistency.",
+    "Compressor overtemp fault after extended use.",
+    "Ambient temperature is normal."
+  ],
+  "tests": {
+    "error-log": "CONDENSER TEMP HIGH trips appearing over the past week, more frequent in busy periods.",
+    "temp-probe": "Condenser outlet hot — well above spec. Refrigerant head pressure high.",
+    "inspect-beater": "Barrel and mix side fine. Condenser fan at the rear is completely seized — won't turn by hand."
+  },
+  "correctFix": "replace-condenser-fan-motor",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor", "clean-condenser-coils"],
+  "payout": 130,
+  "partsCost": 45,
+  "flavour": "Hot air, no movement. Classic.",
+  "authenticityNote": "A seized condenser fan kills high-side cooling, raising head pressure and degrading refrigeration. Pressures read high, which looks exactly like overcharge — check the fan first before reaching for the gauges."
+}

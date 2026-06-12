@@ -1,0 +1,21 @@
+{
+  "id": "slushie-drain-valve-stuck-open",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Product level drops on its own even when not serving.",
+    "Sticky puddle under the machine.",
+    "MIX LOW alarm going off repeatedly."
+  ],
+  "tests": {
+    "error-log": "Repeated MIX LOW alarms at irregular intervals.",
+    "temp-probe": "Temps fine. Refrigeration working.",
+    "inspect-beater": "Drain valve at the base of the bowl is held open by a fragment of crystallised syrup. Product slowly bleeding out."
+  },
+  "correctFix": "clean-and-reseat-drain-valve",
+  "wrongFixes": ["replace-float-switch", "replace-bowl-gasket", "replace-mix-inlet-valve"],
+  "payout": 85,
+  "partsCost": 0,
+  "flavour": "The machine wasn't losing its mind. Just its product.",
+  "authenticityNote": "Drain valves can be held open by a shard of crystallised old product lodged in the seat, causing a slow seep that looks like a float switch or gasket issue until you trace the leak to the valve."
+}

@@ -1,0 +1,21 @@
+{
+  "id": "refrigerant-low",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Product consistently soft — never quite freezes to serve texture.",
+    "Compressor running continuously.",
+    "No specific error codes."
+  ],
+  "tests": {
+    "error-log": "No hard faults. Repeated PRODUCT TEMP HIGH warnings over the past month.",
+    "temp-probe": "Barrel at −2 °C — should be −6 to −8 °C. Suction pressure low.",
+    "continuity-test": "All electrical fine. Refrigerant pressures confirm undercharge — suction pressure well below spec."
+  },
+  "correctFix": "regas-refrigeration",
+  "wrongFixes": ["replace-compressor", "replace-expansion-valve", "replace-hopper-thermistor"],
+  "payout": 140,
+  "partsCost": 50,
+  "flavour": "More gas, less disappointment.",
+  "authenticityNote": "Low refrigerant from a slow leak degrades over weeks; the machine keeps running but can't hit barrel temperature. Low suction pressure is the key read — not the soft product alone, which could be a dozen other things."
+}

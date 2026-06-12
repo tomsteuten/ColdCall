@@ -1,0 +1,21 @@
+{
+  "id": "draw-valve-microswitch-fault",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "DRAW HANDLE OPEN alarm on the display.",
+    "Handle hasn't been touched — staff are adamant.",
+    "Nothing dispensing."
+  ],
+  "tests": {
+    "error-log": "DRAW HANDLE OPEN fault logged continuously for 18 hours.",
+    "inspect-beater": "Draw handle fully closed. Microswitch actuator arm is bent, pressing the switch permanently.",
+    "continuity-test": "Microswitch reads closed-circuit (triggered) with handle at rest. It should read open."
+  },
+  "correctFix": "replace-draw-handle-microswitch",
+  "wrongFixes": ["replace-dispense-door", "replace-controller-board", "replace-draw-handle"],
+  "payout": 110,
+  "partsCost": 12,
+  "flavour": "Told the machine the door was open. The machine believed it.",
+  "authenticityNote": "The draw handle microswitch can be bent by a heavy-handed pull or a dropped scoop. The controller reads 'handle open' and locks out dispensing — the whole machine appears dead until you trace it to this one $12 part."
+}

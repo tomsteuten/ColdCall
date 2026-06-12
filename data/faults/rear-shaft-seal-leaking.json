@@ -1,0 +1,21 @@
+{
+  "id": "rear-shaft-seal-leaking",
+  "machineType": "soft-serve-commercial",
+  "tier": 2,
+  "symptoms": [
+    "Mix appearing on the back panel of the machine.",
+    "Faint burning smell during busy periods.",
+    "Product output otherwise normal."
+  ],
+  "tests": {
+    "error-log": "No faults logged.",
+    "inspect-beater": "Beater shaft seal at the rear of the barrel is torn. Mix is being flung out along the rotating shaft and landing on the motor housing.",
+    "temp-probe": "Barrel and hopper temps fine."
+  },
+  "correctFix": "replace-beater-shaft-seal",
+  "wrongFixes": ["replace-barrel-seal", "replace-beater-motor", "replace-dispense-valve-seal"],
+  "payout": 125,
+  "partsCost": 22,
+  "flavour": "Located the leak. Somewhere behind everything.",
+  "authenticityNote": "The beater shaft seal prevents mix from migrating rearward along the shaft into the motor bay. When it fails the machine still works, but the motor gets progressively coated in milk protein — the burning smell is that protein cooking on the housing."
+}
