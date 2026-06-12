@@ -2,7 +2,7 @@
 
 import { STARTING } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const SAVE_KEY = 'coldcall_save';
 
 /**
@@ -29,7 +29,7 @@ export function defaultState() {
 
     van: {
       slots: STARTING.vanSlots,
-      stock: {}, // partId -> count
+      stock: { 'generic-parts': STARTING.vanSlots }, // partId -> count
     },
 
     techs: [], // { id, name, skill, routeId|null, hiredAt }
@@ -83,6 +83,15 @@ export const MIGRATIONS = {
       if (typeof cb.misses !== 'number') cb.misses = 1;
     }
     old.schemaVersion = 2;
+    return old;
+  },
+  // v2 -> v3: van stock tracking added. Old saves had stock: {} (no parts);
+  // give them a full van so they're not immediately blocked on their next job.
+  2: (old) => {
+    if (typeof old.van.stock['generic-parts'] !== 'number') {
+      old.van.stock['generic-parts'] = STARTING.vanSlots;
+    }
+    old.schemaVersion = 3;
     return old;
   },
 };

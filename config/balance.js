@@ -70,6 +70,13 @@ export const PRESTIGE = {
   lifetimeEarningsThreshold: 250000,
 };
 
+/** Van stock and parts restocking. */
+export const VAN = {
+  // Cost per slot when restocking the van. Filling 4 empty slots = $80 — easily
+  // covered by one job, but worth managing so running dry has a real cost.
+  partUnitCost: 20,
+};
+
 /** Machine of the Day. Day 1 = the launch date; used only for the share-card day number. */
 export const MOTD = {
   epochDate: '2026-06-12', // Day 1 — change only on a fresh deploy, never mid-run

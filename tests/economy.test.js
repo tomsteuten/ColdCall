@@ -1,10 +1,13 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, VAN } from '../config/balance.js';
+import { STARTING } from '../config/balance.js';
 import {
   settleJob,
   buyTool,
+  restockVan,
+  vanRestockCost,
   utcDateStringAfter,
   dueCallbacks,
   claimDueCallback,
@@ -244,4 +247,70 @@ test('buyTool throws on an unknown tool id (programmer error, not player state)'
 test('utcDateStringAfter is deterministic given a now', () => {
   const now = Date.UTC(2026, 5, 12, 10, 0, 0); // 2026-06-12
   assertEqual(utcDateStringAfter(JOBS.callbackDueDays, now), '2026-06-13');
+});
+
+// --- van stock ---
+
+test('van: correct fix with partsCost > 0 consumes one generic-parts', () => {
+  const state = defaultState();
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
+  settleJob(state, makeFault(), true, 'client-1');
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots - 1);
+});
+
+test('van: wrong fix does not consume parts', () => {
+  const state = defaultState();
+  settleJob(state, makeFault(), false, 'client-1');
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
+});
+
+test('van: procedure-only fix (partsCost 0) does not consume parts', () => {
+  const state = defaultState();
+  const procedureFault = { ...makeFault(), partsCost: 0 };
+  settleJob(state, procedureFault, true, 'client-1');
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
+});
+
+test('van: settleJob throws when out of parts for a parts-needing correct fix', () => {
+  const state = defaultState();
+  state.van.stock['generic-parts'] = 0;
+  let threw = false;
+  try { settleJob(state, makeFault(), true, 'client-1'); } catch { threw = true; }
+  assert(threw, 'should throw when van is empty and fix needs parts');
+  assertEqual(state.van.stock['generic-parts'], 0, 'stock should be unchanged on throw');
+});
+
+test('restockVan: fills to capacity and deducts cash', () => {
+  const state = defaultState();
+  state.van.stock['generic-parts'] = 1;
+  const slotsToFill = state.van.slots - 1;
+  const cost = slotsToFill * VAN.partUnitCost;
+  state.player.cash = cost + 100;
+  const result = restockVan(state);
+  assert(result.ok, 'restock should succeed');
+  assertEqual(state.van.stock['generic-parts'], state.van.slots);
+  assertEqual(state.player.cash, 100);
+});
+
+test('restockVan: refuses when unaffordable', () => {
+  const state = defaultState();
+  state.van.stock['generic-parts'] = 0;
+  state.player.cash = 0;
+  const result = restockVan(state);
+  assert(!result.ok, 'restock should fail when unaffordable');
+  assertEqual(state.van.stock['generic-parts'], 0, 'stock should be unchanged');
+});
+
+test('restockVan: refuses when van already full', () => {
+  const state = defaultState();
+  const result = restockVan(state); // starts full
+  assert(!result.ok, 'should refuse when already full');
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
+});
+
+test('vanRestockCost: returns 0 when full, correct cost when partially empty', () => {
+  const state = defaultState(); // full
+  assertEqual(vanRestockCost(state), 0);
+  state.van.stock['generic-parts'] = 2;
+  assertEqual(vanRestockCost(state), (STARTING.vanSlots - 2) * VAN.partUnitCost);
 });

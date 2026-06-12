@@ -10,6 +10,7 @@ import {
   SCHEMA_VERSION,
   SAVE_KEY,
 } from '../js/state.js';
+import { STARTING } from '../config/balance.js';
 
 /** In-memory localStorage stand-in for node. */
 function memoryStorage() {
@@ -99,6 +100,18 @@ test('load refuses to wipe a corrupt save', () => {
   assert(typeof error === 'string' && error.length > 0, 'should report the error');
   assert(storage.getItem(SAVE_KEY) === '{not json at all', 'corrupt blob must remain untouched');
   assertEqual(state, defaultState(), 'fallback state should be defaults');
+});
+
+test('v2 save migrates to v3: van.stock gains generic-parts', () => {
+  // Fixture: a v2 save that predates parts tracking — stock is empty.
+  const v2Fixture = defaultState();
+  v2Fixture.schemaVersion = 2;
+  v2Fixture.van.stock = {};
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v2Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.van.stock['generic-parts'], STARTING.vanSlots, 'should get starting parts');
 });
 
 test('exportSave -> importSave round-trips and migrates', () => {

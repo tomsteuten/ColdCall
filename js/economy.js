@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, VAN, STARTING } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -38,6 +38,11 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   const { callback = null, now = Date.now() } = opts;
   let earned;
   if (correct) {
+    if (fault.partsCost > 0) {
+      const inStock = state.van.stock['generic-parts'] ?? 0;
+      if (inStock < 1) throw new Error('Van is out of parts — restock before committing');
+      state.van.stock['generic-parts'] = inStock - 1;
+    }
     const rate = callback ? Math.round(fault.payout * JOBS.callbackJobPayoutMult) : fault.payout;
     earned = rate - fault.partsCost;
     state.player.reputation += REPUTATION.correctFix;
@@ -131,6 +136,32 @@ export const TOOL_CATALOGUE = {
     },
   },
 };
+
+/**
+ * Cost to restock the van to full capacity from its current level.
+ * Returns 0 when the van is already full.
+ * @param {object} state
+ * @returns {number}
+ */
+export function vanRestockCost(state) {
+  const current = state.van.stock['generic-parts'] ?? 0;
+  const slots = state.van.slots;
+  return Math.max(0, slots - current) * VAN.partUnitCost;
+}
+
+/**
+ * Restock the van to full capacity. Refuses when already full or unaffordable.
+ * @param {object} state game state (mutated on success)
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function restockVan(state) {
+  const cost = vanRestockCost(state);
+  if (cost === 0) return { ok: false, reason: 'Van already full' };
+  if (state.player.cash < cost) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= cost;
+  state.van.stock['generic-parts'] = state.van.slots;
+  return { ok: true, reason: null };
+}
 
 /**
  * Buy a tool: spend cash, apply its effect. Refuses (without mutating) when

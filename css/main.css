@@ -43,6 +43,11 @@ body {
   color: var(--text-dim);
 }
 
+.stat-warn {
+  color: #f0917f; /* same salmon as callbacks — attention needed */
+  font-weight: 600;
+}
+
 .screen {
   flex: 1;
   display: flex;
@@ -214,6 +219,19 @@ body {
   margin: 0;
   font-size: 0.85rem;
   color: var(--text-dim);
+}
+
+/* --- van stock --- */
+
+.btn-restock {
+  border-color: #f0b84a; /* warm amber — distinct from blue accent and red callbacks */
+  text-align: center;
+}
+
+.job-no-parts {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #f0917f;
 }
 
 /* --- invoice --- */

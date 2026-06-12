@@ -3,7 +3,7 @@
 import { load, save } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimDueCallback } from './economy.js';
+import { buyTool, claimDueCallback, restockVan } from './economy.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
@@ -85,6 +85,12 @@ const actions = {
     const { ok, reason } = buyTool(state, toolId);
     if (ok) save(state);
     else console.warn(`Cold Call: tool not bought: ${reason}`);
+    render();
+  },
+  restockVan() {
+    const { ok, reason } = restockVan(state);
+    if (ok) save(state);
+    else console.warn(`Cold Call: van not restocked: ${reason}`);
     render();
   },
   startMotd() {

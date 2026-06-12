@@ -4,7 +4,7 @@
  */
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
-import { dueCallbacks } from '../economy.js';
+import { dueCallbacks, vanRestockCost } from '../economy.js';
 import { canPlayToday } from '../motd.js';
 
 /**
@@ -31,12 +31,16 @@ export function render(root, ctx) {
   wire(root, ctx.actions);
 }
 
-/** Cash/reputation header shown on every view (shop.js imports it too). */
+/** Cash/reputation/van header shown on every view (shop.js imports it too). */
 export function statusBar(state) {
+  const parts = state.van.stock['generic-parts'] ?? 0;
+  const slots = state.van.slots;
+  const vanDim = parts === 0 ? ' stat-warn' : ' stat-dim';
   return `
     <header class="status-bar">
       <span class="stat">$${state.player.cash}</span>
       <span class="stat stat-dim">Rep ${state.player.reputation}</span>
+      <span class="stat${vanDim}">Van ${parts}/${slots}</span>
     </header>`;
 }
 
@@ -69,6 +73,9 @@ function homeView({ state, justUnlockedTier }) {
       <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
       ${motdSection}
       <button class="btn" data-action="open-shop">Tools shop</button>
+      ${vanRestockCost(state) > 0
+        ? `<button class="btn btn-restock" data-action="restock-van">Restock van ($${vanRestockCost(state)})</button>`
+        : ''}
     </section>`;
 }
 
@@ -102,8 +109,10 @@ function jobView({ state, faults, machines, clients }) {
     })
     .join('');
 
+  const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
+  const restockCost = vanRestockCost(state);
   const fixButtons = job.fixOptions
-    .map((id) => `<button class="btn btn-fix" data-fix="${id}">${fixLabel(id)}</button>`)
+    .map((id) => `<button class="btn btn-fix" data-fix="${id}" ${outOfParts ? 'disabled' : ''}>${fixLabel(id)}</button>`)
     .join('');
 
   return `
@@ -121,6 +130,8 @@ function jobView({ state, faults, machines, clients }) {
       <ul class="tests">${testRows}</ul>
 
       <h3 class="section-head">Commit to a fix</h3>
+      ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
+        <button class="btn btn-restock" data-action="restock-van" ${state.player.cash < restockCost ? 'disabled' : ''}>Restock van ($${restockCost})</button>` : ''}
       <div class="fixes">${fixButtons}</div>
     </section>`;
 }
@@ -170,6 +181,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="open-motd-result"]').forEach((el) =>
     el.addEventListener('click', actions.openMotdResult)
+  );
+  root.querySelectorAll('[data-action="restock-van"]').forEach((el) =>
+    el.addEventListener('click', actions.restockVan)
   );
   root.querySelectorAll('[data-test]').forEach((el) =>
     el.addEventListener('click', () => actions.runTest(el.dataset.test))
