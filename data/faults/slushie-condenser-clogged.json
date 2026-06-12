@@ -1,0 +1,21 @@
+{
+  "id": "slushie-condenser-clogged",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Both bowls churning but the slush is just cold syrup.",
+    "Machine blowing warm air out the front.",
+    "Fan sounds like it's working overtime."
+  ],
+  "tests": {
+    "error-log": "HIGH PRESSURE warning logged daily for the past two weeks.",
+    "temp-probe": "Bowls sitting at 8 °C — nowhere near slush. Condenser inlet hot enough to fry an egg.",
+    "inspect-beater": "Augers and seals are fine. The condenser intake grille is a solid felt mat of dust."
+  },
+  "correctFix": "clean-condenser-coil",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-condenser-fan"],
+  "payout": 95,
+  "partsCost": 0,
+  "flavour": "Cured a refrigeration failure with a stiff brush.",
+  "authenticityNote": "Corner-shop slushie machines get shoved against a wall and suck in dust all day; a blocked condenser is the number one cause of warm slush. Regassing is the classic expensive misdiagnosis — the refrigerant was fine, it just couldn't reject heat."
+}

@@ -1,0 +1,21 @@
+{
+  "id": "slushie-thermostat-stuck",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Left bowl frozen into one solid block.",
+    "Auger groaning and barely turning."
+  ],
+  "tests": {
+    "error-log": "AUGER OVERTORQUE error, repeating since this morning.",
+    "temp-probe": "Bowl reads −10 °C — miles below setpoint. The thermostat never cut out.",
+    "inspect-beater": "Auger is healthy under the ice. Mix ratio tastes right.",
+    "continuity-test": "Thermostat contacts read welded closed. It's calling for cold forever."
+  },
+  "correctFix": "replace-thermostat",
+  "wrongFixes": ["drain-and-remix-product", "replace-auger-motor"],
+  "payout": 105,
+  "partsCost": 18,
+  "flavour": "It had one job: knowing when to stop.",
+  "authenticityNote": "A thermostat stuck closed over-freezes the bowl and presents identically to weak mix — frozen block, straining auger. The temp probe is what separates them: stuck stat drives the bowl far below setpoint, weak mix freezes at a perfectly normal temperature."
+}

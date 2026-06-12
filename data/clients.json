@@ -2,6 +2,11 @@
   "_comment": "Client definitions. Burgertown is the narrative spine (GDD §4). More clients in a later session.",
   "clients": [
     {
+      "id": "kwik-stop-corner",
+      "name": "Kwik Stop Corner Shop",
+      "tier": 1
+    },
+    {
       "id": "burgertown-high-st",
       "name": "Burgertown — High Street",
       "tier": 2

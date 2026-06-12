@@ -2,6 +2,11 @@
   "_comment": "Machine type definitions. Tier ladder in GDD §4. Names are fictional parody — no real branding.",
   "machines": [
     {
+      "id": "slushie-machine",
+      "name": "Polar Twister Twin-Bowl Slushie",
+      "tier": 1
+    },
+    {
       "id": "soft-serve-commercial",
       "name": "FrostKing 4500 Soft Serve",
       "tier": 2

@@ -1,0 +1,18 @@
+{
+  "id": "slushie-bowl-gasket-leak",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "Sticky red syrup pooling under the machine.",
+    "Leak traced to the back of the left bowl."
+  ],
+  "tests": {
+    "inspect-beater": "Bowl rear gasket has a visible split. The auger shaft seal is fine."
+  },
+  "correctFix": "replace-bowl-gasket",
+  "wrongFixes": ["replace-bowl", "replace-auger-shaft-seal"],
+  "payout": 80,
+  "partsCost": 10,
+  "flavour": "Cleaned up a strawberry crime scene for the price of a gasket.",
+  "authenticityNote": "Bowl gaskets are a routine wear item on slushie machines; a leak at the bowl rear is almost never the bowl itself. Tier-1 cousin of the soft-serve door O-ring — trivially cheap once you actually look."
+}
