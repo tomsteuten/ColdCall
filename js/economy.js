@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -46,4 +46,39 @@ export function settleJob(state, fault, correct, clientId) {
   state.player.cash += earned;
   state.player.lifetimeEarnings += earned;
   return earned;
+}
+
+/**
+ * Tools for sale. Costs come from config/balance.js (rule 3); blurbs are the
+ * shop copy. GDD §3.3: tools unlock test types, they don't just inflate numbers.
+ * @type {Object<string, {name: string, blurb: string, cost: number, owned: function(object): boolean, apply: function(object): void}>}
+ */
+export const TOOL_CATALOGUE = {
+  'multimeter-tier-2': {
+    name: 'Multimeter Tier 2',
+    blurb: 'A proper meter. Unlocks the continuity test on motors and sensors.',
+    cost: TOOLS.multimeterTier2Cost,
+    owned: (state) => state.tools.multimeterTier >= 2,
+    apply: (state) => {
+      state.tools.multimeterTier = 2;
+    },
+  },
+};
+
+/**
+ * Buy a tool: spend cash, apply its effect. Refuses (without mutating) when
+ * already owned or unaffordable — those are player situations, not bugs, so
+ * the result carries a player-facing reason instead of throwing.
+ * @param {object} state game state (mutated on success)
+ * @param {string} toolId key in TOOL_CATALOGUE
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function buyTool(state, toolId) {
+  const tool = TOOL_CATALOGUE[toolId];
+  if (!tool) throw new Error(`Unknown tool id "${toolId}"`);
+  if (tool.owned(state)) return { ok: false, reason: 'Already owned' };
+  if (state.player.cash < tool.cost) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= tool.cost;
+  tool.apply(state);
+  return { ok: true, reason: null };
 }

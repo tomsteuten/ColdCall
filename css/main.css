@@ -145,6 +145,58 @@ body {
   padding-bottom: var(--space);
 }
 
+/* --- shop --- */
+
+.section-title {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.shop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.shop-card {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.shop-card-owned {
+  opacity: 0.7;
+}
+
+.shop-tool-name {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.shop-tool-blurb {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.btn-buy {
+  text-align: center;
+}
+
+.shop-locked {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
 /* --- invoice --- */
 
 .screen-invoice {

@@ -3,9 +3,11 @@
 import { load, save } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
+import { buyTool } from './economy.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import * as jobScreen from './ui/job.js';
+import * as shopScreen from './ui/shop.js';
 
 const { state, error } = load();
 if (error) {
@@ -20,6 +22,10 @@ const app = document.getElementById('app');
 // Result of the last commitFix, shown on the invoice screen. Transient by
 // design: a refresh mid-invoice lands on home with the money already banked.
 let invoice = null;
+
+// Which top-level screen is showing. Transient on purpose — where you were
+// browsing isn't game state, so a refresh lands back on home.
+let screen = 'home';
 
 const actions = {
   nextTicket() {
@@ -44,10 +50,29 @@ const actions = {
     invoice = null;
     render();
   },
+  openShop() {
+    screen = 'shop';
+    render();
+  },
+  closeShop() {
+    screen = 'home';
+    render();
+  },
+  buyTool(toolId) {
+    const { ok, reason } = buyTool(state, toolId);
+    if (ok) save(state);
+    else console.warn(`Cold Call: tool not bought: ${reason}`);
+    render();
+  },
 };
 
 function render() {
-  jobScreen.render(app, { state, faults, machines, clients, invoice, actions });
+  // An active job or pending invoice always wins over the shop.
+  if (screen === 'shop' && !state.jobs.active && !invoice) {
+    shopScreen.render(app, { state, actions });
+  } else {
+    jobScreen.render(app, { state, faults, machines, clients, invoice, actions });
+  }
 }
 
 // A save can hold an active job whose fault was since renamed/removed from the

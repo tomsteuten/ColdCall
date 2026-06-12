@@ -28,8 +28,8 @@ export function render(root, ctx) {
   wire(root, ctx.actions);
 }
 
-/** Cash/reputation header shown on every view. */
-function statusBar(state) {
+/** Cash/reputation header shown on every view (shop.js imports it too). */
+export function statusBar(state) {
   return `
     <header class="status-bar">
       <span class="stat">$${state.player.cash}</span>
@@ -45,6 +45,7 @@ function homeView({ state }) {
       <h1 class="dev-title">Cold Call</h1>
       <p class="dev-meta">${state.stats.jobsCompleted} jobs done${streak > 1 ? ` · ${streak} clean in a row` : ''}</p>
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
+      <button class="btn" data-action="open-shop">Tools shop</button>
     </section>`;
 }
 
@@ -124,6 +125,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="dismiss-invoice"]').forEach((el) =>
     el.addEventListener('click', actions.dismissInvoice)
+  );
+  root.querySelectorAll('[data-action="open-shop"]').forEach((el) =>
+    el.addEventListener('click', actions.openShop)
   );
   root.querySelectorAll('[data-test]').forEach((el) =>
     el.addEventListener('click', () => actions.runTest(el.dataset.test))

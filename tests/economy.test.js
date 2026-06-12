@@ -1,8 +1,8 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats and callbacks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION } from '../config/balance.js';
-import { settleJob, utcDateStringAfter } from '../js/economy.js';
+import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
+import { settleJob, buyTool, utcDateStringAfter } from '../js/economy.js';
 
 function makeFault() {
   return {
@@ -75,6 +75,46 @@ test('a wrong fix always pays less than a correct fix (callback rate sanity)', (
   const correctPay = f.payout - f.partsCost;
   const wrongPay = Math.round(f.payout * JOBS.callbackPayoutMult);
   assert(wrongPay < correctPay, `callback pay ${wrongPay} should be < correct pay ${correctPay}`);
+});
+
+test('buyTool deducts exactly the balance.js price and upgrades the multimeter', () => {
+  const state = defaultState();
+  state.player.cash = TOOLS.multimeterTier2Cost + 100;
+  const result = buyTool(state, 'multimeter-tier-2');
+  assertEqual(result, { ok: true, reason: null });
+  assertEqual(state.player.cash, 100);
+  assertEqual(state.tools.multimeterTier, 2);
+});
+
+test('buyTool refuses when unaffordable and mutates nothing', () => {
+  const state = defaultState();
+  state.player.cash = TOOLS.multimeterTier2Cost - 1;
+  const result = buyTool(state, 'multimeter-tier-2');
+  assertEqual(result.ok, false);
+  assert(result.reason, 'refusal should carry a player-facing reason');
+  assertEqual(state.player.cash, TOOLS.multimeterTier2Cost - 1);
+  assertEqual(state.tools.multimeterTier, 1);
+});
+
+test('buyTool refuses a double-buy and takes no more money', () => {
+  const state = defaultState();
+  state.player.cash = TOOLS.multimeterTier2Cost * 2;
+  buyTool(state, 'multimeter-tier-2');
+  const cashAfterFirst = state.player.cash;
+  const result = buyTool(state, 'multimeter-tier-2');
+  assertEqual(result.ok, false);
+  assertEqual(state.player.cash, cashAfterFirst);
+  assertEqual(state.tools.multimeterTier, 2);
+});
+
+test('buyTool throws on an unknown tool id (programmer error, not player state)', () => {
+  let threw = false;
+  try {
+    buyTool(defaultState(), 'sonic-screwdriver');
+  } catch {
+    threw = true;
+  }
+  assert(threw, 'expected buyTool to throw for an unknown tool id');
 });
 
 test('utcDateStringAfter is deterministic given a now', () => {
