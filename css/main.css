@@ -376,3 +376,58 @@ body {
   font-size: 0.9rem;
   margin: 0;
 }
+
+/* --- save data panel (shop) --- */
+
+.import-textarea {
+  font: inherit;
+  font-size: 0.85rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--text-dim);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  resize: vertical;
+}
+
+.settings-ok {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #a8d8a8;
+}
+
+.settings-err {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #f0917f;
+  word-break: break-word;
+}
+
+/* --- corrupt save banner (home) --- */
+
+.corrupt-banner {
+  background: var(--surface);
+  border: 1px solid #f0917f;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.corrupt-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f0917f;
+}
+
+.corrupt-detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}

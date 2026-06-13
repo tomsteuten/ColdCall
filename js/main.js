@@ -1,6 +1,6 @@
 /** @file Boot and screen routing: load save + fault library, route between home/job/invoice. */
 
-import { load, makePersist } from './state.js';
+import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
 import { buyTool, claimDueCallback, restockVan, hireTech } from './economy.js';
@@ -21,6 +21,10 @@ if (error) {
 // refuses to write, so the unreadable blob is never overwritten.
 const save = makePersist(error);
 
+// Raw blob preserved in storage when the load failed — offered to the player
+// for recovery via copy/paste (the only recovery story for a corrupt save).
+const corruptSaveBlob = error ? (globalThis.localStorage?.getItem(SAVE_KEY) ?? null) : null;
+
 const { faults, machines, clients } = await loadGameData();
 
 const app = document.getElementById('app');
@@ -36,6 +40,10 @@ let offlineReport = null;
 // Result of a completed MotD run. Transient: a refresh lands on home, and the
 // result is still recoverable via state.motd.lastResult if played today.
 let motdResult = null;
+
+// Feedback messages for the save data panel in the shop. Transient.
+let exportMessage = null;
+let importError = null;
 
 // Which top-level screen is showing. Transient on purpose — where you were
 // browsing isn't game state, so a refresh lands back on home.
@@ -82,10 +90,14 @@ const actions = {
     render();
   },
   openShop() {
+    exportMessage = null;
+    importError = null;
     screen = 'shop';
     render();
   },
   closeShop() {
+    exportMessage = null;
+    importError = null;
     screen = 'home';
     render();
   },
@@ -138,6 +150,37 @@ const actions = {
     screen = 'home';
     render();
   },
+  async exportSave() {
+    const blob = exportSave(state);
+    try {
+      await navigator.clipboard.writeText(blob);
+      exportMessage = 'Copied to clipboard.';
+    } catch {
+      window.prompt('Copy this to transfer your save to another device:', blob);
+      exportMessage = null;
+    }
+    render();
+  },
+  importSave(blob) {
+    if (!blob.trim()) return;
+    try {
+      const newState = importSaveBlob(blob);
+      // Bypass the session gate — an explicit import replaces whatever is there.
+      rawSave(newState);
+      window.location.reload();
+    } catch (e) {
+      importError = String(e.message ?? e);
+      render();
+    }
+  },
+  async copyCorruptSave() {
+    if (!corruptSaveBlob) return;
+    try {
+      await navigator.clipboard.writeText(corruptSaveBlob);
+    } catch {
+      window.prompt('Copy the raw save blob (it may be recoverable after a game update):', corruptSaveBlob);
+    }
+  },
   async shareMotd() {
     const dateStr = getTodayDateStr();
     const result = motdResult ?? { ...state.motd.lastResult, streak: state.motd.streak };
@@ -155,9 +198,9 @@ function render() {
   if (screen === 'motd') {
     motdScreen.render(app, { state, motdResult, actions });
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
-    shopScreen.render(app, { state, actions });
+    shopScreen.render(app, { state, actions, exportMessage, importError });
   } else {
-    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, actions });
+    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, corruptSaveBlob, actions });
   }
 }
 

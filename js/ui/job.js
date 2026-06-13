@@ -48,7 +48,7 @@ export function statusBar(state) {
     </header>`;
 }
 
-function homeView({ state, justUnlockedTier, offlineReport }) {
+function homeView({ state, justUnlockedTier, offlineReport, corruptSaveBlob }) {
   const streak = state.stats.cleanStreak;
   const due = dueCallbacks(state).length;
   const unlockBanner =
@@ -75,12 +75,21 @@ function homeView({ state, justUnlockedTier, offlineReport }) {
        </div>`
     : '';
 
+  const corruptBanner = corruptSaveBlob
+    ? `<div class="corrupt-banner">
+         <p class="corrupt-title">Save file couldn't be loaded</p>
+         <p class="corrupt-detail">Your previous save is preserved in storage, untouched. Copy the raw blob to try recovering it after a game update.</p>
+         <button class="btn btn-sm" data-action="copy-corrupt-save">Copy raw save blob</button>
+       </div>`
+    : '';
+
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
       <h1 class="dev-title">Cold Call</h1>
       <p class="dev-meta">${state.stats.jobsCompleted} jobs done${streak > 1 ? ` · ${streak} clean in a row` : ''}</p>
       ${unlockBanner}
+      ${corruptBanner}
       ${offlineBanner}
       ${due > 0 ? `<p class="home-callbacks">${due} callback${due > 1 ? 's' : ''} waiting</p>` : ''}
       <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
@@ -199,6 +208,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="dismiss-offline-report"]').forEach((el) =>
     el.addEventListener('click', actions.dismissOfflineReport)
+  );
+  root.querySelectorAll('[data-action="copy-corrupt-save"]').forEach((el) =>
+    el.addEventListener('click', actions.copyCorruptSave)
   );
   root.querySelectorAll('[data-test]').forEach((el) =>
     el.addEventListener('click', () => actions.runTest(el.dataset.test))
