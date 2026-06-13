@@ -156,7 +156,9 @@ const actions = {
     const todayStr = getTodayDateStr();
     const fault = pickMotdFault(faults, todayStr);
     const prng = mulberry32(todayStr + '-shuffle');
-    startJob(state, fault, 'motd', prng, null, true);
+    // puzzleDateStr stored on the job so settlement uses the start-day date
+    // even if the player crosses UTC midnight before committing a fix.
+    startJob(state, fault, 'motd', prng, null, true, todayStr);
     save(state);
     render();
   },
@@ -209,9 +211,19 @@ const actions = {
     }
   },
   async shareMotd() {
-    const dateStr = getTodayDateStr();
     const result = motdResult ?? { ...state.motd.lastResult, streak: state.motd.streak };
-    const text = buildShareCard(result, dateStr);
+    // Use the stored puzzle date (immune to UTC-midnight drift); fall back to
+    // lastPlayedDate (same value, stored by settleMotd) then to today as a last resort.
+    const dateStr =
+      result.puzzleDateStr ??
+      state.motd.lastResult?.puzzleDateStr ??
+      state.motd.lastPlayedDate ??
+      getTodayDateStr();
+    const stats = {
+      cleanStreak: state.stats.cleanStreak,
+      callbackCount: state.jobs.callbacks.length,
+    };
+    const text = buildShareCard(result, dateStr, stats);
     try {
       await navigator.clipboard.writeText(text);
     } catch {

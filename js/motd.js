@@ -69,11 +69,16 @@ export function canPlayToday(state, now = Date.now()) {
  * @param {string[]} testsRun test ids that were run
  * @param {number} startedAt ms epoch when the run began
  * @param {number} [now] ms epoch, injectable for tests
- * @returns {{ testsUsed: number, timeMs: number, solved: boolean, streak: number, fault: object }}
+ * @param {string|null} [puzzleDateStr] UTC date the puzzle was started on ("YYYY-MM-DD");
+ *   if provided, used as the canonical puzzle date instead of re-deriving from `now`.
+ *   This prevents a UTC-midnight crossing between start and settle from attributing
+ *   the result to the wrong day's puzzle.
+ * @returns {{ testsUsed: number, timeMs: number, solved: boolean, streak: number, fault: object, puzzleDateStr: string }}
  */
-export function settleMotd(state, fault, correct, testsRun, startedAt, now = Date.now()) {
-  const todayStr = getTodayDateStr(now);
-  const yesterdayStr = utcDateStringAfter(-1, now);
+export function settleMotd(state, fault, correct, testsRun, startedAt, now = Date.now(), puzzleDateStr = null) {
+  // Use the stored puzzle date if provided (avoids UTC-midnight mismatch).
+  const todayStr = puzzleDateStr ?? getTodayDateStr(now);
+  const yesterdayStr = utcDateStringAfter(-1, new Date(todayStr + 'T12:00:00Z').getTime());
 
   const prevSolved =
     state.motd.lastPlayedDate === yesterdayStr && state.motd.lastResult?.solved === true;
@@ -92,9 +97,10 @@ export function settleMotd(state, fault, correct, testsRun, startedAt, now = Dat
   state.motd.streak = streak;
   // faultId pins which puzzle this result belongs to — the result screen must
   // not change if a library update remaps the date's draw.
-  state.motd.lastResult = { testsUsed, timeMs, solved: correct, faultId: fault.id };
+  // puzzleDateStr is stored so share/result screens use the start-day date, not settlement time.
+  state.motd.lastResult = { testsUsed, timeMs, solved: correct, faultId: fault.id, puzzleDateStr: todayStr };
 
-  return { testsUsed, timeMs, solved: correct, streak, fault };
+  return { testsUsed, timeMs, solved: correct, streak, fault, puzzleDateStr: todayStr };
 }
 
 /**
@@ -102,13 +108,15 @@ export function settleMotd(state, fault, correct, testsRun, startedAt, now = Dat
  * Format:
  *   Cold Call ☎️ Day <N> 🔥<streak>        (streak line omitted on failure)
  *   🔬🔬🔬✅  (one 🔬 per test run, then ✅ or ❌)
+ *   🧹 N clean  OR  ⚠️ N callbacks waiting   (optional stats line)
  *   https://tomsteuten.github.io/ColdCall
  *
  * @param {{ testsUsed: number, solved: boolean, streak: number }} result
  * @param {string} dateStr "YYYY-MM-DD" of the puzzle
+ * @param {{ cleanStreak?: number, callbackCount?: number }} [stats] optional player stats for the shame/clean flourish
  * @returns {string} the text blob
  */
-export function buildShareCard(result, dateStr) {
+export function buildShareCard(result, dateStr, { cleanStreak = 0, callbackCount = 0 } = {}) {
   const epochMs = new Date(MOTD.epochDate).getTime();
   const dayMs = new Date(dateStr).getTime();
   const dayNumber = Math.floor((dayMs - epochMs) / DAY_MS) + 1;
@@ -120,5 +128,13 @@ export function buildShareCard(result, dateStr) {
 
   const grid = '🔬'.repeat(result.testsUsed) + (result.solved ? '✅' : '❌');
 
-  return `${header}\n${grid}\nhttps://tomsteuten.github.io/ColdCall`;
+  // Stats flourish: clean streak wins over callback shame if both are somehow true.
+  let statsLine = '';
+  if (cleanStreak >= 1) {
+    statsLine = `\n🧹 ${cleanStreak} clean`;
+  } else if (callbackCount > 0) {
+    statsLine = `\n⚠️ ${callbackCount} callback${callbackCount !== 1 ? 's' : ''} waiting`;
+  }
+
+  return `${header}\n${grid}${statsLine}\nhttps://tomsteuten.github.io/ColdCall`;
 }

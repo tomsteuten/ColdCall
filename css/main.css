@@ -623,12 +623,28 @@ body {
 /* ── Machine of the Day result ───────────────────────────────── */
 .screen-motd-result {
   justify-content: center;
+  align-items: center;
   text-align: center;
+  gap: var(--space);
+}
+
+.motd-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--surface-hi);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: var(--space-sm);
 }
 
-.motd-good h2 { color: var(--success); }
-.motd-bad h2  { color: var(--warn); }
+.motd-good .motd-card { border-color: var(--success); }
+.motd-bad  .motd-card { border-color: var(--warn); }
+
+.motd-good .motd-verdict { color: var(--success); }
+.motd-bad  .motd-verdict { color: var(--warn); }
 
 .motd-label {
   margin: 0;
@@ -638,18 +654,22 @@ body {
   color: var(--text-dim);
 }
 
-.motd-emoji  { font-size: var(--text-2xl); margin: var(--space-xs) 0; letter-spacing: 0.1em; }
-.motd-score  { margin: 0; font-weight: 600; }
-.motd-streak { margin: 0; color: var(--success); }
+.motd-emoji   { font-size: var(--text-3xl); margin: var(--space-xs) 0; letter-spacing: 0.1em; }
+.motd-verdict { margin: 0; font-size: var(--text-2xl); font-weight: 700; line-height: 1.2; }
+.motd-score   { margin: 0; font-weight: 600; color: var(--text-dim); font-size: var(--text-sm); }
+.motd-streak  { margin: 0; color: var(--success); font-weight: 600; }
+.motd-clean   { margin: 0; color: var(--success); font-size: var(--text-sm); }
+.motd-shame   { margin: 0; color: var(--warn);    font-size: var(--text-sm); }
 
 .motd-flavour {
   color: var(--text-dim);
   font-style: italic;
-  margin: 0;
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-sm);
 }
 
 .motd-note {
   color: var(--text-dim);
   font-size: var(--text-sm);
-  margin: 0;
+  margin: var(--space-xs) 0 0;
 }

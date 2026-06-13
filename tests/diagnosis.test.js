@@ -128,6 +128,17 @@ test('continuity-test is gated behind multimeter tier 2', () => {
   assertEqual(runTest(state, 'continuity-test', FAULTS), TESTS['continuity-test'].generic);
 });
 
+test('continuity-test is available on a MotD job regardless of multimeter tier', () => {
+  // GDD §5: the shared daily puzzle must be equally solvable by every player.
+  const state = freshJobState(); // multimeterTier = 1
+  state.jobs.active.motd = true; // mark the active job as MotD
+  const result = testAvailability(state, 'continuity-test');
+  assert(result.available, 'continuity-test must be available on MotD jobs even at tier 1');
+  // Regular (non-MotD) job with tier 1 is still blocked.
+  state.jobs.active.motd = false;
+  assert(!testAvailability(state, 'continuity-test').available, 'still blocked on non-MotD job');
+});
+
 test('commitFix with the correct fix pays payout minus parts plus the speed bonus', () => {
   const state = freshJobState(); // no tests run -> the full speed bonus
   const cashBefore = state.player.cash;

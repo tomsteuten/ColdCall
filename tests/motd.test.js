@@ -236,3 +236,65 @@ test('getTodayDateStr returns a YYYY-MM-DD string for a known epoch', () => {
   const now = Date.UTC(2026, 5, 12, 15, 30, 0); // 2026-06-12T15:30Z
   assertEqual(getTodayDateStr(now), '2026-06-12');
 });
+
+// --- UTC-midnight crossing ---
+
+test('puzzle date is pinned to start day even if settled after UTC midnight', () => {
+  // Simulate: puzzle started at 23:55 on 2026-06-12, settled at 00:05 on 2026-06-13.
+  const state = defaultState();
+  const fault = makeFaults()['fault-alpha'];
+  const startedAt = Date.UTC(2026, 5, 12, 23, 55, 0); // 23:55 on June 12
+  const settledAt = Date.UTC(2026, 5, 13,  0,  5, 0); // 00:05 on June 13
+  const puzzleDateStr = '2026-06-12';
+  settleMotd(state, fault, true, ['error-log'], startedAt, settledAt, puzzleDateStr);
+  assertEqual(state.motd.lastPlayedDate, '2026-06-12', 'lastPlayedDate must be the start day');
+  assertEqual(state.motd.lastResult.puzzleDateStr, '2026-06-12', 'lastResult.puzzleDateStr must be the start day');
+});
+
+test('streak still increments correctly when settled across midnight (puzzle date is yesterday)', () => {
+  // Day 1 solved normally. Day 2: started on June 13, settled on June 14 (unusual but possible).
+  const state = defaultState();
+  const fault = makeFaults()['fault-alpha'];
+  // Day 1 play
+  settleMotd(state, fault, true, [], Date.UTC(2026, 5, 12, 12, 0, 0), Date.UTC(2026, 5, 12, 12, 0, 0), '2026-06-12');
+  // Day 2 play — started on June 13, settled on June 14, puzzleDateStr keeps it as June 13
+  const result = settleMotd(state, fault, true, [], Date.UTC(2026, 5, 13, 23, 50, 0), Date.UTC(2026, 5, 14, 0, 5, 0), '2026-06-13');
+  assertEqual(result.streak, 2, 'streak should increment because puzzleDateStr is June 13 (day after June 12)');
+  assertEqual(state.motd.lastPlayedDate, '2026-06-13');
+});
+
+// --- share card stats ---
+
+test('share card: clean streak flourish appears when cleanStreak >= 1', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1 };
+  const card = buildShareCard(result, '2026-06-12', { cleanStreak: 5, callbackCount: 0 });
+  assert(card.includes('🧹'), `expected clean emoji in: ${card}`);
+  assert(card.includes('5 clean'), `expected count in: ${card}`);
+});
+
+test('share card: callback shame appears when cleanStreak is 0 and callbacks > 0', () => {
+  const result = { testsUsed: 2, solved: true, streak: 1 };
+  const card = buildShareCard(result, '2026-06-12', { cleanStreak: 0, callbackCount: 3 });
+  assert(card.includes('⚠️'), `expected shame emoji in: ${card}`);
+  assert(card.includes('3 callbacks'), `expected count in: ${card}`);
+});
+
+test('share card: clean streak wins over callback shame if both are non-zero', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1 };
+  const card = buildShareCard(result, '2026-06-12', { cleanStreak: 2, callbackCount: 1 });
+  assert(card.includes('🧹'), `expected clean emoji: ${card}`);
+  assert(!card.includes('⚠️'), `should not show shame when clean streak active: ${card}`);
+});
+
+test('share card: no stats line when both are zero', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1 };
+  const card = buildShareCard(result, '2026-06-12', { cleanStreak: 0, callbackCount: 0 });
+  assert(!card.includes('🧹'), `no clean line: ${card}`);
+  assert(!card.includes('⚠️'), `no shame line: ${card}`);
+});
+
+test('share card: backward-compat — no stats arg produces no flourish line', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1 };
+  const card = buildShareCard(result, '2026-06-12');
+  assert(!card.includes('🧹') && !card.includes('⚠️'), `no stats line without arg: ${card}`);
+});

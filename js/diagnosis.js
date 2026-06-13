@@ -58,9 +58,11 @@ export function shuffled(arr, next) {
  * @param {{misses: number}|null} [callback] set when replaying a claimed
  *   callback — carries the miss count so settlement can dampen repeat penalties
  * @param {boolean} [motd] true when this is a Machine of the Day run
+ * @param {string|null} [puzzleDateStr] UTC date "YYYY-MM-DD" the MotD puzzle was
+ *   started on; stored so settlement uses the start-day date even across UTC midnight.
  * @returns {object} the new active job
  */
-export function startJob(state, fault, clientId, next, callback = null, motd = false) {
+export function startJob(state, fault, clientId, next, callback = null, motd = false, puzzleDateStr = null) {
   if (state.jobs.active) throw new Error('A job is already active');
   state.jobs.active = {
     faultId: fault.id,
@@ -72,12 +74,15 @@ export function startJob(state, fault, clientId, next, callback = null, motd = f
     fixOptions: shuffled([fault.correctFix, ...fault.wrongFixes], next),
     callback,
     motd,
+    puzzleDateStr: motd ? puzzleDateStr : null,
   };
   return state.jobs.active;
 }
 
 /**
  * Is a test available with the player's current tools?
+ * MotD runs are ungated — the shared puzzle must be equally solvable by every
+ * player, so all tests are available regardless of tool tier (GDD §5).
  * @param {object} state
  * @param {string} testId
  * @returns {{available: boolean, reason: string|null}} reason is player-facing when locked
@@ -85,7 +90,8 @@ export function startJob(state, fault, clientId, next, callback = null, motd = f
 export function testAvailability(state, testId) {
   const t = TESTS[testId];
   if (!t) throw new Error(`Unknown test id "${testId}"`);
-  if (t.requiresMultimeterTier && state.tools.multimeterTier < t.requiresMultimeterTier) {
+  const isMotd = !!state.jobs.active?.motd;
+  if (t.requiresMultimeterTier && !isMotd && state.tools.multimeterTier < t.requiresMultimeterTier) {
     return { available: false, reason: `Requires Multimeter Tier ${t.requiresMultimeterTier}` };
   }
   return { available: true, reason: null };
@@ -144,7 +150,8 @@ export function commitFix(state, fixId, faults) {
   const correct = fixId === fault.correctFix;
 
   if (job.motd) {
-    const result = settleMotd(state, fault, correct, job.testsRun, job.startedAt);
+    const now = Date.now();
+    const result = settleMotd(state, fault, correct, job.testsRun, job.startedAt, now, job.puzzleDateStr ?? null);
     state.jobs.active = null;
     return { motd: true, ...result };
   }

@@ -7,12 +7,11 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (session 12)
+## Next session prompt (session 13)
 
-Session 11 (visual identity & CSS/layout pass) has landed and is pushed. The
-design-system rewrite is in css/main.css; job.js has the new panel/receipt HTML.
-Proceed with "proceed with session 12 from notes.md" — it is fully specified
-below and needs no decision from Tom first.
+Session 12 (MotD polish + correctness bugs) has landed. Proceed with
+"proceed with session 13 from notes.md" — it is fully specified below
+and needs no decision from Tom first.
 
 ### What session 10 added (callback choice + rescue split, GDD §3.1)
 
@@ -48,6 +47,39 @@ below and needs no decision from Tom first.
 
 Note: REVIEW_FINDINGS.md (untracked) item 7 (mandatory callbacks) is now
 addressed by this session. Still safe to delete — left for Tom.
+
+---
+
+## What session 12 added (MotD polish + correctness bugs)
+
+- **UTC-midnight date pinning (REVIEW_FINDINGS #5).** `startJob()` now accepts
+  a `puzzleDateStr` arg (7th param, optional) and stores it on the active job.
+  `settleMotd()` accepts it as a 7th param (after `now`) and uses it as the
+  canonical puzzle date instead of re-reading the clock at settlement time; the
+  date is stored in `lastResult.puzzleDateStr`. `commitFix()` threads the stored
+  date through. `startMotd()` in main.js passes `todayStr`. The share card and
+  result screen both use the pinned date, so a player who starts a puzzle at
+  23:55 and commits at 00:05 sees the right day number and their result counts
+  against the right date's streak. Tests: midnight-crossing settle uses the
+  start day; streak still increments correctly across the boundary.
+- **MotD tool access (REVIEW_FINDINGS #7).** `testAvailability()` in diagnosis.js
+  skips the tier gate when `state.jobs.active?.motd` is true — the shared daily
+  puzzle must be equally solvable by every player. Tier-1 players can now run the
+  continuity test on a MotD job. Regular jobs are unaffected. Test added.
+- **MotD result screen polish (GDD §5).** New `.motd-card` component wraps the
+  result in a bordered card (success-coloured border on a win, warn on a loss).
+  Emoji grid bumped to `--text-3xl`; verdict heading at `--text-2xl`. Added
+  clean-streak flourish (🧹 N clean in a row, green) and callback-shame flourish
+  (⚠️ N callbacks waiting, warn) — clean streak wins when both are non-zero.
+  `buildShareCard()` gains an optional third `{ cleanStreak, callbackCount }`
+  arg so the flourish appears in the share text too. `shareMotd()` passes live
+  stats. Share button shows "📋 Copy result".
+- `sw.js` cache bumped v3 → v4.
+- Tests: `node tests/run.js` — 147 passing (was 139). New tests: UTC-midnight
+  settle, streak-across-midnight, MotD tool access, 5 share-card stats tests.
+- Verified at ~380px in the preview: solved card (green border, 🔥 streak, 🧹
+  clean), failed card (warn border, ⚠️ callbacks, correct fix revealed), share
+  text round-trips, no console errors.
 
 ---
 
