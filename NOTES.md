@@ -7,33 +7,56 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (senior game-dev review)
+## Next session prompt (Session 17 — failure as learning)
 
-Session 15 (character portraits and technician callback attribution) has landed.
-Do not begin Session 16 yet. Perform a holistic review of the current game as a
-senior game developer, focused on UX, UI, onboarding, moment-to-moment
-playability, pacing, clarity, mobile ergonomics, feedback, and whether the core
-diagnosis loop is genuinely enjoyable.
+Session 16 is complete. Proceed with Session 17 from the roadmap below.
 
-Start by reading `GDD.md`, `CLAUDE.md`, and `NOTES.md`, then inspect the complete
-implementation and run the full test suite. Play through the game locally at
-approximately 380px mobile width and at desktop width. Exercise fresh tickets,
-tests and fixes, callbacks from both sources, van restocking, tools, technician
-hiring/offline progress, save export/import, and Machine of the Day.
+Start by reading `GDD.md`, `CLAUDE.md`, and `NOTES.md`, then inspect fault data,
+job settlement, callback state, and the invoice UI. Run the full test suite before
+changing code. Implement only Session 17: make wrong answers educational by
+showing the chosen fix, correct fix, and concise fault-specific reasoning after
+failure; preserve or review gathered evidence on player-caused callbacks so the
+return visit continues the investigation. Keep tech rescues clean unless a better
+small, explicit rule is justified.
 
-Review from the player's perspective rather than primarily as a code auditor.
-Prioritise findings that affect comprehension, fun, friction, pacing, visual
-hierarchy, touch interaction, emotional payoff, and reasons to continue playing.
-Check whether the player understands what to do, whether diagnosis feels like
-deduction instead of button exhaustion, whether rewards and penalties are
-legible, whether recurring characters add personality, and whether the UI feels
-coherent and intentional across every screen.
+Treat saves as sacred. This work is likely to change persisted callback or active
+job state, so add a schema migration and migration tests for any shape change.
+Validate any new player-facing fault explanation field through the existing fault
+schema/load path. Do not expose the correct answer before commit, and do not
+implement Session 18's repair interaction, MotD timing changes, staff/idle
+changes, desktop redesign, or broad balance retuning.
 
-Deliver findings first, ordered by severity and supported by concrete screen,
-flow, and file references. Separate confirmed problems from taste-level polish.
-Include a short assessment of the core loop, the strongest current elements,
-the highest-value improvements before launch, and a practical recommended order
-of work. Do not implement fixes during this review unless explicitly asked.
+Run `node tests/run.js`, manually verify fresh failure, player callback evidence,
+tech rescue behavior, and repeat failure at approximately 380px and desktop
+width, bump the service-worker cache if app-shell files change, and update this
+handover. Do not push without Tom's approval.
+
+### What session 16 added (diagnosis comprehension + first-job onboarding)
+
+- **Integrated first-ticket guide.** A fresh standard ticket now teaches the
+  symptoms → tests → commit loop inside the symptoms panel. It explains that
+  tests reveal evidence at a simulated-minute/speed-bonus cost and that a wrong
+  fix returns as a reduced-rate callback. The guide is derived from existing
+  completion/callback stats, so no save schema change was needed.
+- **Visible diagnostic economics.** Every unrun test now advertises its configured
+  minute cost before selection. Fresh jobs also show the exact projected speed
+  bonus transition from the current clock; callbacks show simulated time only,
+  and MotD explains that the test adds to the shared score.
+- **First irreversible-fix guard.** The first standard job pauses after a fix is
+  selected and shows a compact inline confirmation naming the fix, stating that
+  diagnosis ends, and warning about the reduced-rate callback. The player can
+  commit or keep diagnosing. Returning players commit directly with no added
+  friction. Pending confirmation is transient and never reshapes a save.
+- **Inspection art corrected.** Both machine `open` states retain fault colours,
+  amber indicators, and fault messaging while exposing internals. `working`
+  remains a distinct cyan/green state for the later repair-payoff session.
+- **PWA/tests.** `sw.js` cache bumped v8 → v9. `node tests/run.js` reports 187
+  passing, 0 failed. New coverage checks projected cost copy, first-job guidance,
+  confirmation markup, returning-player behavior, and open-vs-working art.
+- **Manual verification.** Fresh, returning, and confirmation states were rendered
+  with the real template/CSS in a 380px app container; fresh/returning and open
+  inspection states were also checked at desktop width. No overflow or wrapping
+  issues were found, and the open slushie remains amber with `E-04`.
 
 ### What session 15 added (character portraits + callback attribution)
 
@@ -243,11 +266,21 @@ guidance (CSS/wiring/flavour → mid model; state/economy/engine → strongest).
 "proceed with session N from notes.md") or needs a decision/prompt from you first.
 
 Findings from `REVIEW_FINDINGS.md` (Codex's post-session-10 read-only review,
-2026-06-13) have been folded in below where warranted: MotD bugs → session 12;
-the save/offline/security cluster → a new session 13 (hardening); tech callback
-attribution → session 15; the repair interaction was already session 16. Items I
-judged real but low-likelihood still get fixed because the fix is cheap and the
-downside (silent save reset) is severe.
+2026-06-13) were folded into sessions 12-15 where warranted. A second holistic
+senior game-dev UX/playability review after Session 15 found that the largest
+remaining launch risk is not code stability but whether players understand and
+learn the diagnosis game. The upcoming arc is therefore reordered around:
+
+1. diagnosis comprehension and onboarding (Session 16);
+2. failure as useful learning (Session 17);
+3. repair feedback and emotional payoff (Session 18);
+4. callback/idle clarity (Session 19);
+5. fair interruption-safe MotD scoring (Session 20).
+
+Confirmed lower-priority polish from that review — desktop scaling, save/settings
+information architecture, rotating character dialogue, and audio — remains after
+the core-loop work. This supersedes the old plan where the repair interaction was
+Session 16.
 
 General rules for every session below: read GDD §7 (art/audio direction) + §2/§5
 and CLAUDE.md before coding; keep the no-build / vanilla-DOM constraints; mobile
@@ -374,24 +407,112 @@ update this file at the end.
 - **Done when:** clients show portraits + a line of character; callbacks name the
   actual tech (or a neutral label); fallback verified; tests green.
 
-### Session 16 — The light repair interaction (GDD §2.3; REVIEW_FINDINGS #6)
-- **Model:** Opus (strongest) — it touches the active-job → invoice flow and may
-  add a transient repair step to state; anything near the commit/settle path and
-  a possible migration is strongest-model work (CLAUDE.md rule 1 + engine).
-- **Start with:** "proceed with session 16 from notes.md" — specified, but read
-  GDD §2.3 carefully; if it needs a state-shape change, ship a migration + test.
-- **Scope:** After a correct diagnosis, a quick satisfying repair beat
-  (hold-to-tighten / sequence-tap) before the invoice — "light, not a second
-  minigame" (GDD §2.3). Must not alter $/min balance or the active>idle invariant;
-  keep it skippable/instant-safe so it never punishes a mobile interruption.
-- **REVIEW_FINDINGS #6 (this IS that finding — agree it's a real design gap):**
-  the key correctness constraint is refresh safety — an in-progress repair must
-  either survive a refresh on state.jobs.active, or settlement must be structured
-  so a refresh can neither duplicate nor lose the reward. Decide which and test it.
-- **Done when:** repair beat plays between commit and invoice, refresh can't dupe
-  or drop rewards, economy invariants untouched, tests green.
+### Session 16 — Diagnosis comprehension and first-job onboarding
+- **Model:** Sonnet/mid is sufficient if onboarding remains transient UI state;
+  use the strongest model if a save-shape decision becomes necessary.
+- **Start with:** "proceed with session 16 from notes.md" — fully specified.
+- **Why now:** the senior review found that a fresh player is dropped directly
+  into four diagnostics and irreversible fix buttons without being taught the
+  deduction loop, callback risk, or the cost of gathering evidence. Diagnosis is
+  the primary design pillar, so comprehension comes before adding more juice.
+- **Scope — concise onboarding:** teach symptoms → tests → commit to a fix during
+  the first ticket, in context. Avoid a long modal or separate manual. Explain
+  that tests reveal evidence but spend simulated job minutes, and a wrong fix
+  creates a reduced-rate callback. Keep returning-player friction near zero.
+- **Scope — visible test economics:** put each available test's simulated-minute
+  cost on the button/row before it is run, and make the resulting speed-bonus
+  consequence legible before the click. The player must be able to compare a
+  cheap vague test with a slow informative one without consulting the GDD.
+- **Scope — first irreversible choice:** before the first fix commit, clearly
+  communicate that choosing a fix ends the diagnosis and that a wrong answer
+  causes a callback. A one-time lightweight confirmation or inline first-job
+  guard is acceptable; do not add confirmation friction to every later job.
+- **Scope — art-state correction:** running a diagnostic currently changes the
+  slushie illustration to cyan fluid/green light/"COOL", visually implying the
+  fault is repaired. Make the open/inspection state remain visibly faulty while
+  showing the internals. Preserve distinct `fault`, `open`, and `working` states.
+- **State guidance:** prefer deriving first-job onboarding from existing stats
+  (`jobsCompleted`, `callbacksCaused`, active job tests) or transient state. If a
+  durable onboarding flag is genuinely needed, bump the schema and migrate/test
+  it; never silently reshape saves.
+- **Out of scope:** revealing the correct answer after failure, preserving tests
+  on callbacks, the repair interaction, MotD timing changes, staff/idle changes,
+  desktop redesign, audio, and broad balance retuning.
+- **Tests/manual verification:** add focused UI/state tests for test-cost labels,
+  first-fix warning behavior, returning-player behavior, and the open art state.
+  Verify fresh and returning saves at ~380px and desktop width.
+- **Done when:** a new player can explain the diagnosis loop and its risk/reward
+  from the first job; every test advertises its cost before use; the first fix is
+  knowingly irreversible; inspection art no longer looks repaired; full suite
+  and manual checks are green.
 
-### Not-yet-scheduled (deliberately after the above)
+### Session 17 — Failure as learning
+- **Model:** strongest. This may change callback/active-job state and therefore
+  touches save migrations and the settlement path.
+- **Start with:** "proceed with session 17 from notes.md" — specified, but decide
+  the evidence-persistence shape after inspecting the smallest safe approach.
+- **Scope:** make a wrong diagnosis educational. The failure receipt should show
+  the player's chosen fix, the correct fix, and concise fault-specific reasoning
+  explaining the discriminating clue. Avoid revealing hidden data before commit.
+- **Scope:** preserve or review the evidence gathered on a player-caused callback
+  so tomorrow's return visit feels like continuing an investigation rather than
+  paying to repeat forgotten button presses. Tech rescues may start clean unless
+  a better fiction emerges.
+- **Data guidance:** add a player-facing diagnostic explanation field to fault
+  data if needed; validate it like other fault fields. Do not expose contributor
+  `authenticityNote` verbatim as the default UI copy unless it reads naturally.
+- **Done when:** failure clearly teaches how to make a better call next time,
+  callback evidence behavior is refresh-safe and migrated, and tests cover both
+  callback sources plus repeat misses.
+
+### Session 18 — Light repair interaction and payoff (GDD §2.3)
+- **Model:** strongest — it touches the active-job → invoice settlement flow.
+- **Start with:** "proceed with session 18 from notes.md" — fully specified.
+- **Scope:** after a correct diagnosis, add a brief satisfying repair beat
+  (hold-to-tighten or short sequence tap), then show the machine's `working` art
+  before the invoice. It is feedback, not a second skill gate.
+- **Constraints:** no economy or simulated-time penalty, accessible on touch,
+  skippable/instant-safe, and interruption-safe. Refresh may neither duplicate nor
+  lose a reward; choose and test an explicit settlement boundary.
+- **Done when:** correct diagnosis has tactile and visual payoff, the working
+  illustration is actually seen in normal play, and refresh safety is proven.
+
+### Session 19 — Callback, staff, and offline clarity
+- **Model:** Sonnet/mid for copy/UI; strongest if callback state changes.
+- **Start with:** "proceed with session 19 from notes.md" — fully specified.
+- **Scope — callbacks:** show due/expiry information and clearly distinguish the
+  reputation consequence of abandoning a player obligation from the penalty-free
+  expiry of an optional tech rescue. Explain future/not-yet-due callbacks so an
+  offline report cannot announce one that then seems to vanish.
+- **Scope — staff purchase:** before the $2,000 hire, explain expected jobs/hour,
+  success rate, offline cap, callback risk, and that launch techs have no wage.
+- **Scope — offline report:** use the existing `techReports` detail to attribute
+  jobs, earnings, and misses per technician instead of showing only aggregates.
+- **Done when:** callback timing/consequences and technician value are legible
+  before decisions are made, with no economy changes required.
+
+### Session 20 — Interruption-safe Machine of the Day scoring
+- **Model:** strongest because shared-puzzle scoring is a correctness contract.
+- **Start with:** "proceed with session 20 from notes.md" — requires one design
+  decision: replace wall-clock solve time with either simulated diagnostic minutes
+  or omit time and rank/share only tests used. Default recommendation: tests used
+  first, simulated minutes second; never elapsed wall time.
+- **Scope:** remove `Date.now() - startedAt` as the score because phone calls,
+  sleep, refreshes, and accessibility needs currently worsen a supposedly shared
+  fair result. Keep deterministic date pinning and equal tool access intact.
+- **Done when:** interruption cannot worsen the score, share/result copy reflects
+  the new measure, old saved results remain readable, and tests cover refresh and
+  midnight boundaries.
+
+### Not-yet-scheduled (deliberately after the core-loop arc)
+- **Desktop layout:** use the available width intentionally above mobile sizes,
+  likely with a two-column diagnosis layout while preserving the focused 380px
+  experience. The current app remains a 480px column on large screens.
+- **Settings/save information architecture:** move save transfer out of "Tools
+  shop", replace implementation errors such as "URI malformed" with player-facing
+  copy, and expose audio/settings in a coherent location.
+- **Character variation:** rotate or contextually select caller lines so recurring
+  personalities stay charming instead of repeating one quote every ticket.
 - **Audio** (GDD §7): satisfying clicks, perfect-job jingle, one chiptune loop;
   CC0/generated; GDD says polish-phase, not a launch blocker. Sonnet.
 - **A balance/fun playtest pass** (GDD §10: "fun with all numbers set to 1"). No

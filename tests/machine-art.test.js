@@ -29,3 +29,20 @@ test('fault and open states produce different machine markup', () => {
     );
   }
 });
+
+test('open inspection art remains visibly faulty, distinct from working art', () => {
+  const slushieOpen = machineSvg('slushie-machine', 'open');
+  assert(slushieOpen.includes('E-04'), 'open slushie should retain its fault code');
+  assert(!slushieOpen.includes('COOL'), 'open slushie must not look repaired');
+
+  const softServeOpen = machineSvg('soft-serve-commercial', 'open');
+  assert(softServeOpen.includes('fill="#f59e0b"'), 'open soft serve should retain an amber warning');
+  assert(!softServeOpen.includes('34&#176;F'), 'open soft serve must not show the working temperature');
+
+  for (const machineId of MACHINES) {
+    assert(
+      machineSvg(machineId, 'open') !== machineSvg(machineId, 'working'),
+      `${machineId} inspection and working states must remain distinct`
+    );
+  }
+});

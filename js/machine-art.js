@@ -49,11 +49,12 @@ export function machineSvg(machineId, state) {
 // Working → full cyan fluid, green LED, green screen text
 
 function slushieSvg(state) {
-  const fl  = state === 'fault' ? P.fluidFlt : P.fluidOk;
-  const flo = state === 'fault' ? '0.4'      : '0.82';
-  const led = state === 'fault' ? P.warn      : P.ok;
-  const sc  = state === 'fault' ? P.warn      : P.ok;
-  const stx = state === 'fault' ? 'E-04'      : 'COOL';
+  const working = state === 'working';
+  const fl  = working ? P.fluidOk : P.fluidFlt;
+  const flo = working ? '0.82'    : '0.4';
+  const led = working ? P.ok      : P.warn;
+  const sc  = working ? P.ok      : P.warn;
+  const stx = working ? 'COOL'    : 'E-04';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 70" width="100%" height="100%" aria-hidden="true">
     <ellipse cx="80" cy="67" rx="50" ry="3.5" fill="${P.shadow}"/>
@@ -104,7 +105,7 @@ function slushieSvg(state) {
     <circle cx="54"  cy="53.5" r="3.5" fill="${led}"/>
 
     <!-- fault warning dot (second indicator, right side of panel) -->
-    ${state === 'fault' ? `
+    ${!working ? `
     <circle cx="107" cy="53.5" r="3.5" fill="${P.warn}"/>
     <text x="107" y="56.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="5.5" font-weight="bold" fill="#1a1a2e">!</text>
     ` : ''}
@@ -134,11 +135,12 @@ function slushieSvg(state) {
 // Working → full cyan hopper fluid, green LED, temperature readout
 
 function softServeSvg(state) {
-  const fl  = state === 'fault' ? P.fluidFlt : P.fluidOk;
-  const flo = state === 'fault' ? '0.35'     : '0.80';
-  const led = state === 'fault' ? P.warn     : P.ok;
-  const sc  = state === 'fault' ? P.warn     : P.ok;
-  const stx = state === 'fault' ? 'E-13'     : '34&#176;F';  // &#176; = °
+  const working = state === 'working';
+  const fl  = working ? P.fluidOk : P.fluidFlt;
+  const flo = working ? '0.80'    : '0.35';
+  const led = working ? P.ok      : P.warn;
+  const sc  = working ? P.ok      : P.warn;
+  const stx = working ? '34&#176;F' : 'E-13';  // &#176; = °
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 70" width="100%" height="100%" aria-hidden="true">
     <ellipse cx="80" cy="67" rx="36" ry="3" fill="${P.shadow}"/>
@@ -177,6 +179,9 @@ function softServeSvg(state) {
     <line x1="80" y1="23" x2="80" y2="39" stroke="${P.metalHi}" stroke-width="2.5" stroke-linecap="round"/>
     <!-- evaporator coil suggestion -->
     <path d="M 58 37 Q 65 42 72 37 Q 79 32 86 37 Q 93 42 102 37" fill="none" stroke="${P.metalHi}" stroke-width="1.5" opacity="0.6"/>
+    <!-- fault marker remains visible while the panel is open -->
+    <circle cx="104" cy="30" r="4" fill="${P.warn}" opacity="0.9"/>
+    <text x="104" y="33.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="6" font-weight="bold" fill="#1a1a2e">!</text>
     ` : `
     <!-- front service panel (closed) -->
     <rect x="48" y="21" width="64" height="20" rx="2" fill="${P.panel}"/>

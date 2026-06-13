@@ -57,6 +57,24 @@ let screen = 'home';
 // itself is in state (player.tierUnlocked); only the fanfare is lost on refresh.
 let justUnlockedTier = null;
 
+// The first irreversible fix gets a lightweight inline confirmation. This is
+// transient: progress stats decide who needs it, so saves stay unchanged.
+let pendingFirstFixId = null;
+
+function commitSelectedFix(fixId) {
+  const result = commitFix(state, fixId, faults);
+  pendingFirstFixId = null;
+  if (result.motd) {
+    motdResult = result;
+    screen = 'motd';
+  } else {
+    invoice = result;
+    if (result.unlockedTier) justUnlockedTier = result.unlockedTier;
+  }
+  save(state);
+  render();
+}
+
 const actions = {
   nextTicket() {
     justUnlockedTier = null;
@@ -98,16 +116,20 @@ const actions = {
     save(state);
     render();
   },
-  commitFix(fixId) {
-    const result = commitFix(state, fixId, faults);
-    if (result.motd) {
-      motdResult = result;
-      screen = 'motd';
-    } else {
-      invoice = result;
-      if (result.unlockedTier) justUnlockedTier = result.unlockedTier;
+  chooseFix(fixId) {
+    if (jobScreen.isFirstJobOnboarding(state)) {
+      pendingFirstFixId = fixId;
+      render();
+      return;
     }
-    save(state);
+    commitSelectedFix(fixId);
+  },
+  confirmFirstFix() {
+    if (!pendingFirstFixId) return;
+    commitSelectedFix(pendingFirstFixId);
+  },
+  cancelFirstFix() {
+    pendingFirstFixId = null;
     render();
   },
   dismissInvoice() {
@@ -241,7 +263,20 @@ function render() {
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions, exportMessage, importError });
   } else {
-    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, screen, actions });
+    jobScreen.render(app, {
+      state,
+      faults,
+      machines,
+      clients,
+      invoice,
+      justUnlockedTier,
+      offlineReport,
+      expiryReport,
+      corruptSaveBlob,
+      pendingFirstFixId,
+      screen,
+      actions,
+    });
   }
 }
 

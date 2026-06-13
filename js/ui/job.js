@@ -5,7 +5,7 @@
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks, speedBonus } from '../economy.js';
-import { JOBS } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { machineSvg } from '../machine-art.js';
@@ -23,6 +23,27 @@ export function sourceLabel(callback) {
 function callbackRatePct(source) {
   const mult = source === 'tech' ? JOBS.rescueCallbackPayoutMult : JOBS.callbackJobPayoutMult;
   return Math.round(mult * 100);
+}
+
+/** First-ticket guidance is derived from existing progress, so saves need no new flag. */
+export function isFirstJobOnboarding(state) {
+  const job = state.jobs.active;
+  return !!job
+    && !job.callback
+    && !job.motd
+    && state.stats.jobsCompleted === 0
+    && state.stats.callbacksCaused === 0;
+}
+
+/** Player-facing cost/consequence shown before a diagnostic is run. */
+export function testCostCopy(job, testId) {
+  const cost = DIAGNOSIS.testMinutes[testId] ?? 0;
+  if (job.callback) return `+${cost} min simulated job time`;
+  if (job.motd) return `+${cost} min simulated job time · adds 1 test to your score`;
+
+  const before = speedBonus(job.minutesSpent ?? 0);
+  const after = speedBonus((job.minutesSpent ?? 0) + cost);
+  return `+${cost} min · speed bonus $${before} → $${after}`;
 }
 
 /**
@@ -165,7 +186,7 @@ function callbacksView({ state, faults, clients }) {
     </section>`;
 }
 
-function jobView({ state, faults, machines, clients }) {
+export function jobView({ state, faults, machines, clients, pendingFirstFixId = null }) {
   const job = state.jobs.active;
   const fault = faults[job.faultId];
   const machine = machines.find((m) => m.id === job.machineType);
@@ -186,12 +207,14 @@ function jobView({ state, faults, machines, clients }) {
         return `
           <li class="test-row">
             <button class="btn btn-test" disabled>${TESTS[id].label}</button>
+            <p class="test-meta">${testCostCopy(job, id)}</p>
             <p class="test-locked">${reason}</p>
           </li>`;
       }
       return `
         <li class="test-row">
           <button class="btn btn-test" data-test="${id}">${TESTS[id].label}</button>
+          <p class="test-meta">${testCostCopy(job, id)}</p>
         </li>`;
     })
     .join('');
@@ -205,9 +228,11 @@ function jobView({ state, faults, machines, clients }) {
     : '';
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
+  const firstJob = isFirstJobOnboarding(state);
   const fixButtons = job.fixOptions
     .map((id) => `<button class="btn btn-fix" data-fix="${escapeHtml(id)}" ${outOfParts ? 'disabled' : ''}>${escapeHtml(fixLabel(id))}</button>`)
     .join('');
+  const pendingFixLabel = pendingFirstFixId ? escapeHtml(fixLabel(pendingFirstFixId)) : '';
 
   const clientName = job.motd ? 'Machine of the Day' : (client ? escapeHtml(client.name) : escapeHtml(job.clientId));
   const safeMachineName = escapeHtml(machineName);
@@ -250,6 +275,11 @@ function jobView({ state, faults, machines, clients }) {
 
       <div class="panel">
         <h3 class="panel-label">Reported symptoms</h3>
+        ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
+          <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
+          <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
+          <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
+        </div>` : ''}
         <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
       </div>
 
@@ -260,9 +290,21 @@ function jobView({ state, faults, machines, clients }) {
 
       <div class="panel">
         <h3 class="panel-label">Commit fix</h3>
+        ${firstJob && !pendingFirstFixId
+          ? `<p class="fix-guidance">Choose when the evidence is strong enough. Your first selection gets one confirmation.</p>`
+          : ''}
         ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
           <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
-        <div class="fixes">${fixButtons}</div>
+        ${pendingFirstFixId
+          ? `<div class="first-fix-warning" role="alert">
+              <p><strong>Commit ${pendingFixLabel}?</strong></p>
+              <p>This ends diagnosis. A wrong fix causes a reduced-rate callback tomorrow.</p>
+              <div class="first-fix-actions">
+                <button class="btn btn-primary" data-action="confirm-first-fix">Commit fix</button>
+                <button class="btn btn-sm" data-action="cancel-first-fix">Keep diagnosing</button>
+              </div>
+            </div>`
+          : `<div class="fixes">${fixButtons}</div>`}
       </div>
     </section>`;
 }
@@ -368,6 +410,12 @@ function wire(root, actions) {
     el.addEventListener('click', () => actions.runTest(el.dataset.test))
   );
   root.querySelectorAll('[data-fix]').forEach((el) =>
-    el.addEventListener('click', () => actions.commitFix(el.dataset.fix))
+    el.addEventListener('click', () => actions.chooseFix(el.dataset.fix))
+  );
+  root.querySelectorAll('[data-action="confirm-first-fix"]').forEach((el) =>
+    el.addEventListener('click', actions.confirmFirstFix)
+  );
+  root.querySelectorAll('[data-action="cancel-first-fix"]').forEach((el) =>
+    el.addEventListener('click', actions.cancelFirstFix)
   );
 }
