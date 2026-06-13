@@ -170,6 +170,35 @@ test('v4 save with no active job migrates to v5 cleanly', () => {
   assertEqual(migrated.jobs.active, null, 'no active job stays null');
 });
 
+test('v5 save migrates to v6: callbacks gain source = player and an expiry day', () => {
+  // Fixture: a v5 save with a queued callback from before the obligation/rescue
+  // split. It must become a conservative 'player' obligation, and gain an expiry
+  // day = dueDay + callbackExpiryDays so its claim window is never retroactively cut.
+  const v5Fixture = defaultState();
+  v5Fixture.schemaVersion = 5;
+  v5Fixture.jobs.callbacks = [
+    { faultId: 'worn-scraper-blades', clientId: 'burgertown-high-st', dueDay: '2026-06-10', misses: 1 },
+  ];
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v5Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  const cb = migrated.jobs.callbacks[0];
+  assertEqual(cb.source, 'player', 'pre-split callbacks migrate to the lower player rate');
+  assertEqual(cb.expiryDay, '2026-06-13', 'expiry = dueDay + 3 callbackExpiryDays');
+  assertEqual(cb.misses, 1, 'existing fields are untouched');
+  assertEqual(cb.faultId, 'worn-scraper-blades', 'faultId untouched');
+});
+
+test('v5 save with no callbacks migrates to v6 cleanly', () => {
+  const v5Fixture = defaultState();
+  v5Fixture.schemaVersion = 5;
+  v5Fixture.jobs.callbacks = [];
+  const migrated = migrate(JSON.parse(JSON.stringify(v5Fixture)));
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.jobs.callbacks, [], 'empty queue stays empty');
+});
+
 test('a save from a newer game version is rejected, blob left untouched', () => {
   const storage = memoryStorage();
   const future = defaultState();

@@ -7,14 +7,56 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (session 10)
+## Next session prompt (session 11)
 
-See the queued session 10 prompt below — callback choice + rescue split
-(STRONGEST model: economy + migration). It depends on session 9's settlement
-math, which has now landed.
+Session 10 (callback choice + rescue split) has landed. State is now at schema
+v6. All v1.0 GDD §9 scope items plus every queued pre-launch design decision are
+now implemented — there is no queued session-11 prompt. Next steps are Tom's
+call: playtesting/balance tuning, art/audio polish (GDD §7), or starting v1.x
+(Tiers 3–4, prestige, workshop, tech specialisation — GDD §9). Pick one and
+write its prompt here at the end of that session.
 
-Sessions 1–9 are done and committed (not pushed). State is at schema v5.
-Everything from session 8, plus session 9 additions:
+### What session 10 added (callback choice + rescue split, GDD §3.1)
+
+- Two callback kinds. `state.jobs.callbacks` entries now carry `source`
+  ('player' obligation | 'tech' rescue) and an `expiryDay`. economy.js settleJob
+  pays a source-dependent rate on a correct callback: player → callbackJobPayoutMult
+  (0.4 of net), tech → rescueCallbackPayoutMult (0.9 of net, MUST stay < 1.0 so
+  rescues never beat fresh — invariant test pins this). No source ⇒ player rate
+  (conservative back-compat). idle.js tags its queued callbacks source 'tech'.
+- Claiming is a choice. `claimDueCallback` is gone; new `claimCallback(state,
+  faults, index, now)` claims the specific entry the player picked from the
+  Callbacks list. main.js `nextTicket` no longer auto-claims — fresh tickets
+  only. New actions: openCallbacks/closeCallbacks (screen='callbacks') and
+  takeCallback(index).
+- Expiry, computed on load like offline progress. New `expireCallbacks(state,
+  now)` removes callbacks past their expiryDay. Player obligations expiring cost
+  expiredCallbackRepPenalty rep EACH; tech rescues expire silently (optional
+  bonus, not a debt — this nuance is a GDD §3.1 decision of record I added).
+  Reported in a transient home banner.
+- Schema v5→v6 migration: existing callbacks → source 'player' (lower rate) with
+  expiryDay = dueDay + callbackExpiryDays (full claim window preserved).
+  Migration tests with v5 fixtures (with-callback + empty cases).
+- balance.js knobs (all new): JOBS.rescueCallbackPayoutMult 0.9,
+  JOBS.callbackExpiryDays 3, REPUTATION.expiredCallbackRepPenalty 3.
+- UI (ui/job.js): home shows a separate "Callbacks (n)" button + an expiry
+  banner; new callbacks screen lists due callbacks with rate + source ("your
+  miss" 40% vs "Dave's miss" 90%); invoice shows "Rescue rate ×90%" /
+  "Callback rate ×40%". sw.js cache bumped v1→v2. CSS for the list/banner.
+- Tests: `node tests/run.js` — 139 passing (was 128). Verified at 380px in the
+  preview: expiry banner + −3 rep on load, both callback kinds listed with
+  correct rates, a tech rescue paid net×0.9 = $108 (payout 140 − parts 20),
+  "Next ticket" starts a fresh job and leaves callbacks queued, no console errors.
+
+Note: REVIEW_FINDINGS.md (untracked) item 7 (mandatory callbacks) is now
+addressed by this session. Still safe to delete — left for Tom.
+
+---
+
+## Archived session 9–10 starting context
+
+Sessions 1–10 are done and committed (not pushed). Everything from session 8,
+plus session 9 additions:
 
 - Simulated job clock + speed bonus (GDD §2.1). config/balance.js DIAGNOSIS:
   testMinutes (error-log 2, temp-probe 5, inspect-beater 15, continuity-test 8),
@@ -49,35 +91,13 @@ delete; left in the tree for Tom to skim first.
 
 ## Queued session prompts (decisions confirmed by Tom, recorded in GDD)
 
-### Session 10 prompt — callback choice + rescue split (STRONGEST model: economy + migration)
+None. Every queued pre-launch design decision is implemented (session 10 closed
+the last one — callback choice + rescue split). The next session's direction is
+Tom's call; see the session-11 note at the top.
 
-Read GDD.md §2.1/§3.1 (v1.0 decisions of record) and CLAUDE.md fully before
-doing anything. Depends on session 9 landing first (shares settlement math).
+## v1.0 scope — all items shipped
 
-Split callbacks into obligations and rescues, and make claiming a choice:
-
-- Schema migration (+1 from current): each state.jobs.callbacks entry gains
-  source: 'player' | 'tech' and an expiry day. Existing entries migrate to
-  source 'player' (conservative: the lower rate) with expiry = dueDay +
-  callbackExpiryDays. Migration test with a previous-version fixture.
-- economy.js: settleJob's callback rate becomes source-dependent —
-  player-caused stays callbackJobPayoutMult (0.4 of net); tech-caused pays
-  rescueCallbackPayoutMult of net (suggested 0.9, MUST stay < 1.0 so rescues
-  never beat fresh tickets — add the invariant test). idle.js sets
-  source: 'tech' on the callbacks it queues.
-- Expiry is computed on load, deterministically, like offline progress: due
-  callbacks past their expiry day are removed with a reputation penalty
-  (knobs: callbackExpiryDays, expiredCallbackRepPenalty in balance.js) and the
-  loss is reported in the welcome-back/home banner.
-- UI: home gets a separate "Callbacks (n)" button listing due callbacks with
-  their rate and source ("your miss" vs "Dave's miss"); "Next ticket" never
-  auto-claims a callback. main.js actions.nextTicket loses the claimDueCallback
-  call; a new action claims a chosen callback.
-- All numbers in config/balance.js. Run tests, verify at ~380px, update this
-  file for the next session, small commits, don't push until Tom says so.
-
-## v1.0 scope — all items shipped after session 8
-
-Session 8 closed the last two GDD §9 items (PWA + save export/import).
-Session 9 landed the diagnosis test costs / speed bonus. Session 10 (the last
-queued pre-launch design item — callback choice + rescue split) is prompted above.
+Session 8 closed the last two GDD §9 items (PWA + save export/import). Session 9
+landed the diagnosis test costs / speed bonus. Session 10 landed the callback
+choice + rescue split — the last queued pre-launch design item. The full GDD §9
+v1.0 scope is now implemented at schema v6.

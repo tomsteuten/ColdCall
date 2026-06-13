@@ -1,8 +1,9 @@
 /** @file Single game-state object: defaults, save/load to localStorage, export/import, migrations. */
 
-import { STARTING } from '../config/balance.js';
+import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
 /**
@@ -36,8 +37,11 @@ export function defaultState() {
     routes: [], // { id, clientId }
 
     jobs: {
-      active: null, // in-flight diagnosis job, survives refresh; carries minutesSpent (simulated clock) and, for callbacks, { callback: { misses } }
-      callbacks: [], // { faultId, clientId, dueDay, misses } — misses counts wrong fixes so far
+      active: null, // in-flight diagnosis job, survives refresh; carries minutesSpent (simulated clock) and, for callbacks, { callback: { misses, source } }
+      // { faultId, clientId, dueDay, expiryDay, misses, source } — source is
+      // 'player' (obligation, 40% rate) or 'tech' (rescue, ~90% rate); misses
+      // counts wrong fixes so far; expiryDay is when it falls off the board.
+      callbacks: [],
     },
 
     motd: {
@@ -115,6 +119,25 @@ export const MIGRATIONS = {
       old.jobs.active.minutesSpent = 0;
     }
     old.schemaVersion = 5;
+    return old;
+  },
+  // v5 -> v6: callbacks split into obligations and rescues, and claiming becomes
+  // a choice (GDD §3.1). Each queued callback gains a `source` and an `expiryDay`.
+  // Existing entries predate the split: migrate them to 'player' — the lower
+  // (40%) rate, the conservative reading that never over-pays a save in the wild.
+  // expiryDay is dueDay + callbackExpiryDays so an already-due old callback still
+  // gets its full claim window before it can expire (never retroactively lost).
+  5: (old) => {
+    for (const cb of old.jobs.callbacks) {
+      if (cb.source !== 'player' && cb.source !== 'tech') cb.source = 'player';
+      if (typeof cb.expiryDay !== 'string') {
+        const due = Date.parse(`${cb.dueDay}T00:00:00Z`);
+        cb.expiryDay = Number.isNaN(due)
+          ? null
+          : new Date(due + JOBS.callbackExpiryDays * DAY_MS).toISOString().slice(0, 10);
+      }
+    }
+    old.schemaVersion = 6;
     return old;
   },
 };

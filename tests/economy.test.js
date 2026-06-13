@@ -10,7 +10,8 @@ import {
   restockVan,
   utcDateStringAfter,
   dueCallbacks,
-  claimDueCallback,
+  claimCallback,
+  expireCallbacks,
 } from '../js/economy.js';
 
 function makeFault() {
@@ -58,15 +59,26 @@ test('wrong fix: pays exactly payout times wrongFixPayoutMult from balance.js', 
   assertEqual(state.player.lifetimeEarnings, earned);
 });
 
-test('wrong fix: callback queued with fault, client, due day and a misses count', () => {
+test('wrong fix: callback queued as a player obligation with due day, expiry and misses', () => {
   const state = defaultState();
-  settleJob(state, makeFault(), false, 'client-1');
+  const now = Date.UTC(2026, 5, 12, 10, 0, 0); // 2026-06-12
+  settleJob(state, makeFault(), false, 'client-1', { now });
   assertEqual(state.jobs.callbacks.length, 1);
   const cb = state.jobs.callbacks[0];
   assertEqual(cb.faultId, 'econ-fault');
   assertEqual(cb.clientId, 'client-1');
   assertEqual(cb.misses, 1);
-  assert(/^\d{4}-\d{2}-\d{2}$/.test(cb.dueDay), `dueDay should be a UTC date string, got ${cb.dueDay}`);
+  assertEqual(cb.source, 'player', 'a fresh miss is the player\'s obligation');
+  assertEqual(cb.dueDay, utcDateStringAfter(JOBS.callbackDueDays, now));
+  assertEqual(cb.expiryDay, utcDateStringAfter(JOBS.callbackDueDays + JOBS.callbackExpiryDays, now));
+});
+
+test('wrong fix on a tech rescue re-queues it still tagged tech-caused', () => {
+  const state = defaultState();
+  settleJob(state, makeFault(), false, 'client-1', { callback: { misses: 1, source: 'tech' } });
+  assertEqual(state.jobs.callbacks.length, 1);
+  assertEqual(state.jobs.callbacks[0].source, 'tech', 'a botched rescue stays a rescue');
+  assertEqual(state.jobs.callbacks[0].misses, 2);
 });
 
 test('wrong fix: reputation drops, clean streak resets, callbacksCaused counts', () => {
@@ -194,12 +206,40 @@ test('invariant: the speed bonus is purely additive, so active > idle still hold
 
 // --- callback jobs (GDD §2.1: the job returns tomorrow at reduced rate) ---
 
-test('correct fix on a callback pays the GDD §6 40% rate on the job net', () => {
+test('correct fix on a player-caused callback pays the GDD §6 40% rate on the job net', () => {
   const state = defaultState();
   const cash = state.player.cash;
-  const { earned } = settleJob(state, makeFault(), true, 'client-1', { callback: { misses: 1 } });
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    callback: { misses: 1, source: 'player' },
+  });
   assertEqual(earned, Math.round((120 - 30) * JOBS.callbackJobPayoutMult));
   assertEqual(state.player.cash, cash + earned);
+});
+
+test('correct fix on a tech-caused rescue pays the higher rescue rate on the job net', () => {
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    callback: { misses: 1, source: 'tech' },
+  });
+  assertEqual(earned, Math.round((120 - 30) * JOBS.rescueCallbackPayoutMult));
+});
+
+test('a callback with no source defaults to the conservative player rate', () => {
+  // Back-compat: an in-flight callback job saved before the split has no source.
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', { callback: { misses: 1 } });
+  assertEqual(earned, Math.round((120 - 30) * JOBS.callbackJobPayoutMult), 'no source => player rate');
+});
+
+test('invariant: the rescue rate must stay below 1.0 so it never beats a fresh ticket', () => {
+  // GDD §3.1: farming rescues must never out-earn taking new tickets.
+  assert(JOBS.rescueCallbackPayoutMult < 1.0, 'rescue rate must be < 1.0');
+  const f = makeFault();
+  const freshMin = settleJob(defaultState(), f, true, 'c', { minutesSpent: 1e6 }).earned; // net, no bonus
+  const rescueBest = settleJob(defaultState(), f, true, 'c', {
+    callback: { misses: 1, source: 'tech' },
+  }).earned;
+  assert(rescueBest < freshMin, `tech rescue ${rescueBest} must be < worst fresh ${freshMin}`);
 });
 
 test('a correct callback fix never loses money, even with expensive parts', () => {
@@ -262,7 +302,7 @@ const NOON = Date.UTC(2026, 5, 12, 12, 0, 0); // 2026-06-12
 function stateWithCallbacks(...dueDays) {
   const state = defaultState();
   for (const [i, dueDay] of dueDays.entries()) {
-    state.jobs.callbacks.push({ faultId: `f-${i}`, clientId: 'client-1', dueDay, misses: 1 });
+    state.jobs.callbacks.push({ faultId: `f-${i}`, clientId: 'client-1', dueDay, misses: 1, source: 'player' });
   }
   return state;
 }
@@ -274,25 +314,84 @@ test('dueCallbacks: due yesterday and today count, tomorrow does not', () => {
   assertEqual(due.map((cb) => cb.dueDay), ['2026-06-11', '2026-06-12']);
 });
 
-test('claimDueCallback returns the oldest due entry and removes it from the queue', () => {
+test('claimCallback returns the chosen due entry by index and removes it', () => {
   const state = stateWithCallbacks('2026-06-11', '2026-06-12', '2026-06-13');
   const faults = { 'f-0': {}, 'f-1': {}, 'f-2': {} };
-  const cb = claimDueCallback(state, faults, NOON);
-  assertEqual(cb.faultId, 'f-0');
-  assertEqual(state.jobs.callbacks.length, 2);
-});
-
-test('claimDueCallback returns null when nothing is due', () => {
-  const state = stateWithCallbacks('2026-06-13');
-  assertEqual(claimDueCallback(state, { 'f-0': {} }, NOON), null);
-  assertEqual(state.jobs.callbacks.length, 1, 'a not-yet-due callback stays queued');
-});
-
-test('claimDueCallback drops entries whose fault left the library and serves the next', () => {
-  const state = stateWithCallbacks('2026-06-11', '2026-06-12');
-  const cb = claimDueCallback(state, { 'f-1': {} }, NOON); // f-0 no longer exists
+  const cb = claimCallback(state, faults, 1, NOON); // the player picked the second one
   assertEqual(cb.faultId, 'f-1');
-  assertEqual(state.jobs.callbacks, [], 'the stale entry is gone, not stuck');
+  assertEqual(state.jobs.callbacks.length, 2);
+  assertEqual(state.jobs.callbacks.map((c) => c.faultId), ['f-0', 'f-2'], 'only the chosen one is removed');
+});
+
+test('claimCallback refuses a not-yet-due index without mutating', () => {
+  const state = stateWithCallbacks('2026-06-11', '2026-06-13');
+  assertEqual(claimCallback(state, { 'f-0': {}, 'f-1': {} }, 1, NOON), null, 'index 1 is due tomorrow');
+  assertEqual(state.jobs.callbacks.length, 2, 'a not-yet-due callback stays queued');
+});
+
+test('claimCallback refuses an out-of-range index', () => {
+  const state = stateWithCallbacks('2026-06-11');
+  assertEqual(claimCallback(state, { 'f-0': {} }, 5, NOON), null);
+  assertEqual(state.jobs.callbacks.length, 1);
+});
+
+test('claimCallback drops an entry whose fault left the library and returns null', () => {
+  const state = stateWithCallbacks('2026-06-11');
+  const cb = claimCallback(state, {}, 0, NOON); // f-0 no longer exists
+  assertEqual(cb, null);
+  assertEqual(state.jobs.callbacks, [], 'the stale entry is removed, not stuck');
+});
+
+// --- callback expiry (GDD §3.1: stale callbacks fall off the board on load) ---
+
+function callbackWith(source, expiryDay) {
+  return { faultId: 'f', clientId: 'client-1', dueDay: '2026-06-10', expiryDay, misses: 1, source };
+}
+
+test('expireCallbacks removes callbacks past their expiry day and reports the count', () => {
+  const state = defaultState();
+  state.jobs.callbacks = [
+    callbackWith('player', '2026-06-11'), // expired (before today)
+    callbackWith('tech', '2026-06-13'),   // still claimable
+  ];
+  const report = expireCallbacks(state, NOON); // today = 2026-06-12
+  assertEqual(report.count, 1);
+  assertEqual(state.jobs.callbacks.length, 1, 'the live callback stays');
+  assertEqual(state.jobs.callbacks[0].source, 'tech');
+});
+
+test('expireCallbacks docks reputation for player obligations only, not tech rescues', () => {
+  const state = defaultState();
+  state.player.reputation = 10;
+  state.jobs.callbacks = [
+    callbackWith('player', '2026-06-11'),
+    callbackWith('player', '2026-06-10'),
+    callbackWith('tech', '2026-06-09'), // expires silently
+  ];
+  const report = expireCallbacks(state, NOON);
+  assertEqual(report.count, 3);
+  assertEqual(report.playerExpired, 2);
+  assertEqual(report.techExpired, 1);
+  assertEqual(report.repPenalty, 2 * REPUTATION.expiredCallbackRepPenalty);
+  assertEqual(state.player.reputation, 10 - 2 * REPUTATION.expiredCallbackRepPenalty);
+  assertEqual(state.jobs.callbacks, [], 'all three were past expiry');
+});
+
+test('expireCallbacks returns null and changes nothing when none are expired', () => {
+  const state = stateWithCallbacks('2026-06-11', '2026-06-12'); // no expiryDay set
+  state.jobs.callbacks[0].expiryDay = '2026-06-13';
+  state.jobs.callbacks[1].expiryDay = '2026-06-14';
+  const rep = state.player.reputation;
+  assertEqual(expireCallbacks(state, NOON), null);
+  assertEqual(state.jobs.callbacks.length, 2);
+  assertEqual(state.player.reputation, rep);
+});
+
+test('expireCallbacks keeps a callback due today — expiry is strictly past', () => {
+  const state = defaultState();
+  state.jobs.callbacks = [callbackWith('player', '2026-06-12')]; // expiryDay === today
+  assertEqual(expireCallbacks(state, NOON), null, 'expiry day itself is still claimable');
+  assertEqual(state.jobs.callbacks.length, 1);
 });
 
 // --- tier unlocks ---

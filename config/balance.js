@@ -25,10 +25,19 @@ export const JOBS = {
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
   // GDD §2.1 says "partial payout" with no number; this knob is ours to tune.
   wrongFixPayoutMult: 0.4,
-  // The returned job's rate when fixed correctly — GDD §6's "Callback pays 40%".
-  // Applied to the job's net (payout - parts) so a correct rescue never loses money.
+  // Player-caused (obligation) callback rate when fixed correctly — GDD §6's
+  // "Callback pays 40%". Applied to the job's net (payout - parts) so a correct
+  // rescue never loses money. You misdiagnosed and already took the partial.
   callbackJobPayoutMult: 0.4,
-  callbackDueDays: 1, // how many days until a callback job returns
+  // Tech-caused (rescue) callback rate — GDD §3.1: your idle tech botched it and
+  // the client never paid, so rescuing pays NEAR fresh-ticket net. MUST stay < 1.0
+  // (and below a fresh fix's net) so farming rescues never beats taking new tickets.
+  rescueCallbackPayoutMult: 0.9,
+  callbackDueDays: 1, // how many days until a callback job returns (becomes due)
+  // Days a callback stays claimable after it comes due before it expires off the
+  // board (GDD §3.1). Player-caused obligations expiring cost reputation (below);
+  // tech-caused rescues just disappear — they were optional bonus pay, not a debt.
+  callbackExpiryDays: 3,
 };
 
 /**
@@ -64,6 +73,10 @@ export const REPUTATION = {
   // Missing the same callback again costs less than the first miss — dampened,
   // not free, so a repeat-miss spiral can't drain reputation forever.
   repeatCallbackPenalty: 1,
+  // Letting a player-caused obligation expire off the board (GDD §3.1) costs more
+  // than a single miss — abandoning a client you owe is worse than getting it
+  // wrong twice. Tech-caused rescues expire with no penalty (they weren't a debt).
+  expiredCallbackRepPenalty: 3,
   // Reputation needed to unlock each tier (key = tier). Rep is +1 per clean job
   // and a focused job runs ~60–75s, so 10 rep ≈ 10–12.5 minutes — inside GDD §6's
   // "Tier 2 within 15 minutes", with slack for a couple of -2 misses.

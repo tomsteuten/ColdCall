@@ -3,7 +3,7 @@
 import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimDueCallback, restockVan, hireTech } from './economy.js';
+import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
@@ -37,6 +37,10 @@ let invoice = null;
 // shown once, dismissed by the player, gone on next refresh.
 let offlineReport = null;
 
+// Callbacks that expired off the board while away (GDD §3.1). Transient: shown
+// once in a home banner, dismissed by the player, gone on next refresh.
+let expiryReport = null;
+
 // Result of a completed MotD run. Transient: a refresh lands on home, and the
 // result is still recoverable via state.motd.lastResult if played today.
 let motdResult = null;
@@ -56,16 +60,35 @@ let justUnlockedTier = null;
 const actions = {
   nextTicket() {
     justUnlockedTier = null;
+    // Fresh tickets only — callbacks are never auto-claimed (GDD §3.1); the
+    // player chooses them from the Callbacks list via takeCallback().
     const next = mulberry32(Date.now());
-    // Due callbacks jump the queue (GDD §2.1: the job returns tomorrow).
-    const cb = claimDueCallback(state, faults);
-    if (cb) {
-      startJob(state, faults[cb.faultId], cb.clientId, next, { misses: cb.misses });
-    } else {
-      const { fault, client } = pickTicket(faults, clients, state.player.tierUnlocked, next);
-      startJob(state, fault, client.id, next);
-    }
+    const { fault, client } = pickTicket(faults, clients, state.player.tierUnlocked, next);
+    startJob(state, fault, client.id, next);
     save(state);
+    render();
+  },
+  openCallbacks() {
+    justUnlockedTier = null;
+    screen = 'callbacks';
+    render();
+  },
+  closeCallbacks() {
+    screen = 'home';
+    render();
+  },
+  takeCallback(index) {
+    const cb = claimCallback(state, faults, Number(index));
+    if (cb) {
+      const next = mulberry32(Date.now());
+      startJob(state, faults[cb.faultId], cb.clientId, next, {
+        misses: cb.misses,
+        source: cb.source,
+      });
+      screen = 'home';
+      save(state);
+    }
+    // A failed claim (stale/removed entry) just re-renders the updated list.
     render();
   },
   runTest(testId) {
@@ -121,6 +144,10 @@ const actions = {
   },
   dismissOfflineReport() {
     offlineReport = null;
+    render();
+  },
+  dismissExpiryReport() {
+    expiryReport = null;
     render();
   },
   startMotd() {
@@ -200,7 +227,7 @@ function render() {
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions, exportMessage, importError });
   } else {
-    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, corruptSaveBlob, actions });
+    jobScreen.render(app, { state, faults, machines, clients, invoice, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, screen, actions });
   }
 }
 
@@ -211,7 +238,10 @@ if (state.jobs.active && !faults[state.jobs.active.faultId]) {
   state.jobs.active = null;
 }
 
-// Simulate offline progress before first render so the report is visible on home.
+// Expire stale callbacks and simulate offline progress before first render, so
+// both reports are visible on home. Expire first: a callback can only fall off
+// the board for being old, never for the new offline jobs queued this load.
+expiryReport = expireCallbacks(state);
 offlineReport = simulateOfflineProgress(state, faults);
 
 render();

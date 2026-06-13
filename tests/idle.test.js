@@ -3,6 +3,7 @@
 import { defaultState } from '../js/state.js';
 import { TECHS, OFFLINE, JOBS } from '../config/balance.js';
 import { simulateOfflineProgress } from '../js/idle.js';
+import { utcDateStringAfter } from '../js/economy.js';
 
 const HOUR_MS = 3600 * 1000;
 const MIN_MS = 60 * 1000;
@@ -108,6 +109,9 @@ test('failed jobs add callbacks to state.jobs.callbacks', () => {
     assert(typeof cb.faultId === 'string', 'callback should have a faultId');
     assert(typeof cb.dueDay === 'string', 'callback should have a dueDay');
     assertEqual(cb.misses, 1, 'first miss starts at 1');
+    assertEqual(cb.source, 'tech', 'an idle tech botched it — it is a tech-caused rescue');
+    assertEqual(cb.expiryDay, utcDateStringAfter(1 + JOBS.callbackExpiryDays, now),
+      'expiry = due day + callbackExpiryDays');
   }
 });
 

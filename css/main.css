@@ -87,10 +87,9 @@ body {
   text-align: center;
 }
 
-.home-callbacks {
-  margin: 0;
-  color: #f0917f; /* matches the callback invoice heading */
-  font-weight: 600;
+.btn-callbacks {
+  border-color: #f0917f; /* callback salmon — same family as the warning stats */
+  text-align: center;
 }
 
 .home-unlock,
@@ -132,6 +131,78 @@ body {
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
+}
+
+/* --- expiry report banner (home) --- */
+
+.home-expiry-report {
+  background: var(--surface);
+  border: 1px solid #f0917f;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.home-expiry-title {
+  margin: 0 0 0.2rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f0917f;
+}
+
+.home-expiry-detail {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* --- callbacks list --- */
+
+.callbacks-intro {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.callbacks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.callback-card {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.callback-client {
+  margin: 0;
+  font-weight: 600;
+}
+
+.callback-meta {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.btn-callback-take {
+  text-align: center;
+}
+
+.callbacks-empty {
+  margin: 0;
+  color: var(--text-dim);
+  flex: 1;
 }
 
 /* --- job --- */

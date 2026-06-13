@@ -132,8 +132,9 @@ export function runTest(state, testId, faults) {
  * @param {object} state game state (mutated: job cleared, economy applied)
  * @param {string} fixId one of the job's fixOptions
  * @param {Object<string, object>} faults fault library keyed by id
- * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, unlockedTier: number|null, minutesSpent: number}}
- *   for the invoice screen (minutesSpent lets it show the speed bonus earned)
+ * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, callbackSource: string|null, unlockedTier: number|null, minutesSpent: number}}
+ *   for the invoice screen (minutesSpent lets it show the speed bonus earned;
+ *   callbackSource lets it show the right callback rate)
  */
 export function commitFix(state, fixId, faults) {
   const job = state.jobs.active;
@@ -156,7 +157,15 @@ export function commitFix(state, fixId, faults) {
     minutesSpent,
   });
   state.jobs.active = null;
-  return { correct, fault, earned, callback: callback !== null, unlockedTier, minutesSpent };
+  return {
+    correct,
+    fault,
+    earned,
+    callback: callback !== null,
+    callbackSource: callback ? callback.source ?? 'player' : null,
+    unlockedTier,
+    minutesSpent,
+  };
 }
 
 /**

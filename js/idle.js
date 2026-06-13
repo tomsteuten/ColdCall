@@ -1,6 +1,6 @@
 /** @file Techs, contract routes, and deterministic offline-progress simulation from lastSeen. */
 
-import { TECHS, OFFLINE } from '../config/balance.js';
+import { TECHS, OFFLINE, JOBS } from '../config/balance.js';
 import { mulberry32 } from './rng.js';
 import { utcDateStringAfter } from './economy.js';
 
@@ -63,13 +63,17 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
         techEarned += TECHS.earningsPerJob;
         jobsDone++;
       } else {
-        // Failed job: pick a random fault and queue a callback due tomorrow.
+        // Failed job: pick a random fault and queue a tech-caused (rescue)
+        // callback due tomorrow (GDD §3.1) — the player can rescue it near the
+        // fresh rate. expiryDay gives it the same claim window as any callback.
         const fault = faultPool[Math.floor(prng() * faultPool.length)];
         state.jobs.callbacks.push({
           faultId: fault.id,
           clientId: route.clientId,
           dueDay: utcDateStringAfter(1, now),
+          expiryDay: utcDateStringAfter(1 + JOBS.callbackExpiryDays, now),
           misses: 1,
+          source: 'tech',
         });
         techCallbacks++;
         callbacksAdded++;

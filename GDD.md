@@ -77,9 +77,9 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 - Techs earn ~40–60% of what active play earns per job. **Hard rule: active play is always the best $/min.**
 
 **Decision of record (v1.0) — callbacks are a choice, and there are two kinds:**
-- **Tech-caused (rescue):** your idle tech botched it and the client never paid — rescuing pays near fresh-ticket net (knob in balance.js, always ≤ fresh so farming rescues never beats taking new tickets). This is the §3.1 "bonus pay" loop feeding idle back into active.
-- **Player-caused (obligation, from §2.1):** you misdiagnosed and already took the partial — the return visit pays the 40%-of-net callback rate. Left unclaimed for N days it expires: reputation hit, job gone.
-- Callbacks are claimed from their own "Callbacks (n)" entry on the home screen. "Next ticket" never auto-claims one.
+- **Tech-caused (rescue):** your idle tech botched it and the client never paid — rescuing pays near fresh-ticket net (`rescueCallbackPayoutMult`, always < 1.0 so farming rescues never beats taking new tickets). This is the §3.1 "bonus pay" loop feeding idle back into active. Left unclaimed past its expiry it falls off the board too, but with **no reputation penalty** — it was optional bonus pay, never a debt you owed.
+- **Player-caused (obligation, from §2.1):** you misdiagnosed and already took the partial — the return visit pays the 40%-of-net callback rate. Left unclaimed past its expiry (`callbackExpiryDays`) it's gone *with* a reputation hit (`expiredCallbackRepPenalty`) — you abandoned a client you owed.
+- Both kinds carry an `expiryDay` and are claimed from their own "Callbacks (n)" entry on the home screen, which shows each one's rate and source. "Next ticket" never auto-claims one.
 
 ### 3.2 Offline Progress
 - Simulated on load from elapsed time (no background timers). Capped at 8h base, upgradeable to 24h ("Answering Service" upgrade).
