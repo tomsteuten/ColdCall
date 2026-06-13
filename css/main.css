@@ -142,6 +142,16 @@ body {
   color: #f0917f;
 }
 
+.job-clock {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.job-clock strong {
+  color: var(--accent);
+}
+
 .job-client {
   margin: 0;
   font-size: 1.2rem;

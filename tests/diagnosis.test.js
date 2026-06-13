@@ -1,7 +1,7 @@
 /** @file Diagnosis engine tests: job start, test results, tool gating, fix resolution. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION } from '../config/balance.js';
+import { JOBS, REPUTATION, DIAGNOSIS } from '../config/balance.js';
 import {
   TESTS,
   startJob,
@@ -42,6 +42,7 @@ test('startJob sets active job with hidden fault and shuffled options', () => {
   assertEqual(job.faultId, 'test-fault');
   assertEqual(job.clientId, 'burgertown-high-st');
   assertEqual(job.testsRun, []);
+  assertEqual(job.minutesSpent, 0, 'a fresh job starts with a clean simulated clock');
   assertEqual(job.fixOptions.slice().sort(), ['right-fix', 'wrong-a', 'wrong-b'], 'options are correct + wrong fixes');
   assertEqual(job.fixOptions.filter((f) => f === 'right-fix').length, 1, 'correctFix appears exactly once');
 });
@@ -84,6 +85,31 @@ test('running the same test twice records it once', () => {
   assertEqual(state.jobs.active.testsRun, ['error-log']);
 });
 
+test('runTest accrues each test cost on the simulated clock, once per test', () => {
+  const state = freshJobState();
+  runTest(state, 'error-log', FAULTS);
+  assertEqual(state.jobs.active.minutesSpent, DIAGNOSIS.testMinutes['error-log']);
+  runTest(state, 'temp-probe', FAULTS);
+  assertEqual(
+    state.jobs.active.minutesSpent,
+    DIAGNOSIS.testMinutes['error-log'] + DIAGNOSIS.testMinutes['temp-probe']
+  );
+  // Re-running a test is free — re-reading a result costs no job time.
+  runTest(state, 'error-log', FAULTS);
+  assertEqual(
+    state.jobs.active.minutesSpent,
+    DIAGNOSIS.testMinutes['error-log'] + DIAGNOSIS.testMinutes['temp-probe']
+  );
+});
+
+test('the clock is simulated, not wall-clock — minutesSpent ignores elapsed real time', () => {
+  // GDD §2.1: a phone interruption must never cost the player. Only acts advance it.
+  const state = freshJobState();
+  assertEqual(state.jobs.active.minutesSpent, 0);
+  // No tests run: however long the job sits open, the clock has not moved.
+  assertEqual(state.jobs.active.minutesSpent, 0);
+});
+
 test('continuity-test is gated behind multimeter tier 2', () => {
   const state = freshJobState();
   assertEqual(state.tools.multimeterTier, 1, 'default state starts at tier 1');
@@ -102,15 +128,27 @@ test('continuity-test is gated behind multimeter tier 2', () => {
   assertEqual(runTest(state, 'continuity-test', FAULTS), TESTS['continuity-test'].generic);
 });
 
-test('commitFix with the correct fix pays payout minus parts and clears the job', () => {
-  const state = freshJobState();
+test('commitFix with the correct fix pays payout minus parts plus the speed bonus', () => {
+  const state = freshJobState(); // no tests run -> the full speed bonus
   const cashBefore = state.player.cash;
-  const { correct, earned } = commitFix(state, 'right-fix', FAULTS);
+  const { correct, earned, minutesSpent } = commitFix(state, 'right-fix', FAULTS);
   assert(correct, 'should be correct');
-  assertEqual(earned, 100 - 20);
-  assertEqual(state.player.cash, cashBefore + 80);
+  assertEqual(minutesSpent, 0, 'no tests were run');
+  assertEqual(earned, 100 - 20 + DIAGNOSIS.speedBonusMax);
+  assertEqual(state.player.cash, cashBefore + earned);
   assertEqual(state.jobs.active, null);
   assertEqual(state.jobs.callbacks, []);
+});
+
+test('running tests before a correct fix spends the clock and shrinks the bonus', () => {
+  const state = freshJobState();
+  runTest(state, 'temp-probe', FAULTS); // costs simulated minutes
+  const spent = state.jobs.active.minutesSpent;
+  const { earned, minutesSpent } = commitFix(state, 'right-fix', FAULTS);
+  assertEqual(minutesSpent, spent);
+  const expectedBonus = Math.max(0, DIAGNOSIS.speedBonusMax - spent * DIAGNOSIS.bonusDecayPerMin);
+  assertEqual(earned, 100 - 20 + expectedBonus);
+  assert(earned < 100 - 20 + DIAGNOSIS.speedBonusMax, 'testing must cost some of the bonus');
 });
 
 test('commitFix with a wrong fix pays the callback rate and queues a callback', () => {

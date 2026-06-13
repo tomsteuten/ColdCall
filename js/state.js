@@ -2,7 +2,7 @@
 
 import { STARTING } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const SAVE_KEY = 'coldcall_save';
 
 /**
@@ -36,7 +36,7 @@ export function defaultState() {
     routes: [], // { id, clientId }
 
     jobs: {
-      active: null, // in-flight diagnosis job, survives refresh; callback jobs carry { callback: { misses } }
+      active: null, // in-flight diagnosis job, survives refresh; carries minutesSpent (simulated clock) and, for callbacks, { callback: { misses } }
       callbacks: [], // { faultId, clientId, dueDay, misses } — misses counts wrong fixes so far
     },
 
@@ -103,6 +103,18 @@ export const MIGRATIONS = {
       old.motd.lastResult.faultId = null;
     }
     old.schemaVersion = 4;
+    return old;
+  },
+  // v4 -> v5: diagnosis tests now cost simulated job minutes, and an in-flight
+  // active job tracks minutesSpent (it drives the correct-fresh-fix speed bonus).
+  // A job saved mid-run before this field existed has unknown spend; default to
+  // 0 — the generous reading that keeps the full bonus available, so the change
+  // never retroactively punishes a job already on the bench.
+  4: (old) => {
+    if (old.jobs.active && typeof old.jobs.active.minutesSpent !== 'number') {
+      old.jobs.active.minutesSpent = 0;
+    }
+    old.schemaVersion = 5;
     return old;
   },
 };

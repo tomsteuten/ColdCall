@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -15,9 +15,25 @@ export function utcDateStringAfter(days, now = Date.now()) {
 }
 
 /**
+ * The diagnosis speed bonus in whole dollars for the simulated minutes a job
+ * spent on tests (GDD §2.1). Starts at DIAGNOSIS.speedBonusMax on a blind commit
+ * and decays linearly, floored at 0 — so being thorough is safe (never below
+ * base payout) and being sharp is rewarded. Pure; used by settleJob and the UI.
+ * @param {number} minutesSpent simulated minutes the active job accumulated
+ * @returns {number} bonus dollars, always >= 0
+ */
+export function speedBonus(minutesSpent) {
+  return Math.max(
+    0,
+    Math.round(DIAGNOSIS.speedBonusMax - minutesSpent * DIAGNOSIS.bonusDecayPerMin)
+  );
+}
+
+/**
  * Settle a finished job: apply cash, lifetime earnings, reputation and stats.
  *
- * Fresh job — correct: payout minus parts. Wrong: partial payout at
+ * Fresh job — correct: payout minus parts, plus a speed bonus that decays with
+ * the simulated minutes spent on tests (GDD §2.1). Wrong: partial payout at
  * wrongFixPayoutMult, reputation hit, job queued to return (GDD §2.1).
  * No parts deduction on a wrong fix — the correct part was never fitted.
  *
@@ -32,12 +48,13 @@ export function utcDateStringAfter(days, now = Date.now()) {
  * @param {object} fault the fault that was (or wasn't) fixed
  * @param {boolean} correct whether the committed fix was the correct one
  * @param {string} clientId for the callback queue entry
- * @param {{callback?: {misses: number}|null, now?: number}} [opts] callback
- *   context from the active job, and an injectable clock for tests
+ * @param {{callback?: {misses: number}|null, minutesSpent?: number, now?: number}} [opts]
+ *   callback context and simulated minutes spent from the active job, plus an
+ *   injectable clock for tests
  * @returns {{earned: number, unlockedTier: number|null}} for the invoice screen
  */
 export function settleJob(state, fault, correct, clientId, opts = {}) {
-  const { callback = null, now = Date.now() } = opts;
+  const { callback = null, minutesSpent = 0, now = Date.now() } = opts;
   let earned;
   if (correct) {
     if (fault.partsCost > 0) {
@@ -46,7 +63,10 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
       state.van.stock['generic-parts'] = inStock - 1;
     }
     const net = fault.payout - fault.partsCost;
-    earned = callback ? Math.round(net * JOBS.callbackJobPayoutMult) : net;
+    // No speed bonus on a rescue — callbacks are already discounted (GDD §2.1).
+    earned = callback
+      ? Math.round(net * JOBS.callbackJobPayoutMult)
+      : net + speedBonus(minutesSpent);
     state.player.reputation += REPUTATION.correctFix;
     state.stats.jobsCompleted += 1;
     if (!callback) state.stats.cleanStreak += 1;

@@ -137,6 +137,39 @@ test('v3 save with no MotD result migrates cleanly (lastResult stays null)', () 
   assertEqual(migrated.motd.lastResult, null);
 });
 
+test('v4 save with an in-flight job migrates to v5: active job gains minutesSpent = 0', () => {
+  // Fixture: a v4 save with a job on the bench, saved before the simulated clock
+  // existed. The job must keep its full speed bonus, so minutesSpent defaults to 0.
+  const v4Fixture = defaultState();
+  v4Fixture.schemaVersion = 4;
+  v4Fixture.jobs.active = {
+    faultId: 'worn-scraper-blades',
+    clientId: 'burgertown-high-st',
+    machineType: 'soft-serve-commercial',
+    startedAt: 1700000000000,
+    testsRun: ['temp-probe'],
+    fixOptions: ['a', 'b'],
+    callback: null,
+    motd: false,
+  };
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v4Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.jobs.active.minutesSpent, 0, 'old in-flight job defaults to 0 minutes');
+  assertEqual(migrated.jobs.active.faultId, 'worn-scraper-blades', 'other job fields untouched');
+  assertEqual(migrated.jobs.active.testsRun, ['temp-probe'], 'testsRun preserved');
+});
+
+test('v4 save with no active job migrates to v5 cleanly', () => {
+  const v4Fixture = defaultState();
+  v4Fixture.schemaVersion = 4;
+  v4Fixture.jobs.active = null;
+  const migrated = migrate(JSON.parse(JSON.stringify(v4Fixture)));
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.jobs.active, null, 'no active job stays null');
+});
+
 test('a save from a newer game version is rejected, blob left untouched', () => {
   const storage = memoryStorage();
   const future = defaultState();

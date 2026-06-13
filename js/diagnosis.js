@@ -4,6 +4,7 @@
 
 import { settleJob } from './economy.js';
 import { settleMotd } from './motd.js';
+import { DIAGNOSIS } from '../config/balance.js';
 
 /**
  * The test catalogue (GDD §2.1, SCHEMA.md "Test ids"). Faults may only reference
@@ -67,6 +68,7 @@ export function startJob(state, fault, clientId, next, callback = null, motd = f
     machineType: fault.machineType,
     startedAt: Date.now(),
     testsRun: [],
+    minutesSpent: 0, // simulated job clock (GDD §2.1) — drives the speed bonus
     fixOptions: shuffled([fault.correctFix, ...fault.wrongFixes], next),
     callback,
     motd,
@@ -116,7 +118,11 @@ export function runTest(state, testId, faults) {
   if (!job) throw new Error('No active job');
   const { available, reason } = testAvailability(state, testId);
   if (!available) throw new Error(reason);
-  if (!job.testsRun.includes(testId)) job.testsRun.push(testId);
+  // Only the first run of a test costs time — re-reading a result is free.
+  if (!job.testsRun.includes(testId)) {
+    job.testsRun.push(testId);
+    job.minutesSpent = (job.minutesSpent ?? 0) + (DIAGNOSIS.testMinutes[testId] ?? 0);
+  }
   return testResult(job, testId, faults);
 }
 
@@ -126,8 +132,8 @@ export function runTest(state, testId, faults) {
  * @param {object} state game state (mutated: job cleared, economy applied)
  * @param {string} fixId one of the job's fixOptions
  * @param {Object<string, object>} faults fault library keyed by id
- * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, unlockedTier: number|null}}
- *   for the invoice screen
+ * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, unlockedTier: number|null, minutesSpent: number}}
+ *   for the invoice screen (minutesSpent lets it show the speed bonus earned)
  */
 export function commitFix(state, fixId, faults) {
   const job = state.jobs.active;
@@ -144,9 +150,13 @@ export function commitFix(state, fixId, faults) {
 
   // Old saves' active jobs predate the callback field; undefined means fresh job.
   const callback = job.callback ?? null;
-  const { earned, unlockedTier } = settleJob(state, fault, correct, job.clientId, { callback });
+  const minutesSpent = job.minutesSpent ?? 0;
+  const { earned, unlockedTier } = settleJob(state, fault, correct, job.clientId, {
+    callback,
+    minutesSpent,
+  });
   state.jobs.active = null;
-  return { correct, fault, earned, callback: callback !== null, unlockedTier };
+  return { correct, fault, earned, callback: callback !== null, unlockedTier, minutesSpent };
 }
 
 /**

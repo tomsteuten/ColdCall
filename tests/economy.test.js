@@ -1,10 +1,11 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
+  speedBonus,
   buyTool,
   restockVan,
   utcDateStringAfter,
@@ -27,10 +28,12 @@ function makeFault() {
   };
 }
 
-test('correct fix: cash and lifetimeEarnings rise by payout minus partsCost', () => {
+test('correct fix: cash and lifetimeEarnings rise by payout minus partsCost (bonus aside)', () => {
   const state = defaultState();
   const cash = state.player.cash;
-  const { earned } = settleJob(state, makeFault(), true, 'client-1');
+  // Exhaust the speed bonus so this isolates the base net; the bonus is covered
+  // by its own tests below.
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 1e6 });
   assertEqual(earned, 120 - 30);
   assertEqual(state.player.cash, cash + 90);
   assertEqual(state.player.lifetimeEarnings, 90);
@@ -84,6 +87,109 @@ test('a wrong fix always pays less than a correct fix (callback rate sanity)', (
   const correctPay = f.payout - f.partsCost;
   const wrongPay = Math.round(f.payout * JOBS.wrongFixPayoutMult);
   assert(wrongPay < correctPay, `callback pay ${wrongPay} should be < correct pay ${correctPay}`);
+});
+
+// --- diagnosis speed bonus (GDD §2.1: base payout + a decaying speed bonus) ---
+
+test('speedBonus is full at zero minutes and decays per balance.js', () => {
+  assertEqual(speedBonus(0), DIAGNOSIS.speedBonusMax);
+  assertEqual(speedBonus(3), Math.round(DIAGNOSIS.speedBonusMax - 3 * DIAGNOSIS.bonusDecayPerMin));
+});
+
+test('speedBonus floors at zero — exhaustive testing never drops pay below base', () => {
+  const minutesToZero = DIAGNOSIS.speedBonusMax / DIAGNOSIS.bonusDecayPerMin;
+  assertEqual(speedBonus(minutesToZero + 100), 0);
+  assertEqual(speedBonus(1e6), 0, 'bonus must floor at 0 so thoroughness is never punished');
+});
+
+test('correct fresh fix adds the speed bonus on top of net', () => {
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 5 });
+  assertEqual(earned, 120 - 30 + speedBonus(5));
+});
+
+test('a blind commit (zero minutes) earns the maximum speed bonus', () => {
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 0 });
+  assertEqual(earned, 120 - 30 + DIAGNOSIS.speedBonusMax);
+});
+
+test('missing minutesSpent defaults to the full bonus (back-compat with old jobs)', () => {
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1'); // no minutesSpent
+  assertEqual(earned, 120 - 30 + DIAGNOSIS.speedBonusMax);
+});
+
+test('the speed bonus never applies to a callback rescue', () => {
+  const state = defaultState();
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    callback: { misses: 1 },
+    minutesSpent: 0, // would be the maximum bonus on a fresh job
+  });
+  assertEqual(
+    earned,
+    Math.round((120 - 30) * JOBS.callbackJobPayoutMult),
+    'a discounted rescue earns no speed bonus'
+  );
+});
+
+test('invariant: informed diagnosis beats both blind guessing and exhaustive testing (EV)', () => {
+  // GDD §2.1: a few targeted tests then the correct fix must out-earn committing
+  // blind AND running every test. Modelled on the most guess-friendly real fault
+  // (3 fix options -> 1/3 chance of a lucky blind guess; most faults have 4).
+  const f = makeFault(); // payout 120, parts 30 -> net 90
+  const net = f.payout - f.partsCost;
+  const p = 1 / 3; // probability a blind guess lands the correct fix
+
+  // Informed: two targeted tests, then the correct fix.
+  const informedMinutes =
+    DIAGNOSIS.testMinutes['error-log'] + DIAGNOSIS.testMinutes['temp-probe'];
+  const informed = net + speedBonus(informedMinutes);
+
+  // Blind guess: correct-rate-weighted mix of (full bonus) and (callback outcome).
+  // The miss value is generous to guessing — the immediate partial PLUS the
+  // eventual rescue at the callback rate. Even so, informed must win.
+  const guessRight = net + speedBonus(0);
+  const missPartial = Math.round(f.payout * JOBS.wrongFixPayoutMult);
+  const rescue = Math.round(net * JOBS.callbackJobPayoutMult);
+  const guessEV = p * guessRight + (1 - p) * (missPartial + rescue);
+
+  // Exhaustive: run every test, then the correct fix (bonus forfeited).
+  const allMinutes = Object.values(DIAGNOSIS.testMinutes).reduce((a, b) => a + b, 0);
+  const exhaustive = net + speedBonus(allMinutes);
+
+  assert(informed > guessEV, `informed ${informed} must beat blind-guess EV ${guessEV.toFixed(1)}`);
+  assert(informed > exhaustive, `informed ${informed} must beat exhaustive ${exhaustive}`);
+});
+
+test('invariant: the speed bonus never lets a callback rescue out-earn a fresh fix', () => {
+  // A fresh fix earns net + bonus; a rescue earns the discounted rate with NO
+  // bonus. Even a blind fresh commit (max bonus) and an exhaustive fresh commit
+  // (zero bonus) must both beat the best a callback can pay on the same fault.
+  const f = makeFault();
+  const freshMax = settleJob(defaultState(), f, true, 'c', { minutesSpent: 0 }).earned;
+  const freshMin = settleJob(defaultState(), f, true, 'c', { minutesSpent: 1e6 }).earned;
+  const callbackBest = settleJob(defaultState(), f, true, 'c', {
+    callback: { misses: 1 },
+    minutesSpent: 0,
+  }).earned;
+  assert(callbackBest < freshMin, `callback ${callbackBest} must be < worst fresh ${freshMin}`);
+  assert(callbackBest < freshMax, `callback ${callbackBest} must be < best fresh ${freshMax}`);
+});
+
+test('invariant: the speed bonus is purely additive, so active > idle still holds', () => {
+  // The bonus only ever ADDS to a fresh correct fix (>= 0), so every active job
+  // still pays at least its net — the change cannot weaken the active>idle
+  // guarantee idle.test.js pins on payoutMin - partsCostMax.
+  for (const m of [0, 5, 30, 999]) {
+    assert(speedBonus(m) >= 0, `bonus must be >= 0 (was ${speedBonus(m)} at ${m} min)`);
+  }
+  const worstActive = JOBS.tier1.payoutMin - JOBS.tier1.partsCostMax; // bonus floored at 0
+  const idlePerMin = (TECHS.earningsPerJob * TECHS.jobsPerHour) / 60;
+  assert(
+    worstActive > idlePerMin,
+    `worst active job ${worstActive} must beat idle $/min ${idlePerMin.toFixed(2)}`
+  );
 });
 
 // --- callback jobs (GDD §2.1: the job returns tomorrow at reduced rate) ---

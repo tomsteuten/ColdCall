@@ -4,7 +4,7 @@
  */
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
-import { dueCallbacks } from '../economy.js';
+import { dueCallbacks, speedBonus } from '../economy.js';
 import { JOBS } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 
@@ -131,6 +131,14 @@ function jobView({ state, faults, machines, clients }) {
     })
     .join('');
 
+  // Make the speed/thoroughness trade-off visible before each test (GDD §2.1).
+  // Only fresh, non-MotD jobs earn the bonus — callbacks are already discounted
+  // and MotD pays no cash, so showing a dollar bonus there would mislead.
+  const minutes = job.minutesSpent ?? 0;
+  const clockBar = !job.callback && !job.motd
+    ? `<p class="job-clock">Job clock: ${minutes} min · Speed bonus: <strong>$${speedBonus(minutes)}</strong></p>`
+    : '';
+
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
   const fixButtons = job.fixOptions
     .map((id) => `<button class="btn btn-fix" data-fix="${id}" ${outOfParts ? 'disabled' : ''}>${fixLabel(id)}</button>`)
@@ -143,6 +151,7 @@ function jobView({ state, faults, machines, clients }) {
       <h2 class="job-client">${job.motd ? 'Machine of the Day' : (client ? client.name : job.clientId)}</h2>
       <p class="job-machine">${machine ? machine.name : job.machineType}</p>
       ${job.callback ? `<p class="job-callback-tag">Callback — reduced rate, same machine</p>` : ''}
+      ${clockBar}
 
       <h3 class="section-head">Reported symptoms</h3>
       <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
@@ -165,8 +174,10 @@ function invoiceView({ state, invoice }) {
        <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>
        <p class="invoice-line">Callback rate <span>×${Math.round(JOBS.callbackJobPayoutMult * 100)}%</span></p>`;
   } else if (correct) {
+    const bonus = speedBonus(invoice.minutesSpent ?? 0);
     lines = `<p class="invoice-line">Job payout <span>$${fault.payout}</span></p>
-       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`;
+       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>
+       <p class="invoice-line">Speed bonus <span>+$${bonus}</span></p>`;
   } else if (callback) {
     lines = `<p class="invoice-line">Repeat miss <span>$0</span></p>
        <p class="invoice-note">Wrong again — that machine is back on the board tomorrow, and they're not paying twice.</p>`;

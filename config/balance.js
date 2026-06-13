@@ -31,6 +31,32 @@ export const JOBS = {
   callbackDueDays: 1, // how many days until a callback job returns
 };
 
+/**
+ * Diagnosis test costs and the speed bonus (GDD §2.1 decisions of record).
+ * The job clock is a SIMULATED clock, never wall-clock: each test adds its
+ * `testMinutes` to the active job's minutesSpent, so a phone interruption never
+ * costs anything and every run is deterministic. The correct-fresh-fix bonus
+ * starts full on a blind commit and decays with those minutes — committing blind
+ * keeps the full bonus but risks the callback; exhausting every test forfeits the
+ * bonus but never drops below base payout. Being thorough is safe, being sharp pays.
+ */
+export const DIAGNOSIS = {
+  // Fictional minutes each test costs. Cheap/vague tests are quick; the slow,
+  // very-informative ones (pull the beater) cost the most (GDD §2.1).
+  testMinutes: {
+    'error-log': 2,
+    'temp-probe': 5,
+    'inspect-beater': 15,
+    'continuity-test': 8,
+  },
+  // Speed bonus in whole dollars: speedBonusMax on a blind commit (0 minutes),
+  // decaying bonusDecayPerMin each simulated minute, floored at 0. $40 is ~30% of
+  // a tier-1 payout (80–150). Reaches $0 at 20 minutes: running all four tests
+  // (30 min) forfeits it entirely, a targeted couple keeps most of it.
+  speedBonusMax: 40,
+  bonusDecayPerMin: 2,
+};
+
 /** Reputation deltas (GDD §3.3: earned per clean job, lost on callbacks). */
 export const REPUTATION = {
   correctFix: 1,
