@@ -7,16 +7,12 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (session 11)
+## Next session prompt (session 12)
 
-Session 10 (callback choice + rescue split) has landed and is pushed. State is at
-schema v6 — all GDD §9 v1.0 scope plus every queued pre-launch design decision is
-implemented. The game is now feature-complete but visually a programmer-art
-prototype; the next arc is a **UI/graphics polish track** (Tom's stated
-preference, and it serves the GDD §5 screenshot-based growth hook). The planned
-sessions 11–15 are laid out under "Roadmap" below — to begin one, just say
-"proceed with session N from notes.md" (decision-dependencies, where they exist,
-are flagged per session).
+Session 11 (visual identity & CSS/layout pass) has landed and is pushed. The
+design-system rewrite is in css/main.css; job.js has the new panel/receipt HTML.
+Proceed with "proceed with session 12 from notes.md" — it is fully specified
+below and needs no decision from Tom first.
 
 ### What session 10 added (callback choice + rescue split, GDD §3.1)
 
@@ -219,6 +215,41 @@ update this file at the end.
   if it turns into economy retuning.
 - **v1.x systems** (Tiers 3–4, prestige, workshop, tech specialisation, tech wages
   if deferred in session 13 — GDD §9): strongest model; out of scope for now.
+
+---
+
+## What session 11 added (visual identity & CSS/layout pass)
+
+- Full design-system rewrite in `css/main.css`. All colours consolidated as CSS
+  variables (`--warn`, `--success`, `--amber`); type scale (`--text-xs` →
+  `--text-3xl`); spacing rhythm (`--space-xs` → `--space-xl`); shape tokens
+  (`--radius-sm`, `--radius-lg`). No hard-coded hex or px values remain in the
+  CSS outside `:root`.
+- Screen-to-screen transition: `@keyframes screen-in` (opacity + 6 px
+  translateY, 0.15 s) fires automatically on every `.screen` element creation —
+  no JS changes needed.
+- Status bar converted to a 3-column grid with a hairline separator; uses
+  `font-variant-numeric: tabular-nums`.
+- New reusable component classes: `.card`, `.panel` / `.panel-label`, `.badge`
+  (with `--warn` / `--success` modifiers), `.art-slot` (dashed placeholder
+  frame for future machine sprites), `.divider`.
+- Button hierarchy: all border-colour variants now use CSS variables; added
+  `.screen-home .btn { text-align: center }` so every home-screen nav button
+  is centred (fixes pre-existing "Tools shop" off-centre issue).
+- Home screen: `.dev-title` / `.dev-meta` replaced with `.game-brand` block —
+  ❄ logo glyph with `drop-shadow` glow, `font-variant-emoji: text`, bold
+  `COLD CALL` wordmark (accent / white split), italic tagline.
+- Job screen: each section wrapped in a `.panel` with a `.panel-label` header;
+  badge chips replace inline `<p>` tags for callback/MotD status; `.art-slot`
+  placeholder frame added between machine info and symptoms panel.
+- Invoice screen: flat `<p>` lines replaced with a `.receipt` card (warm
+  off-white `#f5f0e8` background, Courier New, dashed separators, green/red
+  outcome line) in a `.invoice-actions` wrapper — the "payment moment" is now
+  visually distinct from the rest of the dark UI.
+- `sw.js` cache bumped v2 → v3.
+- Tests: `node tests/run.js` — 139 passing, 0 failed (no regressions).
+- Verified at 375 px mobile: home brand block, button hierarchy, panel layout
+  on job screen all render correctly. No console errors.
 
 ---
 
