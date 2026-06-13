@@ -125,7 +125,7 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 - Start: $500, basic multimeter, 4 van slots, Tier 1 clients only.
 - Tier 1 job payout: $80–150 (correct first time), minus parts cost ($10–40). Callback pays 40% — implemented as the *returned callback job* paying 40% of the job's **net** (payout minus parts) when fixed correctly, so a correct rescue can never lose money however expensive the part. The instant partial payout on the wrong fix itself is a separate tunable (also 40% of gross payout at launch). Missing the same callback again pays $0 and re-queues it with a dampened reputation penalty.
 - Parts model: `partsCost` is the price of the fitted part, charged once at settlement. Van stock is availability only — restocking at launch is free (a supplier run between jobs); the §2.3 express markup / time cost is a v1.x lever. Stock must never be a second bill for the same part.
-- First tech hire: $2,000 + $300/day wage; earns ~$50/job at 75% success.
+- First tech hire: $2,000 one-off; earns ~$50/job at 75% success. **No running wage at launch (v1.0):** the idle layer is deliberately generous and active play is always the better $/min (§3.1), so techs cost only their hire price — a recurring wage adds debt / insufficient-cash edge cases not worth it pre-launch. `balance.js` keeps a `dailyWage` knob (unused at runtime) reserved for a v1.x cost sink.
 - Tool Tier 2 (proper multimeter): $1,500. Thermal camera: $8,000.
 - Prestige available around lifetime earnings of $250k.
 - Tuning rule: a focused player should hit Tier 2 (Burgertown unlock) inside the **first 15 minutes** — the meme is the hook, don't gate it deep.

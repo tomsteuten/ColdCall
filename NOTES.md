@@ -152,15 +152,12 @@ update this file at the end.
   every state-derived value in the template strings (ui/job.js, ui/shop.js, etc.),
   and/or validate nested entries on import. Tests with `<`, `>`, quotes, and
   `onerror=`-style markup. (No live users yet — pre-launch is the right time.)
-- **#3 (agree there's a real GDD/impl mismatch; this is a *design decision*, not a
-  bug):** GDD §6 lists the tech at "$2,000 + $300/day wage" but balance.js says
-  dailyWage isn't deducted. Recommended default: **defer wages to v1.x and update
-  GDD §6 to say so** — the idle layer is intentionally generous and wages add debt
-  / broke-player edge cases that aren't worth it pre-launch. If Tom instead wants
-  the sink now, implement it (accrual rule + insufficient-cash behaviour) with new
-  active>idle invariant tests. Either way, end the session with GDD and code agreeing.
+- **#3 — RESOLVED (no code work):** Tom decided to defer tech wages to v1.x. GDD
+  §6 now states techs have no running wage at launch (hire price only); balance.js
+  already keeps `dailyWage` as an unused v1.x knob, so GDD and code agree. Nothing
+  to implement — this finding is closed; do NOT add wage deduction this session.
 - **Done when:** the chosen fixes land with tests; no save can silently reset;
-  imported text can't inject; GDD and balance.js agree on wages; full suite green.
+  imported text can't inject; full suite green.
 
 ### Session 14 — Machine sprites (GDD §7's stated art priority)
 - **Model:** Sonnet for the integration/state-variant wiring (the logic is
