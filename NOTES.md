@@ -55,13 +55,20 @@ addressed by this session. Still safe to delete — left for Tom.
 
 ---
 
-## Roadmap — UI/graphics polish track (sessions 11–15)
+## Roadmap — UI/graphics polish track + hardening (sessions 11–16)
 
 This is a plan, not a contract — reorder or drop items as taste dictates. Each
 session is sized to one branch. "Model" is the recommendation per CLAUDE.md's
 guidance (CSS/wiring/flavour → mid model; state/economy/engine → strongest).
 "Start with" tells you whether the session is fully specified here (just say
 "proceed with session N from notes.md") or needs a decision/prompt from you first.
+
+Findings from `REVIEW_FINDINGS.md` (Codex's post-session-10 read-only review,
+2026-06-13) have been folded in below where warranted: MotD bugs → session 12;
+the save/offline/security cluster → a new session 13 (hardening); tech callback
+attribution → session 15; the repair interaction was already session 16. Items I
+judged real but low-likelihood still get fixed because the fix is cheap and the
+downside (silent save reset) is severe.
 
 General rules for every session below: read GDD §7 (art/audio direction) + §2/§5
 and CLAUDE.md before coding; keep the no-build / vanilla-DOM constraints; mobile
@@ -87,18 +94,75 @@ update this file at the end.
   looks deliberate at 380px and on desktop; no test or console regressions;
   screenshots in the handover.
 
-### Session 12 — Machine of the Day result & share card polish
-- **Model:** Sonnet (presentation + a small string-builder tweak in motd.js).
+### Session 12 — Machine of the Day polish + the two MotD correctness bugs
+- **Model:** Sonnet (presentation + small motd.js/diagnosis.js threading — no
+  economy maths).
 - **Start with:** "proceed with session 12 from notes.md" — fully specified.
-- **Scope:** The MotD result screen is the growth engine (GDD §5) and is still an
-  emoji-text grid. Make the result screen genuinely screenshot-worthy on top of
-  the session-11 identity; refine buildShareCard() copy/layout (keep it
-  copy-paste plain text — that's the Wordle-pattern hook); add clean-streak /
-  callback-shame flourish per GDD §5. Keep it deterministic and tested.
-- **Done when:** result screen looks share-worthy at 380px, share text still
-  round-trips, motd tests green.
+- **Scope (UI):** The MotD result screen is the growth engine (GDD §5), still an
+  emoji-text grid. Make it genuinely screenshot-worthy on top of the session-11
+  identity; refine buildShareCard() copy/layout (keep it copy-paste plain text —
+  that's the Wordle hook); add clean-streak / callback-shame flourish (GDD §5).
+- **Scope (fold in REVIEW_FINDINGS #5 — agreed, narrow but clean):** the MotD
+  puzzle date is read three times (pick at start, settle on commit, share on
+  share) and can disagree across a UTC-midnight crossing. Store the puzzle's UTC
+  date on the active MotD job at startMotd(), then thread that stored date into
+  settleMotd() and buildShareCard() / streak / once-per-day state instead of
+  re-reading "today". Add a test that starts before UTC midnight and settles after.
+- **Scope (fold in REVIEW_FINDINGS #7 — agreed, matters for the shared-puzzle
+  hook):** MotD draws from all tiers but the continuity test is gated behind
+  Multimeter Tier 2, so players get different tool access on the *same* shared
+  puzzle — unfair tests-used/time scores. Make the full launch test set available
+  during a MotD run (simplest fair rule): have testAvailability() treat a MotD job
+  as ungated, or pass a "motd" flag through. Test that a tier-1 player can run the
+  continuity test on a MotD job.
+- **Done when:** result screen looks share-worthy at 380px; share text still
+  round-trips; the midnight and tool-access tests are green; full suite green.
 
-### Session 13 — Machine sprites (GDD §7's stated art priority)
+### Session 13 — Save & idle hardening (REVIEW_FINDINGS #1, #2, #4; decide #3)
+- **Model:** Opus (strongest) — schema-version validation, offline-progress maths,
+  and save security are squarely rule-1 / engine territory (CLAUDE.md).
+- **Start with:** "proceed with session 13 from notes.md" — specified. (The one
+  judgement call inside, the tech-wage question, is laid out below; default to
+  deferring it in the GDD unless Tom says otherwise.) This is the one non-UI
+  detour in the track — slotted here deliberately because the art sessions (14–15)
+  are blocked on Tom's art-source decision anyway, so this fills that gap with
+  high-value pre-launch correctness work.
+- **#1 (agree — High; trigger is narrow but the downside is a silent save reset,
+  and the fix is trivial):** migrate() treats any non-number schemaVersion as v0,
+  so a current save with `"schemaVersion":"6"` (string) is rebuilt from defaults
+  and can then be persisted — a wiped save. Fix: only treat a *missing* version as
+  v0 (and ideally only when the object looks like the flat v0 shape); reject a
+  present-but-invalid version (string / NaN / negative / fractional) as an error
+  that preserves the blob untouched (saves are sacred). Tests for string, null,
+  fractional, negative, NaN-like versions.
+- **#2 (agree — Medium; real idle-correctness flaw):** offline jobs use
+  `Math.floor(hours * jobsPerHour)` and boot save stamps lastSeen = now, so the
+  sub-job remainder is discarded every load — frequent short sessions earn less
+  than one long absence. Fix: carry the unsimulated remainder so it accumulates,
+  WITHOUT letting it bypass the 8h cap (carry only the within-cap partial-job
+  remainder; forfeit time beyond the cap as designed). Mind that save() currently
+  always stamps lastSeen = Date.now() — the fix likely needs either a carry field
+  (schema +1 with migration) or to advance lastSeen by exactly the consumed
+  duration. Tests: two short absences == one combined absence; carry interacts
+  correctly with the cap.
+- **#4 (agree — Medium; matters because saves are shareable text blobs):**
+  state-derived strings (tech.name, client IDs, MotD fields) are interpolated into
+  innerHTML, and importSave() doesn't sanitize nested strings — a hostile shared
+  blob can inject HTML/handlers. Fix: one small escapeHtml() helper applied to
+  every state-derived value in the template strings (ui/job.js, ui/shop.js, etc.),
+  and/or validate nested entries on import. Tests with `<`, `>`, quotes, and
+  `onerror=`-style markup. (No live users yet — pre-launch is the right time.)
+- **#3 (agree there's a real GDD/impl mismatch; this is a *design decision*, not a
+  bug):** GDD §6 lists the tech at "$2,000 + $300/day wage" but balance.js says
+  dailyWage isn't deducted. Recommended default: **defer wages to v1.x and update
+  GDD §6 to say so** — the idle layer is intentionally generous and wages add debt
+  / broke-player edge cases that aren't worth it pre-launch. If Tom instead wants
+  the sink now, implement it (accrual rule + insufficient-cash behaviour) with new
+  active>idle invariant tests. Either way, end the session with GDD and code agreeing.
+- **Done when:** the chosen fixes land with tests; no save can silently reset;
+  imported text can't inject; GDD and balance.js agree on wages; full suite green.
+
+### Session 14 — Machine sprites (GDD §7's stated art priority)
 - **Model:** Sonnet for the integration/state-variant wiring (the logic is
   trivial); the hard part is art production, not code.
 - **Start with:** **a short prompt from Tom — this session is blocked on one
@@ -106,45 +170,58 @@ update this file at the end.
   pixel art himself and drops files in /assets, (b) CC0/asset-pack sprites, (c) an
   AI-pixel-art workflow. Tell the next session which, and (if a/b) have at least
   one machine's sprite set committed first. Until that's answered, don't start.
-- **Scope:** Add a sprite slot to the job screen, one sprite per machine type with
-  working / fault / open-panel state variants (GDD §7), driven from machines.json.
-  Graceful text fallback when a sprite is missing so the game never breaks on
-  un-arted machines. Add sprite paths to the sw.js app-shell list.
+- **Scope:** Drop sprites into the `.art-slot` frame session 11 already added to
+  the job screen — one sprite per machine type with working / fault / open-panel
+  state variants (GDD §7), driven from machines.json. Graceful text fallback when
+  a sprite is missing so the game never breaks on un-arted machines. Add sprite
+  paths to the sw.js app-shell list (and bump the cache name).
 - **Done when:** at least the tier-1/2 star machines show state-appropriate
   sprites, missing-art fallback verified, PWA still caches offline.
 
-### Session 14 — Character portraits for tickets / Burgertown managers
-- **Model:** Sonnet (wiring/CSS + flavour).
-- **Start with:** shares session 13's art-source decision — once that's settled,
-  "proceed with session 14 from notes.md" works; otherwise supply it inline.
-- **Scope:** Simple portraits in the ticket/job dialog (GDD §4/§7 — recurring
+### Session 15 — Character portraits + correct tech attribution (REVIEW_FINDINGS #8)
+- **Model:** Sonnet (wiring/CSS + flavour; #8 is a tiny shape change — if it grows
+  a migration, that part is still simple).
+- **Start with:** shares session 14's art-source decision — once that's settled,
+  "proceed with session 15 from notes.md" works; otherwise supply it inline.
+- **Scope (UI):** Simple portraits in the ticket/job dialog (GDD §4/§7 — recurring
   Burgertown manager personalities, big personality-per-byte return). Portrait
   data lives in clients.json; text-only fallback. Lean into the comedy/flavour.
-- **Done when:** clients show portraits + a line of character on the job screen,
-  fallback verified.
+- **Scope (fold in REVIEW_FINDINGS #8 — agree, minor):** every tech-caused callback
+  currently shows "Dave's miss" because callbacks don't record which tech botched
+  the job; Mike's misses are mis-attributed. Since this session adds tech
+  personality anyway, do it properly: store techId/techName on tech-generated
+  callbacks (idle.js) with a migration for existing entries, and have
+  sourceLabel() use it. (If that feels like scope creep, the cheap fallback is a
+  neutral "tech miss" label — but proper attribution pays off with the portraits.)
+- **Done when:** clients show portraits + a line of character; callbacks name the
+  actual tech (or a neutral label); fallback verified; tests green.
 
-### Session 15 — The light repair interaction (GDD §2.3)
+### Session 16 — The light repair interaction (GDD §2.3; REVIEW_FINDINGS #6)
 - **Model:** Opus (strongest) — it touches the active-job → invoice flow and may
   add a transient repair step to state; anything near the commit/settle path and
   a possible migration is strongest-model work (CLAUDE.md rule 1 + engine).
-- **Start with:** "proceed with session 15 from notes.md" — specified, but read
+- **Start with:** "proceed with session 16 from notes.md" — specified, but read
   GDD §2.3 carefully; if it needs a state-shape change, ship a migration + test.
 - **Scope:** After a correct diagnosis, a quick satisfying repair beat
   (hold-to-tighten / sequence-tap) before the invoice — "light, not a second
   minigame" (GDD §2.3). Must not alter $/min balance or the active>idle invariant;
   keep it skippable/instant-safe so it never punishes a mobile interruption.
-- **Done when:** repair beat plays between commit and invoice, economy invariants
-  untouched, tests green.
+- **REVIEW_FINDINGS #6 (this IS that finding — agree it's a real design gap):**
+  the key correctness constraint is refresh safety — an in-progress repair must
+  either survive a refresh on state.jobs.active, or settlement must be structured
+  so a refresh can neither duplicate nor lose the reward. Decide which and test it.
+- **Done when:** repair beat plays between commit and invoice, refresh can't dupe
+  or drop rewards, economy invariants untouched, tests green.
 
-### Not-yet-scheduled (deliberately after the visual track)
+### Not-yet-scheduled (deliberately after the above)
 - **Audio** (GDD §7): satisfying clicks, perfect-job jingle, one chiptune loop;
   CC0/generated; GDD says polish-phase, not a launch blocker. Sonnet.
 - **A balance/fun playtest pass** (GDD §10: "fun with all numbers set to 1"). No
   evidence this has happened. Not a UI task, but don't let it slip indefinitely —
   the visual work above also makes a playtest read more clearly. Strongest model
   if it turns into economy retuning.
-- **v1.x systems** (Tiers 3–4, prestige, workshop, tech specialisation — GDD §9):
-  strongest model; out of scope for the current visual track.
+- **v1.x systems** (Tiers 3–4, prestige, workshop, tech specialisation, tech wages
+  if deferred in session 13 — GDD §9): strongest model; out of scope for now.
 
 ---
 
