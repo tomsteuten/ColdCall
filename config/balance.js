@@ -25,7 +25,8 @@ export const JOBS = {
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
   // GDD §2.1 says "partial payout" with no number; this knob is ours to tune.
   wrongFixPayoutMult: 0.4,
-  // The returned job's rate when fixed correctly — this is GDD §6's "Callback pays 40%".
+  // The returned job's rate when fixed correctly — GDD §6's "Callback pays 40%".
+  // Applied to the job's net (payout - parts) so a correct rescue never loses money.
   callbackJobPayoutMult: 0.4,
   callbackDueDays: 1, // how many days until a callback job returns
 };
@@ -72,12 +73,9 @@ export const PRESTIGE = {
   lifetimeEarningsThreshold: 250000,
 };
 
-/** Van stock and parts restocking. */
-export const VAN = {
-  // Cost per slot when restocking the van. Filling 4 empty slots = $80 — easily
-  // covered by one job, but worth managing so running dry has a real cost.
-  partUnitCost: 20,
-};
+// Van restocking is free at launch — parts are billed per job via fault.partsCost,
+// so a restock charge would bill the same part twice. Slot count is STARTING.vanSlots;
+// the GDD §2.3 supplier-run / express-markup cost is a v1.x knob to add here.
 
 /** Machine of the Day. Day 1 = the launch date; used only for the share-card day number. */
 export const MOTD = {

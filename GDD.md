@@ -113,7 +113,8 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 ## 6. Economy (starting numbers — all live in `config/balance.js`)
 
 - Start: $500, basic multimeter, 4 van slots, Tier 1 clients only.
-- Tier 1 job payout: $80–150 (correct first time), minus parts cost ($10–40). Callback pays 40% — implemented as the *returned callback job* paying 40% of base payout (minus parts) when fixed correctly. The instant partial payout on the wrong fix itself is a separate tunable (also 40% at launch). Missing the same callback again pays $0 and re-queues it with a dampened reputation penalty.
+- Tier 1 job payout: $80–150 (correct first time), minus parts cost ($10–40). Callback pays 40% — implemented as the *returned callback job* paying 40% of the job's **net** (payout minus parts) when fixed correctly, so a correct rescue can never lose money however expensive the part. The instant partial payout on the wrong fix itself is a separate tunable (also 40% of gross payout at launch). Missing the same callback again pays $0 and re-queues it with a dampened reputation penalty.
+- Parts model: `partsCost` is the price of the fitted part, charged once at settlement. Van stock is availability only — restocking at launch is free (a supplier run between jobs); the §2.3 express markup / time cost is a v1.x lever. Stock must never be a second bill for the same part.
 - First tech hire: $2,000 + $300/day wage; earns ~$50/job at 75% success.
 - Tool Tier 2 (proper multimeter): $1,500. Thermal camera: $8,000.
 - Prestige available around lifetime earnings of $250k.

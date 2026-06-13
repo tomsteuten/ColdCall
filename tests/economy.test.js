@@ -1,13 +1,12 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, VAN } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
   buyTool,
   restockVan,
-  vanRestockCost,
   utcDateStringAfter,
   dueCallbacks,
   claimDueCallback,
@@ -89,12 +88,21 @@ test('a wrong fix always pays less than a correct fix (callback rate sanity)', (
 
 // --- callback jobs (GDD §2.1: the job returns tomorrow at reduced rate) ---
 
-test('correct fix on a callback pays the GDD §6 40% rate minus parts', () => {
+test('correct fix on a callback pays the GDD §6 40% rate on the job net', () => {
   const state = defaultState();
   const cash = state.player.cash;
   const { earned } = settleJob(state, makeFault(), true, 'client-1', { callback: { misses: 1 } });
-  assertEqual(earned, Math.round(120 * JOBS.callbackJobPayoutMult) - 30);
+  assertEqual(earned, Math.round((120 - 30) * JOBS.callbackJobPayoutMult));
   assertEqual(state.player.cash, cash + earned);
+});
+
+test('a correct callback fix never loses money, even with expensive parts', () => {
+  // Guards the regression where mult applied to gross payout minus full parts
+  // went negative for high-partsCost faults.
+  const state = defaultState();
+  const pricey = { ...makeFault(), payout: 80, partsCost: 60 };
+  const { earned } = settleJob(state, pricey, true, 'client-1', { callback: { misses: 1 } });
+  assert(earned > 0, `correct callback fix must earn > $0, got $${earned}`);
 });
 
 test('correct fix on a callback earns rep and counts the job, but not the clean streak', () => {
@@ -137,7 +145,7 @@ test('a callback job never out-earns a fresh job (active > idle, per minute)', (
   // so being forced onto callbacks is always worse $/min than fresh tickets.
   const f = makeFault();
   const fresh = f.payout - f.partsCost;
-  const callbackPay = Math.round(f.payout * JOBS.callbackJobPayoutMult) - f.partsCost;
+  const callbackPay = Math.round((f.payout - f.partsCost) * JOBS.callbackJobPayoutMult);
   assert(callbackPay < fresh, `callback job pay ${callbackPay} should be < fresh pay ${fresh}`);
 });
 
@@ -280,25 +288,14 @@ test('van: settleJob throws when out of parts for a parts-needing correct fix', 
   assertEqual(state.van.stock['generic-parts'], 0, 'stock should be unchanged on throw');
 });
 
-test('restockVan: fills to capacity and deducts cash', () => {
+test('restockVan: fills to capacity for free — parts are billed per job, not twice', () => {
   const state = defaultState();
   state.van.stock['generic-parts'] = 1;
-  const slotsToFill = state.van.slots - 1;
-  const cost = slotsToFill * VAN.partUnitCost;
-  state.player.cash = cost + 100;
+  state.player.cash = 0; // even broke, a supplier run restores availability
   const result = restockVan(state);
   assert(result.ok, 'restock should succeed');
   assertEqual(state.van.stock['generic-parts'], state.van.slots);
-  assertEqual(state.player.cash, 100);
-});
-
-test('restockVan: refuses when unaffordable', () => {
-  const state = defaultState();
-  state.van.stock['generic-parts'] = 0;
-  state.player.cash = 0;
-  const result = restockVan(state);
-  assert(!result.ok, 'restock should fail when unaffordable');
-  assertEqual(state.van.stock['generic-parts'], 0, 'stock should be unchanged');
+  assertEqual(state.player.cash, 0, 'restocking must not charge — partsCost is charged at settlement');
 });
 
 test('restockVan: refuses when van already full', () => {
@@ -306,11 +303,4 @@ test('restockVan: refuses when van already full', () => {
   const result = restockVan(state); // starts full
   assert(!result.ok, 'should refuse when already full');
   assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
-});
-
-test('vanRestockCost: returns 0 when full, correct cost when partially empty', () => {
-  const state = defaultState(); // full
-  assertEqual(vanRestockCost(state), 0);
-  state.van.stock['generic-parts'] = 2;
-  assertEqual(vanRestockCost(state), (STARTING.vanSlots - 2) * VAN.partUnitCost);
 });

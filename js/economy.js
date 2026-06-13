@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, VAN, STARTING, TECHS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -22,9 +22,11 @@ export function utcDateStringAfter(days, now = Date.now()) {
  * No parts deduction on a wrong fix — the correct part was never fitted.
  *
  * Callback job (opts.callback set) — correct: the GDD §6 40% rate
- * (callbackJobPayoutMult) minus parts; clean streak does NOT advance, a rescue
- * isn't a clean job. Wrong again: $0 (the partial was already paid once),
- * a dampened reputation hit, and the job re-queues for tomorrow.
+ * (callbackJobPayoutMult) applied to the job's NET (payout minus parts), so a
+ * correct rescue can never lose money however expensive the part. Clean streak
+ * does NOT advance, a rescue isn't a clean job. Wrong again: $0 (the partial
+ * was already paid once), a dampened reputation hit, and the job re-queues
+ * for tomorrow.
  *
  * @param {object} state game state (mutated)
  * @param {object} fault the fault that was (or wasn't) fixed
@@ -43,8 +45,8 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
       if (inStock < 1) throw new Error('Van is out of parts — restock before committing');
       state.van.stock['generic-parts'] = inStock - 1;
     }
-    const rate = callback ? Math.round(fault.payout * JOBS.callbackJobPayoutMult) : fault.payout;
-    earned = rate - fault.partsCost;
+    const net = fault.payout - fault.partsCost;
+    earned = callback ? Math.round(net * JOBS.callbackJobPayoutMult) : net;
     state.player.reputation += REPUTATION.correctFix;
     state.stats.jobsCompleted += 1;
     if (!callback) state.stats.cleanStreak += 1;
@@ -138,27 +140,17 @@ export const TOOL_CATALOGUE = {
 };
 
 /**
- * Cost to restock the van to full capacity from its current level.
- * Returns 0 when the van is already full.
- * @param {object} state
- * @returns {number}
- */
-export function vanRestockCost(state) {
-  const current = state.van.stock['generic-parts'] ?? 0;
-  const slots = state.van.slots;
-  return Math.max(0, slots - current) * VAN.partUnitCost;
-}
-
-/**
- * Restock the van to full capacity. Refuses when already full or unaffordable.
+ * Restock the van to full capacity. Refuses when already full.
+ * Free at launch: van stock is availability, not a second parts bill — the
+ * part's price is charged per job via fault.partsCost (GDD §6), so charging
+ * here too would bill the player twice for the same part. The GDD §2.3
+ * supplier-run time cost / express markup is a v1.x lever.
  * @param {object} state game state (mutated on success)
  * @returns {{ok: boolean, reason: string|null}}
  */
 export function restockVan(state) {
-  const cost = vanRestockCost(state);
-  if (cost === 0) return { ok: false, reason: 'Van already full' };
-  if (state.player.cash < cost) return { ok: false, reason: 'Not enough cash' };
-  state.player.cash -= cost;
+  const current = state.van.stock['generic-parts'] ?? 0;
+  if (current >= state.van.slots) return { ok: false, reason: 'Van already full' };
   state.van.stock['generic-parts'] = state.van.slots;
   return { ok: true, reason: null };
 }

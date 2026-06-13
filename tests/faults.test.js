@@ -98,6 +98,19 @@ test('every real fault file validates clean and is in the index', () => {
   assertEqual(index.length, files.length, 'index lists a file that does not exist');
 });
 
+test('every real fault is profitable to fix, fresh and as a callback', () => {
+  // Economy invariant (review finding): a correct fix must never lose money.
+  // Fresh net = payout - partsCost; callback net = round(net * callbackJobPayoutMult).
+  const index = JSON.parse(readFileSync(join(root, 'data/faults/index.json'), 'utf8'));
+  for (const file of index) {
+    const fault = JSON.parse(readFileSync(join(root, 'data/faults', file), 'utf8'));
+    const net = fault.payout - fault.partsCost;
+    assert(net > 0, `${file}: fresh net $${net} must be > 0 (payout ${fault.payout}, parts ${fault.partsCost})`);
+    const callbackNet = Math.round(net * JOBS.callbackJobPayoutMult);
+    assert(callbackNet > 0, `${file}: correct callback fix earns $${callbackNet}, must be > 0`);
+  }
+});
+
 test('every fault payout and partsCost sits within its tier range in balance.js', () => {
   // SCHEMA.md: payout "stays within the tier's range in config/balance.js".
   // partsCost 0 is always allowed (procedure-only fixes); otherwise in range.

@@ -4,7 +4,8 @@
  */
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
-import { dueCallbacks, vanRestockCost } from '../economy.js';
+import { dueCallbacks } from '../economy.js';
+import { JOBS } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 
 /**
@@ -85,8 +86,8 @@ function homeView({ state, justUnlockedTier, offlineReport }) {
       <button class="btn btn-primary" data-action="next-ticket">${due > 0 ? 'Take callback' : 'Next ticket'}</button>
       ${motdSection}
       <button class="btn" data-action="open-shop">Tools shop</button>
-      ${vanRestockCost(state) > 0
-        ? `<button class="btn btn-restock" data-action="restock-van">Restock van ($${vanRestockCost(state)})</button>`
+      ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
+        ? `<button class="btn btn-restock" data-action="restock-van">Restock van</button>`
         : ''}
     </section>`;
 }
@@ -122,7 +123,6 @@ function jobView({ state, faults, machines, clients }) {
     .join('');
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
-  const restockCost = vanRestockCost(state);
   const fixButtons = job.fixOptions
     .map((id) => `<button class="btn btn-fix" data-fix="${id}" ${outOfParts ? 'disabled' : ''}>${fixLabel(id)}</button>`)
     .join('');
@@ -143,7 +143,7 @@ function jobView({ state, faults, machines, clients }) {
 
       <h3 class="section-head">Commit to a fix</h3>
       ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
-        <button class="btn btn-restock" data-action="restock-van" ${state.player.cash < restockCost ? 'disabled' : ''}>Restock van ($${restockCost})</button>` : ''}
+        <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
       <div class="fixes">${fixButtons}</div>
     </section>`;
 }
@@ -152,9 +152,9 @@ function invoiceView({ state, invoice }) {
   const { correct, fault, earned, callback, unlockedTier } = invoice;
   let lines;
   if (correct && callback) {
-    // earned = callback rate minus parts, so the rate line is reconstructable.
-    lines = `<p class="invoice-line">Callback rate <span>$${earned + fault.partsCost}</span></p>
-       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`;
+    lines = `<p class="invoice-line">Job payout <span>$${fault.payout}</span></p>
+       <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>
+       <p class="invoice-line">Callback rate <span>×${Math.round(JOBS.callbackJobPayoutMult * 100)}%</span></p>`;
   } else if (correct) {
     lines = `<p class="invoice-line">Job payout <span>$${fault.payout}</span></p>
        <p class="invoice-line">Parts <span>−$${fault.partsCost}</span></p>`;
