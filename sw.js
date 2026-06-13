@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v10';
+const CACHE = 'coldcall-v11';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).

@@ -61,8 +61,12 @@ export function testCostCopy(job, testId) {
  *   dismissInvoice: function, dismissOfflineReport: function}} ctx.actions
  */
 export function render(root, ctx) {
-  const { state, invoice, screen } = ctx;
-  if (invoice) {
+  const { state, invoice, repairBeat, screen } = ctx;
+  if (repairBeat) {
+    // The repair beat precedes the invoice: settlement already happened, this is
+    // the "it works again" payoff before the receipt (GDD §2.3).
+    root.innerHTML = repairView(ctx);
+  } else if (invoice) {
     root.innerHTML = invoiceView(ctx);
   } else if (state.jobs.active) {
     root.innerHTML = jobView(ctx);
@@ -309,6 +313,37 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     </section>`;
 }
 
+/**
+ * The repair beat (GDD §2.3): a brief tactile "tighten it up" hold shown after a
+ * correct fix, over the machine's `working` art, before the invoice. Pure feedback
+ * — no economy or simulated-time effect — and always skippable so it never gates
+ * the payout. Settlement already happened in commitFix; this view moves no money.
+ * @param {object} ctx
+ * @param {object} ctx.state game state (for the status bar)
+ * @param {{machineType: string}} ctx.repairBeat the machine being sealed up
+ * @returns {string}
+ */
+export function repairView({ state, repairBeat }) {
+  const svg = machineSvg(repairBeat.machineType, 'working');
+  const artSlotClass = svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const artSlotContent = svg ?? '[ repaired ]';
+
+  return `
+    ${statusBar(state)}
+    <section class="screen screen-repair">
+      <p class="repair-headline">Running cold again.</p>
+      <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
+      <div class="repair-beat">
+        <div class="repair-bolt" data-repair-hold role="button" tabindex="0"
+             aria-label="Hold to tighten the panel, or press Enter to finish">
+          <span class="repair-bolt-fill"></span>
+          <span class="repair-bolt-label">Hold to tighten</span>
+        </div>
+        <button class="btn btn-sm" data-action="finish-repair">Skip</button>
+      </div>
+    </section>`;
+}
+
 export function invoiceView({ state, invoice }) {
   const { correct, fault, earned, chosenFix, callback, callbackSource, unlockedTier } = invoice;
 
@@ -437,4 +472,66 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="cancel-first-fix"]').forEach((el) =>
     el.addEventListener('click', actions.cancelFirstFix)
   );
+  root.querySelectorAll('[data-action="finish-repair"]').forEach((el) =>
+    el.addEventListener('click', actions.finishRepair)
+  );
+  wireRepairHold(root, actions);
+}
+
+/**
+ * Drive the hold-to-tighten beat. Holding fills a bar; reaching full finishes.
+ * It cannot fail — releasing only pauses — so it's feedback, not a skill gate.
+ * Keyboard (Enter/Space) and the Skip button both finish instantly, keeping it
+ * accessible and touch-friendly. The fill loop self-cancels once the element is
+ * detached (the next render replaces the DOM), so no animation outlives the view.
+ */
+function wireRepairHold(root, actions) {
+  const bolt = root.querySelectorAll('[data-repair-hold]')[0];
+  if (!bolt) return;
+  const fill = bolt.querySelector('.repair-bolt-fill');
+  const HOLD_MS = 1000; // time-to-full while held; generous, never a challenge
+  let progress = 0;     // 0..1
+  let last = 0;
+  let rafId = 0;
+  let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    cancelAnimationFrame(rafId);
+    actions.finishRepair();
+  }
+  function tick(now) {
+    if (done || !bolt.isConnected) return;
+    progress += (now - last) / HOLD_MS;
+    last = now;
+    if (progress >= 1) {
+      fill.style.width = '100%';
+      finish();
+      return;
+    }
+    fill.style.width = `${progress * 100}%`;
+    rafId = requestAnimationFrame(tick);
+  }
+  function startHold(e) {
+    if (done) return;
+    e.preventDefault();
+    last = performance.now();
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(tick);
+  }
+  function pauseHold() {
+    cancelAnimationFrame(rafId); // freeze progress until the next press
+  }
+
+  bolt.addEventListener('pointerdown', startHold);
+  bolt.addEventListener('pointerup', pauseHold);
+  bolt.addEventListener('pointerleave', pauseHold);
+  bolt.addEventListener('pointercancel', pauseHold);
+  bolt.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      finish();
+    }
+  });
 }

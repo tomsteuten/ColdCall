@@ -158,6 +158,62 @@ body {
   padding: 0;
 }
 
+/* ── Repair beat (GDD §2.3): tactile "tighten it up" payoff ──── */
+.screen-repair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space);
+}
+.repair-headline {
+  margin: 0;
+  color: var(--success);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  text-align: center;
+}
+.repair-beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+/* The fill bar grows left-to-right as the player holds; --success when sealed. */
+.repair-bolt {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 240px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none; /* hold gesture must not scroll the page */
+}
+.repair-bolt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.repair-bolt-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: color-mix(in srgb, var(--success) 45%, transparent);
+  pointer-events: none;
+}
+.repair-bolt-label {
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* ── Component: horizontal divider ──────────────────────────── */
 .divider {
   border: none;

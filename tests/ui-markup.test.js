@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, invoiceView, testCostCopy } from '../js/ui/job.js';
+import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy } from '../js/ui/job.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
@@ -153,4 +153,33 @@ test('a correct fix shows no failure lesson and hides the correct-fix reveal', (
   const html = invoiceView({ state, invoice });
   assert(!html.includes('Where it went wrong'), 'a win is not a lesson in failure');
   assert(!html.includes('Correct fix'), 'do not reveal answers on a successful job');
+});
+
+// --- repair beat (GDD §2.3) ---
+
+test('the repair beat shows the working machine art with a holdable, skippable control', () => {
+  const state = defaultState();
+  const html = repairView({ state, repairBeat: { machineType: 'slushie-machine' } });
+  // Working state pins the green "COOL" indicator — the visible payoff.
+  assert(html.includes('COOL'), 'repair beat should render the working machine art');
+  assert(html.includes('art-slot--has-image'), 'known machine art should fill the slot');
+  assert(html.includes('data-repair-hold'), 'beat should expose the hold-to-tighten control');
+  assert(html.includes('data-action="finish-repair"'), 'beat must always be skippable');
+});
+
+test('the repair beat keyboard/skip wiring is hooked up', () => {
+  assert(
+    jobUi.includes("root.querySelectorAll('[data-action=\"finish-repair\"]')"),
+    'finish-repair (skip) must be wired'
+  );
+  assert(jobUi.includes('wireRepairHold(root, actions)'), 'the hold gesture must be wired');
+  assert(jobUi.includes("e.key === 'Enter'"), 'the hold control must finish on keyboard for accessibility');
+});
+
+test('the repair beat falls back to text for an unknown machine and stays skippable', () => {
+  const state = defaultState();
+  const html = repairView({ state, repairBeat: { machineType: 'no-such-machine' } });
+  assert(!html.includes('art-slot--has-image'), 'unknown machine should not claim a real illustration');
+  assert(html.includes('[ repaired ]'), 'unknown machine should show a text fallback');
+  assert(html.includes('data-action="finish-repair"'), 'fallback beat must still be skippable');
 });

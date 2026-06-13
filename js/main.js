@@ -61,6 +61,12 @@ let justUnlockedTier = null;
 // transient: progress stats decide who needs it, so saves stay unchanged.
 let pendingFirstFixId = null;
 
+// A correct fix earns a brief repair beat (GDD §2.3) shown before the invoice.
+// Transient and purely cosmetic: the money is already settled inside commitFix
+// (the settlement boundary), so a refresh mid-beat lands on home with cash
+// banked — the reward is never duplicated nor lost by the beat.
+let repairBeat = null;
+
 function commitSelectedFix(fixId) {
   const result = commitFix(state, fixId, faults);
   pendingFirstFixId = null;
@@ -70,6 +76,8 @@ function commitSelectedFix(fixId) {
   } else {
     invoice = result;
     if (result.unlockedTier) justUnlockedTier = result.unlockedTier;
+    // Only a correct repair gets the satisfying "it works again" payoff.
+    if (result.correct) repairBeat = { machineType: result.fault.machineType };
   }
   save(state);
   render();
@@ -131,6 +139,12 @@ const actions = {
   },
   cancelFirstFix() {
     pendingFirstFixId = null;
+    render();
+  },
+  finishRepair() {
+    // Dismiss the repair beat to reveal the invoice. Idempotent: a double-fire
+    // (skip + hold completing together) is harmless since the money is settled.
+    repairBeat = null;
     render();
   },
   dismissInvoice() {
@@ -270,6 +284,7 @@ function render() {
       machines,
       clients,
       invoice,
+      repairBeat,
       justUnlockedTier,
       offlineReport,
       expiryReport,

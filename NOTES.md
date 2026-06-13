@@ -7,32 +7,63 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (Session 18 — light repair interaction and payoff)
+## Next session prompt (Session 19 — callback, staff, and offline clarity)
 
-Session 17 is complete. Proceed with Session 18 from the roadmap below.
+Session 18 is complete. Proceed with Session 19 from the roadmap below
+("Session 19 — Callback, staff, and offline clarity").
 
-Start by reading `GDD.md` §2.3, `CLAUDE.md`, and `NOTES.md`, then inspect the
-active-job → invoice settlement path (`js/diagnosis.js commitFix`, `js/main.js
-commitSelectedFix`, `js/ui/job.js invoiceView`) and the `working`-state machine
-art (`js/machine-art.js`). Run the full test suite before changing code. Implement
-only Session 18: after a correct diagnosis, add a brief satisfying repair beat
-(hold-to-tighten or a short tap sequence), then show the machine's `working` art
-before the invoice. It is feedback, not a second skill gate — no economy or
-simulated-time penalty, accessible on touch, skippable/instant-safe, and
-interruption-safe. Refresh must neither duplicate nor lose a reward: choose and
-test an explicit settlement boundary (today settlement happens inside `commitFix`
-and the invoice is transient — decide where the repair beat sits relative to that
-money-moving call, and do not move cash twice).
+Start by reading `GDD.md` §3.1/§3.2, `CLAUDE.md`, and this file, then inspect the
+callbacks UI (`js/ui/job.js callbacksView`, `homeView` expiry banner), the
+staff/hire path (`js/economy.js hireTech`, `js/ui/shop.js`), and the offline
+report (`js/idle.js simulateOfflineProgress` + its `techReports` detail, surfaced
+in `homeView`). Run `node tests/run.js` before changing code. Implement only
+Session 19: make callback due/expiry timing and the reputation-vs-penalty-free
+distinction legible; explain not-yet-due callbacks so an offline report can't
+announce one that then seems to vanish; before the $2,000 hire explain expected
+jobs/hour, success rate, offline cap, callback risk, and that launch techs have no
+wage; and attribute the offline report per-technician using the existing
+`techReports` detail. No economy changes should be required. Bump the sw.js cache
+if app-shell files change; don't push without Tom's approval.
 
-Treat saves as sacred. If the repair beat needs any persisted shape, add a schema
-migration + migration tests. Do not implement MotD timing changes (Session 20),
-callback/staff/offline clarity (Session 19), desktop redesign, audio, or broad
-balance retuning.
+### What session 18 added (light repair interaction and payoff — GDD §2.3)
 
-Run `node tests/run.js`, manually verify the repair beat, the visible `working`
-art, and refresh-safety at ~380px and desktop width, bump the service-worker
-cache if app-shell files change, and update this handover. Do not push without
-Tom's approval.
+- **Repair beat after a correct fix.** A brief "tighten it up" beat now plays
+  between a correct diagnosis and the invoice: the machine's `working` art (full
+  cyan product, green LED, "COOL"/"34°F") under a green "Running cold again."
+  headline, a hold-to-tighten control, and an always-present **Skip**. Wrong fixes
+  skip the beat entirely and go straight to the failure receipt (Session 17). MotD
+  runs are unaffected (they have their own result screen, no invoice).
+- **Settlement boundary chosen and proven.** Money still moves exactly once inside
+  `commitFix`/`settleJob` — unchanged. The beat is pure post-settlement feedback:
+  `commitSelectedFix` (`js/main.js`) sets a transient `repairBeat = {machineType}`
+  only when `result.correct`, *after* the cash is already banked and saved. So a
+  refresh mid-beat lands on home with the reward banked once — never duplicated,
+  never lost. Verified live: during the beat the save already shows cash credited,
+  `jobs.active: null`, `jobsCompleted` incremented; reloading stays on home with
+  the same cash. No schema change was needed (everything is transient).
+- **Feedback, not a skill gate.** Holding fills a bar over ~1s; releasing only
+  pauses (never decays), so it cannot fail. Skip and keyboard Enter/Space both
+  finish instantly — touch-accessible and interruption-safe. The rAF fill loop
+  self-cancels once the element detaches (`bolt.isConnected`), so no animation
+  outlives the view. `touch-action: none` on the bolt stops the hold from
+  scrolling the page.
+- **Files.** `js/main.js` (transient `repairBeat` + `finishRepair` action + render
+  ctx), `js/ui/job.js` (new exported `repairView`, route ahead of the invoice,
+  `wireRepairHold` using `querySelectorAll` to stay compatible with the test mock
+  root), `css/main.css` (`.screen-repair`/`.repair-beat`/`.repair-bolt` styles
+  from existing tokens). `sw.js` cache bumped **v10 → v11** (app-shell JS/CSS
+  changed).
+- **Tests.** `node tests/run.js` → **206 passing, 0 failed** (+3): repair beat
+  renders working art with a holdable + skippable control, keyboard/skip wiring is
+  present, and an unknown machine falls back to `[ repaired ]` text while staying
+  skippable.
+- **Manual verification.** At ~380px and desktop: correct soft-serve and slushie
+  fixes both show their `working` illustration; hold-to-tighten fills and advances
+  to the invoice; Skip advances instantly; a wrong fix shows no beat (failure
+  lesson instead); refresh during the beat lands on home with cash banked exactly
+  once. No console errors through the whole flow. (Note: manual playtesting was
+  done against the real local `coldcall_save`, so the dev save advanced a few
+  jobs/cash — cosmetic, no structural change.)
 
 ### What session 17 added (failure as learning + callback evidence persistence)
 
@@ -507,7 +538,8 @@ update this file at the end.
   callback evidence behavior is refresh-safe and migrated, and tests cover both
   callback sources plus repeat misses.
 
-### Session 18 — Light repair interaction and payoff (GDD §2.3)
+### Session 18 — Light repair interaction and payoff (GDD §2.3) ✓ DONE
+- See "What session 18 added" near the top of this file.
 - **Model:** strongest — it touches the active-job → invoice settlement flow.
 - **Start with:** "proceed with session 18 from notes.md" — fully specified.
 - **Scope:** after a correct diagnosis, add a brief satisfying repair beat
