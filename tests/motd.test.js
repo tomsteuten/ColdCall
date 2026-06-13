@@ -67,16 +67,24 @@ test('pickMotdFault draws from all tiers regardless of tierUnlocked', () => {
   assert(seen.has(2), 'should draw tier-2 faults');
 });
 
-test('draw is stable: adding a fault does not change dates already in the wild', () => {
-  // The sort-by-id approach guarantees stability because new ids slot in
-  // alphabetically, shifting the index only for dates that would naturally land
-  // on a higher index. We verify the base case: a 1-fault library always returns
-  // that fault regardless of date.
-  const singleFault = { 'fault-alpha': makeFaults()['fault-alpha'] };
-  const a = pickMotdFault(singleFault, '2026-06-12');
-  const b = pickMotdFault(singleFault, '2099-12-31');
-  assertEqual(a.id, 'fault-alpha');
-  assertEqual(b.id, 'fault-alpha');
+test('draw is stable: adding a fault only remaps dates the new fault wins', () => {
+  // Genuine before/after-library test (rendezvous hashing): for every date,
+  // either the pick is unchanged, or it changed to the newly added fault.
+  // The old index-into-sorted-array draw failed this — adding one fault could
+  // hand an existing date to a different OLD fault.
+  const before = makeFaults();
+  const after = { ...makeFaults(), 'fault-gamma': { ...makeFaults()['fault-alpha'], id: 'fault-gamma' } };
+  let remapped = 0;
+  for (let i = 0; i < 60; i++) {
+    const date = new Date(Date.UTC(2026, 5, 12) + i * 86400000).toISOString().slice(0, 10);
+    const a = pickMotdFault(before, date);
+    const b = pickMotdFault(after, date);
+    if (a.id !== b.id) {
+      assertEqual(b.id, 'fault-gamma', `date ${date} remapped to an OLD fault: ${a.id} -> ${b.id}`);
+      remapped++;
+    }
+  }
+  assert(remapped < 60, 'sanity: not every date should remap');
 });
 
 // --- once-per-day guard ---
@@ -168,7 +176,7 @@ test('solve after solve on same day does not double-count (guard: lastPlayedDate
 
 // --- settleMotd state mutations ---
 
-test('settleMotd stores testsUsed, timeMs, solved in lastResult', () => {
+test('settleMotd stores testsUsed, timeMs, solved and the faultId in lastResult', () => {
   const state = defaultState();
   const now = Date.UTC(2026, 5, 12, 12, 0, 0);
   const fault = makeFaults()['fault-alpha'];
@@ -176,6 +184,7 @@ test('settleMotd stores testsUsed, timeMs, solved in lastResult', () => {
   assertEqual(state.motd.lastResult.testsUsed, 2);
   assertEqual(state.motd.lastResult.solved, true);
   assert(state.motd.lastResult.timeMs > 0);
+  assertEqual(state.motd.lastResult.faultId, 'fault-alpha', 'result must pin its fault');
 });
 
 test('settleMotd does not touch cash or reputation', () => {

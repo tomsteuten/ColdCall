@@ -20,18 +20,28 @@ export function getTodayDateStr(now = Date.now()) {
 
 /**
  * Pick the fault for a given UTC date string, deterministically.
- * Seeds mulberry32 with the date string so every device gets the same puzzle.
+ * Rendezvous hashing: every fault gets a score seeded on date + fault id, and
+ * the highest score wins. Same date → same fault on every device, and adding
+ * a fault to the library only changes the dates the NEW fault wins — it never
+ * reshuffles puzzles between existing faults the way index-into-array did.
  * Draws from ALL faults (MotD is a standalone puzzle, not gated by tierUnlocked).
- * Faults are sorted by id first so the draw is stable across library additions.
  * @param {Object<string, object>} faults fault library keyed by id
  * @param {string} dateStr "YYYY-MM-DD"
  * @returns {object} the selected fault
  */
 export function pickMotdFault(faults, dateStr) {
-  const sorted = Object.values(faults).sort((a, b) => a.id.localeCompare(b.id));
-  if (sorted.length === 0) throw new Error('Fault library is empty');
-  const rng = mulberry32(dateStr);
-  return sorted[Math.floor(rng() * sorted.length)];
+  let best = null;
+  let bestScore = -1;
+  for (const fault of Object.values(faults)) {
+    const score = mulberry32(`${dateStr}:${fault.id}`)();
+    // Tie-break on id so the winner is deterministic even on equal scores.
+    if (score > bestScore || (score === bestScore && fault.id < best.id)) {
+      best = fault;
+      bestScore = score;
+    }
+  }
+  if (!best) throw new Error('Fault library is empty');
+  return best;
 }
 
 /**
@@ -80,7 +90,9 @@ export function settleMotd(state, fault, correct, testsRun, startedAt, now = Dat
 
   state.motd.lastPlayedDate = todayStr;
   state.motd.streak = streak;
-  state.motd.lastResult = { testsUsed, timeMs, solved: correct };
+  // faultId pins which puzzle this result belongs to — the result screen must
+  // not change if a library update remaps the date's draw.
+  state.motd.lastResult = { testsUsed, timeMs, solved: correct, faultId: fault.id };
 
   return { testsUsed, timeMs, solved: correct, streak, fault };
 }
