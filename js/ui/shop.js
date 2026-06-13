@@ -4,7 +4,7 @@
  */
 
 import { TOOL_CATALOGUE } from '../economy.js';
-import { TECHS } from '../../config/balance.js';
+import { TECHS, OFFLINE } from '../../config/balance.js';
 import { statusBar } from './job.js';
 import { escapeHtml } from '../utils.js';
 
@@ -92,7 +92,22 @@ function saveDataHTML(exportMessage, importError) {
     </div>`;
 }
 
-function staffHTML(state) {
+/** Plain-English explainer of what a hire delivers — shown before the purchase. */
+export function staffExplainerHTML() {
+  const successPct = Math.round(TECHS.baseSuccessRate * 100);
+  return `
+    <div class="shop-card staff-explainer">
+      <p class="shop-tool-blurb">A tech works your contract route while you're away.</p>
+      <ul class="staff-stats">
+        <li>~${TECHS.jobsPerHour} jobs/hour, ${successPct}% success — earns $${TECHS.earningsPerJob}/job (always less than active play)</li>
+        <li>Offline earnings simulate up to ${OFFLINE.baseCapHours}h per absence</li>
+        <li>A botched job becomes a rescue callback you can claim — no reputation hit</li>
+        <li>No wage at launch — the $${TECHS.firstHireCost} hire is the only cost</li>
+      </ul>
+    </div>`;
+}
+
+export function staffHTML(state) {
   const tier2Locked = state.player.tierUnlocked < 2;
   const atMax = state.techs.length >= TECHS.maxTechs;
   const affordable = state.player.cash >= TECHS.firstHireCost;
@@ -122,5 +137,6 @@ function staffHTML(state) {
   return `
     <h2 class="section-title">Staff</h2>
     <ul class="shop-list">${techList}</ul>
+    ${atMax ? '' : staffExplainerHTML()}
     ${hireButton}`;
 }

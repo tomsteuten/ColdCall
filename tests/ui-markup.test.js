@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy } from '../js/ui/job.js';
+import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView } from '../js/ui/job.js';
+import { staffExplainerHTML } from '../js/ui/shop.js';
+import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
@@ -182,4 +184,102 @@ test('the repair beat falls back to text for an unknown machine and stays skippa
   assert(!html.includes('art-slot--has-image'), 'unknown machine should not claim a real illustration');
   assert(html.includes('[ repaired ]'), 'unknown machine should show a text fallback');
   assert(html.includes('data-action="finish-repair"'), 'fallback beat must still be skippable');
+});
+
+// --- Session 19: callback / staff / offline clarity ---
+
+const cbFault = { ...fault, machineType: 'slushie-machine' };
+const cbFaults = { 'cb-fault': { ...cbFault, id: 'cb-fault' } };
+const cbClients = [{ id: 'kwik-stop', name: 'Kwik Stop' }];
+
+/** A state with a single callback whose due/expiry/source we control. */
+function stateWithCallback(overrides) {
+  const state = defaultState();
+  state.jobs.callbacks = [
+    {
+      faultId: 'cb-fault',
+      clientId: 'kwik-stop',
+      dueDay: '2026-06-10',
+      expiryDay: '2026-06-15',
+      misses: 1,
+      source: 'player',
+      ...overrides,
+    },
+  ];
+  return state;
+}
+
+test('a due player callback shows its expiry timing and the reputation it risks', () => {
+  // Pin "today" relative to the fixture dates: due 2026-06-10, expiry 2026-06-15.
+  const realNow = Date.now;
+  Date.now = () => Date.parse('2026-06-13T12:00:00Z');
+  try {
+    const state = stateWithCallback({});
+    const html = callbacksView({ state, faults: cbFaults, clients: cbClients });
+    assert(html.includes('data-take="0"'), 'a due callback should be takeable');
+    assert(html.includes('Due now · expires in 2 days'), 'due callback should show its claim window');
+    assert(html.includes(`lose ${REPUTATION.expiredCallbackRepPenalty} rep`), 'player obligation should warn about the rep penalty');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('a not-yet-due tech rescue is shown returning soon, untakeable and penalty-free', () => {
+  const realNow = Date.now;
+  Date.now = () => Date.parse('2026-06-13T12:00:00Z');
+  try {
+    const state = stateWithCallback({
+      dueDay: '2026-06-14',
+      expiryDay: '2026-06-17',
+      source: 'tech',
+      techName: 'Mike',
+    });
+    const html = callbacksView({ state, faults: cbFaults, clients: cbClients });
+    assert(!html.includes('data-take='), 'a not-yet-due callback must not be takeable');
+    assert(html.includes('Returns tomorrow'), 'pending callback should show when it returns');
+    assert(html.includes('expires with no penalty'), 'a tech rescue should be flagged penalty-free');
+    assert(html.includes('Mike&#39;s miss'), 'rescue should attribute the responsible tech (escaped)');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('home Callbacks button distinguishes ready from returning-soon callbacks', () => {
+  const realNow = Date.now;
+  Date.now = () => Date.parse('2026-06-13T12:00:00Z');
+  try {
+    // Only a future callback: button must show "returning soon", not vanish.
+    const pendingOnly = stateWithCallback({ dueDay: '2026-06-14', source: 'tech' });
+    const html = homeView({ state: pendingOnly });
+    assert(html.includes('returning soon'), 'a queued-but-not-due callback should remain visible on home');
+    assert(html.includes('data-action="open-callbacks"'), 'the Callbacks button should still render');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('the offline report attributes jobs and misses per technician', () => {
+  const state = defaultState();
+  const offlineReport = {
+    jobsDone: 5,
+    totalEarned: 250,
+    callbacksAdded: 1,
+    techReports: [
+      { name: 'Dave', jobs: 3, earned: 150, callbacks: 0 },
+      { name: 'Mike', jobs: 3, earned: 100, callbacks: 1 },
+    ],
+  };
+  const html = homeView({ state, offlineReport });
+  assert(html.includes('Dave: 3 jobs · $150'), 'Dave should be attributed his jobs and earnings');
+  assert(html.includes('Mike: 3 jobs · $100 · 1 miss'), 'Mike should be attributed his miss');
+  assert(html.includes('back on the board tomorrow'), 'offline callbacks should be explained, not left to seem vanished');
+});
+
+test('the staff explainer states jobs/hour, success, offline cap, wage, and callback risk before hiring', () => {
+  const html = staffExplainerHTML();
+  assert(html.includes(`${TECHS.jobsPerHour} jobs/hour`), 'should state expected jobs/hour');
+  assert(html.includes(`${Math.round(TECHS.baseSuccessRate * 100)}% success`), 'should state success rate');
+  assert(html.includes(`${OFFLINE.baseCapHours}h`), 'should state the offline cap');
+  assert(html.includes('No wage'), 'should clarify launch techs have no wage');
+  assert(html.includes('rescue callback'), 'should explain the callback risk');
 });

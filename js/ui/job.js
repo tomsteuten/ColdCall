@@ -5,7 +5,7 @@
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks, speedBonus } from '../economy.js';
-import { DIAGNOSIS, JOBS } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { machineSvg } from '../machine-art.js';
@@ -23,6 +23,23 @@ export function sourceLabel(callback) {
 function callbackRatePct(source) {
   const mult = source === 'tech' ? JOBS.rescueCallbackPayoutMult : JOBS.callbackJobPayoutMult;
   return Math.round(mult * 100);
+}
+
+/** Whole UTC days from one "YYYY-MM-DD" string to another (toStr − fromStr), or null if unparseable. */
+function dayDelta(fromStr, toStr) {
+  const a = Date.parse(`${fromStr}T00:00:00Z`);
+  const b = Date.parse(`${toStr}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
+
+/** "today" / "tomorrow" / "in N days" for a target date relative to today (clamped at >= today). */
+function relativeDayPhrase(today, target) {
+  const d = dayDelta(today, target);
+  if (d === null) return 'soon';
+  if (d <= 0) return 'today';
+  if (d === 1) return 'tomorrow';
+  return `in ${d} days`;
 }
 
 /** First-ticket guidance is derived from existing progress, so saves need no new flag. */
@@ -92,9 +109,19 @@ export function statusBar(state) {
     </header>`;
 }
 
-function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob }) {
+export function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob }) {
   const streak = state.stats.cleanStreak;
+  const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
+  const pending = total - due; // queued but not yet returned (e.g. tonight's tech misses)
+  // Distinguish ready-to-take from not-yet-due so a freshly-queued callback the
+  // offline report just announced is visibly "returning soon", not vanished.
+  const callbackLabel =
+    due > 0 && pending > 0
+      ? `Callbacks (${due} ready · ${pending} soon)`
+      : due > 0
+        ? `Callbacks (${due})`
+        : `Callbacks (${pending} returning soon)`;
   const unlockBanner =
     justUnlockedTier === 2
       ? `<p class="home-unlock">Tier 2 unlocked — Burgertown is calling.</p>`
@@ -112,11 +139,30 @@ function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corrup
     : `<button class="btn btn-motd" data-action="start-motd">Machine of the Day</button>`;
 
   const offlineBanner = offlineReport
-    ? `<div class="home-offline-report">
+    ? (() => {
+        const r = offlineReport;
+        // Attribute per technician from the simulation's techReports detail so the
+        // player sees who earned and who left a callback, not just an aggregate.
+        const techLines = (r.techReports ?? [])
+          .map(
+            (t) =>
+              `<li class="home-offline-tech">${escapeHtml(t.name)}: ${t.jobs} job${t.jobs !== 1 ? 's' : ''} · $${t.earned}${t.callbacks > 0 ? ` · ${t.callbacks} miss${t.callbacks !== 1 ? 'es' : ''}` : ''}</li>`
+          )
+          .join('');
+        // Offline callbacks return tomorrow, not now — say so, so the home count's
+        // "returning soon" entry doesn't read like it appeared then disappeared.
+        const callbackNote =
+          r.callbacksAdded > 0
+            ? `<p class="home-offline-callbacks">${r.callbacksAdded} new callback${r.callbacksAdded !== 1 ? 's' : ''} — back on the board tomorrow, claim from Callbacks.</p>`
+            : '';
+        return `<div class="home-offline-report">
          <p class="home-offline-title">While you were away</p>
-         <p class="home-offline-detail">${offlineReport.jobsDone} job${offlineReport.jobsDone !== 1 ? 's' : ''} done · $${offlineReport.totalEarned} earned${offlineReport.callbacksAdded > 0 ? ` · ${offlineReport.callbacksAdded} new callback${offlineReport.callbacksAdded !== 1 ? 's' : ''}` : ''}</p>
+         ${techLines ? `<ul class="home-offline-techs">${techLines}</ul>` : ''}
+         <p class="home-offline-detail">${r.jobsDone} job${r.jobsDone !== 1 ? 's' : ''} done · $${r.totalEarned} earned in total</p>
+         ${callbackNote}
          <button class="btn btn-sm" data-action="dismiss-offline-report">Dismiss</button>
-       </div>`
+       </div>`;
+      })()
     : '';
 
   const corruptBanner = corruptSaveBlob
@@ -149,7 +195,7 @@ function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corrup
       ${offlineBanner}
       ${expiryBanner}
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
-      ${due > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">Callbacks (${due})</button>` : ''}
+      ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
       <button class="btn" data-action="open-shop">Tools shop</button>
       ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
@@ -158,24 +204,48 @@ function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corrup
     </section>`;
 }
 
-/** The Callbacks list — due callbacks the player can choose to take (GDD §3.1). */
-function callbacksView({ state, faults, clients }) {
+/** The Callbacks list — every queued callback, due or returning soon (GDD §3.1). */
+export function callbacksView({ state, faults, clients }) {
   const today = new Date().toISOString().slice(0, 10);
   // Render from the full queue so each row's data-index matches what
-  // claimCallback() splices; only due entries get a Take button.
+  // claimCallback() splices; only due entries get a Take button, and not-yet-due
+  // ones are shown with their return day so an offline-queued callback is visibly
+  // waiting rather than seeming to vanish.
   const rows = state.jobs.callbacks
     .map((cb, index) => ({ cb, index }))
-    .filter(({ cb }) => cb.dueDay <= today)
     .map(({ cb, index }) => {
       const fault = faults[cb.faultId];
       const client = clients.find((c) => c.id === cb.clientId);
       const raw = fault ? fault.machineType.replace(/-/g, ' ') : cb.faultId;
       const machineName = raw.charAt(0).toUpperCase() + raw.slice(1);
+      const isDue = cb.dueDay <= today;
+      const isTech = cb.source === 'tech';
+
+      // Timing: due entries show how long the claim window lasts; pending ones
+      // show when the machine comes back so it doesn't read as disappeared.
+      const timing = isDue
+        ? typeof cb.expiryDay === 'string'
+          ? `Due now · expires ${relativeDayPhrase(today, cb.expiryDay)}`
+          : 'Due now'
+        : `Returns ${relativeDayPhrase(today, cb.dueDay)}`;
+
+      // Consequence of abandoning it: a player obligation costs reputation; an
+      // optional tech rescue expires for free (GDD §3.1).
+      const consequence = isTech
+        ? 'Optional rescue — expires with no penalty.'
+        : `You owe this client — let it expire and lose ${REPUTATION.expiredCallbackRepPenalty} rep.`;
+
+      const action = isDue
+        ? `<button class="btn btn-callback-take" data-take="${index}">Take callback</button>`
+        : `<p class="callback-pending">Not on site yet.</p>`;
+
       return `
-        <li class="callback-card">
+        <li class="callback-card${isDue ? '' : ' callback-card--pending'}">
           <p class="callback-client">${client ? client.name : escapeHtml(cb.clientId)}</p>
           <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceLabel(cb))} · pays ${callbackRatePct(cb.source)}% of net</p>
-          <button class="btn btn-callback-take" data-take="${index}">Take callback</button>
+          <p class="callback-timing">${timing}</p>
+          <p class="callback-consequence">${consequence}</p>
+          ${action}
         </li>`;
     })
     .join('');
@@ -184,8 +254,8 @@ function callbacksView({ state, faults, clients }) {
     ${statusBar(state)}
     <section class="screen screen-callbacks">
       <h2 class="section-title">Callbacks</h2>
-      <p class="callbacks-intro">Machines back on the board. Tech misses pay near full; your own misses pay the reduced rate.</p>
-      ${rows ? `<ul class="callbacks-list">${rows}</ul>` : `<p class="callbacks-empty">No callbacks due right now.</p>`}
+      <p class="callbacks-intro">Machines back on the board. A <strong>tech miss</strong> pays near full and expires for free — it's bonus pay. <strong>Your own miss</strong> pays the reduced rate and costs reputation if you abandon it.</p>
+      ${rows ? `<ul class="callbacks-list">${rows}</ul>` : `<p class="callbacks-empty">No callbacks right now.</p>`}
       <button class="btn" data-action="close-callbacks">Back</button>
     </section>`;
 }

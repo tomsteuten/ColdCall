@@ -7,23 +7,66 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (Session 19 — callback, staff, and offline clarity)
+## Next session prompt (Session 20 — interruption-safe Machine of the Day scoring)
 
-Session 18 is complete. Proceed with Session 19 from the roadmap below
-("Session 19 — Callback, staff, and offline clarity").
+Session 19 is complete. Proceed with Session 20 from the roadmap below
+("Session 20 — Interruption-safe Machine of the Day scoring"). It needs one design
+decision before coding (default recommendation in the roadmap: rank/share by tests
+used first, simulated minutes second; never elapsed wall time). Read `GDD.md` §5,
+`CLAUDE.md`, and this file first; inspect `js/motd.js`, `settleMotd`/`buildShareCard`
+in `js/economy.js`/`js/motd.js`, and the share/result UI. Strongest model — shared
+puzzle scoring is a correctness contract; keep deterministic date pinning and equal
+tool access intact, and keep old saved results readable. Run `node tests/run.js`
+before changing code; bump the sw.js cache if app-shell files change; don't push
+without Tom's approval.
 
-Start by reading `GDD.md` §3.1/§3.2, `CLAUDE.md`, and this file, then inspect the
-callbacks UI (`js/ui/job.js callbacksView`, `homeView` expiry banner), the
-staff/hire path (`js/economy.js hireTech`, `js/ui/shop.js`), and the offline
-report (`js/idle.js simulateOfflineProgress` + its `techReports` detail, surfaced
-in `homeView`). Run `node tests/run.js` before changing code. Implement only
-Session 19: make callback due/expiry timing and the reputation-vs-penalty-free
-distinction legible; explain not-yet-due callbacks so an offline report can't
-announce one that then seems to vanish; before the $2,000 hire explain expected
-jobs/hour, success rate, offline cap, callback risk, and that launch techs have no
-wage; and attribute the offline report per-technician using the existing
-`techReports` detail. No economy changes should be required. Bump the sw.js cache
-if app-shell files change; don't push without Tom's approval.
+### What session 19 added (callback, staff, and offline clarity — GDD §3.1/§3.2)
+
+- **Callbacks screen now shows timing and consequence (`callbacksView`).** It lists
+  the *whole* queue, not just due entries: due callbacks get a Take button plus
+  "Due now · expires in N days/tomorrow/today"; not-yet-due ones show "Returns
+  tomorrow/in N days", a dimmed `.callback-card--pending` card, and "Not on site
+  yet." instead of a Take button. Every row states the abandonment consequence —
+  a player obligation reads "You owe this client — let it expire and lose 3 rep",
+  a tech rescue reads "Optional rescue — expires with no penalty." Intro copy spells
+  out the same tech-miss-vs-your-miss distinction. New helpers `dayDelta` /
+  `relativeDayPhrase` in `js/ui/job.js` convert YYYY-MM-DD pairs to friendly phrases.
+- **Home callbacks button no longer hides queued-but-not-due callbacks.** It now
+  renders whenever `state.jobs.callbacks.length > 0` (was: only when due > 0) and
+  labels itself "Callbacks (N)", "Callbacks (N ready · M soon)", or "Callbacks (M
+  returning soon)". This closes the "offline report announces a callback that then
+  vanishes" gap: tonight's tech misses are due *tomorrow*, so they're now visibly
+  "returning soon" rather than absent until the next day.
+- **Offline report is attributed per technician (`homeView` offline banner).** Uses
+  the existing `techReports` detail (`{name, jobs, earned, callbacks}`) to render a
+  per-tech list ("Dave: 3 jobs · $150", "Mike: 3 jobs · $100 · 1 miss"), keeps the
+  aggregate "$X earned in total" line, and adds "N new callbacks — back on the board
+  tomorrow, claim from Callbacks." so freshly-queued callbacks are explained, not
+  left to seem to disappear. Tech names are escaped (`escapeHtml`).
+- **Pre-hire staff explainer (`js/ui/shop.js`).** New exported `staffExplainerHTML()`
+  renders before the hire button (when not at max): ~2 jobs/hour, 75% success,
+  $50/job (always less than active play), offline sim up to 8h, "a botched job
+  becomes a rescue callback you can claim — no reputation hit", and "No wage at
+  launch — the $2000 hire is the only cost". All numbers read from `balance.js`
+  (`TECHS`, `OFFLINE`), so the copy tracks any tuning.
+- **No economy changes.** Pure render-from-state copy/clarity. `homeView`,
+  `callbacksView`, and `staffHTML`/`staffExplainerHTML` are now exported so the
+  markup tests can call them directly. `sw.js` cache bumped **v11 → v12** (job.js,
+  shop.js, main.css changed).
+- **Tests.** `node tests/run.js` → **211 passing, 0 failed** (+5): due-callback
+  expiry timing + rep warning, not-yet-due tech rescue (untakeable, "Returns
+  tomorrow", penalty-free, attributed), home button shows "returning soon" for a
+  pending-only queue, per-tech offline attribution + the tomorrow note, and the
+  staff explainer's five required facts. CSS for `.home-offline-techs`,
+  `.callback-timing/.callback-consequence/.callback-pending/.callback-card--pending`,
+  and `.staff-stats` from existing tokens.
+- **Manual verification.** `preview-session19.html` (untracked, served at
+  `/preview-session19.html`) renders all three views with the real CSS at 380px:
+  home offline report lists both techs and the tomorrow note, the "1 ready · 1 soon"
+  callbacks button, the callbacks screen contrasting a due player obligation against
+  a returning tech rescue, and the pre-hire explainer. The managed preview panel
+  couldn't bind (Tom's own python server already holds 8123), so this static
+  snapshot stands in for an in-app screenshot.
 
 ### What session 18 added (light repair interaction and payoff — GDD §2.3)
 
