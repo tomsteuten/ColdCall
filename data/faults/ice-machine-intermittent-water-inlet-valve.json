@@ -1,0 +1,23 @@
+{
+  "id": "ice-machine-intermittent-water-inlet-valve",
+  "lesson": "A water fill timeout with a dry reservoir and a normal-reading coil means the inlet valve is mechanically stuck. Don't waste money replacing the float switch or purge pump.",
+  "machineType": "commercial-ice-dispenser",
+  "tier": 3,
+  "symptoms": [
+    "Machine occasionally stops with a red warning light.",
+    "Ice production is extremely slow.",
+    "Water reservoir is dry when the machine shuts down."
+  ],
+  "tests": {
+    "error-log": "ERROR: WATER FILL TIMEOUT.",
+    "temp-probe": "Evaporator plate is 72°F (22°C) (ambient temperature).",
+    "inspect-beater": "N/A. Reservoir is completely dry; water level float switch is sitting at the bottom.",
+    "continuity-test": "Water inlet valve solenoid coil shows normal resistance (1.1k ohms) but fails to open mechanically when energized (plunger sticking intermittently due to internal calcium scale)."
+  },
+  "correctFix": "replace-water-inlet-valve",
+  "wrongFixes": ["replace-float-switch", "replace-purge-pump", "descale-mix-line"],
+  "payout": 230,
+  "partsCost": 40,
+  "flavour": "The valve was stuck shut. The new valve let the water flow.",
+  "authenticityNote": "Water inlet valves open to fill the reservoir at the start of each ice cycle. Plungers inside solenoid valves can become clogged or stuck due to scale buildup from hard water, causing intermittent fill failures even if the coil has continuity."
+}

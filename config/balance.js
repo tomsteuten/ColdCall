@@ -22,6 +22,12 @@ export const JOBS = {
     partsCostMin: 5,
     partsCostMax: 60,
   },
+  tier3: {
+    payoutMin: 150,
+    payoutMax: 350,
+    partsCostMin: 10,
+    partsCostMax: 120,
+  },
   // Wrong fix -> callback: partial payout now, job returns tomorrow at reduced rate.
   // GDD §2.1 says "partial payout" with no number; this knob is ours to tune.
   wrongFixPayoutMult: 0.4,
@@ -82,6 +88,7 @@ export const REPUTATION = {
   // "Tier 2 within 15 minutes", with slack for a couple of -2 misses.
   tierThresholds: {
     2: 10,
+    3: 25,
   },
 };
 

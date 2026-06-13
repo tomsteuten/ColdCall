@@ -1,0 +1,23 @@
+{
+  "id": "granita-intermittent-gear-motor",
+  "lesson": "A clicking sound and non-rotating auger in a single bowl points directly to stripped gears in the auger gearmotor. Replacing the auger spiral or fan motor won't fix the internal drive gears.",
+  "machineType": "granita-slushie",
+  "tier": 3,
+  "symptoms": [
+    "Middle bowl is not slushying; product is separating.",
+    "Every few minutes, the machine emits a loud clicking or popping sound.",
+    "Other bowls are freezing and mixing perfectly."
+  ],
+  "tests": {
+    "error-log": "Bowl 2 Motor Fault - Torque limit exceeded (intermittent).",
+    "temp-probe": "Middle bowl temperature is 28°F (-2°C) but has no slush texture.",
+    "inspect-beater": "Middle bowl spiral auger is intact but doesn't turn under load. The internal gear teeth are stripped.",
+    "continuity-test": "Auger motor stator windings read 120 ohms (good), but motor current draws 2.1A (extremely high) when clicking occurs."
+  },
+  "correctFix": "replace-auger-gearbox-motor",
+  "wrongFixes": ["replace-auger-spiral", "replace-bowl-gasket", "replace-condenser-fan-motor"],
+  "payout": 260,
+  "partsCost": 85,
+  "flavour": "Stripped gears make a terrible noise, but the new gearbox is music to my ears.",
+  "authenticityNote": "Granita machines use high-torque shaded-pole gearmotors to rotate the spiral auger slowly. The gears inside the gearbox are often plastic and can strip if the mix is frozen too solid or if scale builds up, leading to a loud clicking noise under load."
+}

@@ -159,10 +159,46 @@ export function commitFix(state, fixId, faults) {
   const correct = fixId === fault.correctFix;
 
   if (job.motd) {
+    // Score by simulated diagnostic minutes, not wall-clock time: only the player's
+    // own test choices advance the clock, so interruptions can't worsen a shared
+    // result (GDD §5). `now` is passed only to derive the puzzle date when none is pinned.
     const now = Date.now();
-    const result = settleMotd(state, fault, correct, job.testsRun, job.startedAt, now, job.puzzleDateStr ?? null);
+    const simMinutes = job.minutesSpent ?? 0;
+    const result = settleMotd(state, fault, correct, job.testsRun, simMinutes, now, job.puzzleDateStr ?? null);
     state.jobs.active = null;
     return { motd: true, ...result };
+  }
+
+  // Intercept workshop jobs
+  if (job.clientId && job.clientId.startsWith('workshop-')) {
+    const machineId = job.clientId.substring('workshop-'.length);
+    const wMachine = state.workshop && state.workshop.machines
+      ? state.workshop.machines.find(m => m.id === machineId)
+      : null;
+    if (correct) {
+      if (fault.partsCost > 0) {
+        const inStock = state.van.stock['generic-parts'] ?? 0;
+        if (inStock < 1) throw new Error('Van is out of parts — restock before committing');
+        state.van.stock['generic-parts'] = inStock - 1;
+      }
+      if (wMachine) {
+        wMachine.status = 'repaired';
+      }
+    }
+    const minutesSpent = job.minutesSpent ?? 0;
+    state.jobs.active = null;
+    return {
+      correct,
+      fault,
+      earned: 0,
+      chosenFix: fixId,
+      callback: false,
+      callbackSource: null,
+      unlockedTier: null,
+      minutesSpent,
+      isWorkshop: true,
+      wMachineId: machineId,
+    };
   }
 
   // Old saves' active jobs predate the callback field; undefined means fresh job.

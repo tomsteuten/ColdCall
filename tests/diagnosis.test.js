@@ -284,3 +284,28 @@ test('restored evidence ignores test ids no longer in the catalogue', () => {
   });
   assertEqual(state.jobs.active.testsRun, ['temp-probe'], 'unknown test ids are dropped on restore');
 });
+
+test('commitFix with workshop machine updates status on correct and consumes part', () => {
+  const state = defaultState();
+  state.workshop.machines.push({
+    id: 'm1',
+    machineType: 'slushie-machine',
+    faultId: 'test-fault',
+    status: 'broken',
+  });
+  
+  // Start the workshop job
+  startJob(state, FAULTS['test-fault'], 'workshop-m1', mulberry32(10));
+  
+  // Consume part since test-fault partsCost is 20
+  const partsBefore = state.van.stock['generic-parts'];
+  const { correct, isWorkshop } = commitFix(state, 'right-fix', FAULTS);
+  
+  assert(correct, 'should be correct');
+  assert(isWorkshop, 'should be marked as workshop');
+  assertEqual(state.van.stock['generic-parts'], partsBefore - 1);
+  assertEqual(state.workshop.machines[0].status, 'repaired');
+  assertEqual(state.jobs.active, null);
+});
+
+

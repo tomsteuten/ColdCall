@@ -1,0 +1,23 @@
+{
+  "id": "ice-machine-leaking-hot-gas-valve",
+  "lesson": "When a freeze cycle fails to reach target temperature but the compressor is running and water flow is good, touch the hot gas valve. If it's hot during freezing, it's leaking hot gas, defeating the cooling system.",
+  "machineType": "commercial-ice-dispenser",
+  "tier": 3,
+  "symptoms": [
+    "Ice takes forever to form on the evaporator plate.",
+    "Suction line of the compressor is warm during the freeze cycle.",
+    "Water is flowing, but only slush forms on the plate, never solid cubes."
+  ],
+  "tests": {
+    "error-log": "FREEZE CYCLE EXCEEDED MAX TIME.",
+    "temp-probe": "Evaporator plate temp only drops to 30°F (-1°C) after 20 minutes of cooling.",
+    "inspect-beater": "N/A. Evaporator has a thin layer of soft slush, no solid ice.",
+    "continuity-test": "Hot gas harvest valve solenoid coil shows 450 ohms (normal), but the valve body is hot to the touch during the freeze cycle, indicating it is leaking high-pressure gas back into the evaporator."
+  },
+  "correctFix": "replace-hot-gas-bypass-valve",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor-start-relay", "replace-water-inlet-valve"],
+  "payout": 320,
+  "partsCost": 95,
+  "flavour": "Hot gas bypassed the system. Now the bypass is history.",
+  "authenticityNote": "The hot gas valve bypasses hot compressor discharge gas directly into the evaporator during harvest to warm the plate and drop the ice sheet. If this valve leaks during the freeze cycle, it cancels out the refrigeration effect, resulting in very slow or no freezing."
+}

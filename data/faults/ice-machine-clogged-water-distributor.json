@@ -1,0 +1,23 @@
+{
+  "id": "ice-machine-clogged-water-distributor",
+  "lesson": "Uneven ice formation or hollow cubes on one side of the evaporator is caused by a clogged water distribution tube. Swapping the inlet valve or the evaporator plate is an expensive and useless action.",
+  "machineType": "commercial-ice-dispenser",
+  "tier": 3,
+  "symptoms": [
+    "Ice cubes are hollow, misshapen, or only forming on one side of the grid.",
+    "Water is running continuously into the drain.",
+    "The harvest cycle runs but produces very few usable cubes."
+  ],
+  "tests": {
+    "error-log": "LONG HARVEST CYCLE warning.",
+    "temp-probe": "Evaporator plate temperature reads 10°F (-12°C) during freeze cycle.",
+    "inspect-beater": "N/A (no beater). Visual inspection shows water is only trickling down the right side of the evaporator plate; the left side is dry.",
+    "continuity-test": "Water inlet valve and purge pump solenoids show correct resistance (both ~1.2k ohms)."
+  },
+  "correctFix": "clean-water-distributor-tube",
+  "wrongFixes": ["replace-water-inlet-valve", "replace-evaporator-plate", "replace-hot-gas-valve"],
+  "payout": 210,
+  "partsCost": 0,
+  "flavour": "Unclogged the water bar. Now it rains cubes.",
+  "authenticityNote": "Ice machines pump water over a vertical evaporator plate using a distributor tube with small holes. Over time, scale or algae clogs some of these holes, leading to uneven water flow, hollow cubes, and long freeze/harvest times."
+}

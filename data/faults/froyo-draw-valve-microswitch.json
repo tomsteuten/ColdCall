@@ -1,0 +1,23 @@
+{
+  "id": "froyo-draw-valve-microswitch",
+  "lesson": "If a specific tap doesn't start the agitator motor but others do, it's a microswitch problem on that draw handle. Don't swap the whole motor or controller.",
+  "machineType": "froyo-multihead",
+  "tier": 3,
+  "symptoms": [
+    "Pulling the left handle does not start the motor, but product slowly weeps out.",
+    "No error code on screen.",
+    "Middle and right handles work fine."
+  ],
+  "tests": {
+    "error-log": "LOG EMPTY. Status: IDLE.",
+    "temp-probe": "Left barrel temp reads 18°F (-8°C). Product is cold but not being agitated.",
+    "inspect-beater": "Beater is clean and rotates freely by hand.",
+    "continuity-test": "Left draw handle microswitch reads infinite resistance (open circuit) even when the handle is fully pulled."
+  },
+  "correctFix": "replace-draw-handle-microswitch",
+  "wrongFixes": ["replace-beater-motor", "replace-display-board", "replace-solenoid-valve"],
+  "payout": 200,
+  "partsCost": 15,
+  "flavour": "A click in time saves nine... dimes.",
+  "authenticityNote": "Draw handles on commercial froyo machines use microswitches to activate the beater motor and open the mix valve. When the microswitch contact fails (usually from spilled sticky syrup or wear), the machine has no idea the user is pulling the handle."
+}

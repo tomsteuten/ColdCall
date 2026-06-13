@@ -1,0 +1,23 @@
+{
+  "id": "froyo-intermittent-solenoid-valve",
+  "lesson": "When one barrel of a multihead system cools fine but another stays warm while the compressor runs, the liquid-line refrigerant solenoid valve for that barrel is failing to open. Replacing the compressor is an expensive mistake.",
+  "machineType": "froyo-multihead",
+  "tier": 3,
+  "symptoms": [
+    "Left barrel is frozen solid, but right barrel is warm and soupy.",
+    "Compressor is running constantly.",
+    "Left barrel display shows 18°F (-8°C), right barrel shows 45°F (7°C)."
+  ],
+  "tests": {
+    "error-log": "RIGHT BARREL COOLING TIMEOUT.",
+    "temp-probe": "Right barrel temp reads 45°F (7°C).",
+    "inspect-beater": "Right beater is fine. No ice block, just warm liquid mix.",
+    "continuity-test": "Right barrel liquid-line refrigerant solenoid valve coil reads 85 ohms (expected ~80 ohms). Continuity is good, but valve coil is hot and failing mechanically when warmed up."
+  },
+  "correctFix": "replace-refrigerant-solenoid-valve",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor-start-relay", "replace-beater-motor"],
+  "payout": 280,
+  "partsCost": 65,
+  "flavour": "Solenoid was stuck on 'no flow'. Now the cold is back in business.",
+  "authenticityNote": "Multi-barrel machines share a single compressor but use separate solenoid valves on the liquid lines to control cooling to each evaporator barrel independently. If a solenoid valve fails closed mechanically, that barrel gets no refrigeration."
+}

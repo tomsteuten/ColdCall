@@ -2,7 +2,7 @@
 
 import { machineSvg } from '../js/machine-art.js';
 
-const MACHINES = ['slushie-machine', 'soft-serve-commercial'];
+const MACHINES = ['slushie-machine', 'soft-serve-commercial', 'froyo-multihead', 'granita-slushie', 'commercial-ice-dispenser'];
 const STATES = ['fault', 'open', 'working'];
 
 test('every launch machine renders valid inline SVG in every art state', () => {

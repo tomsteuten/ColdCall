@@ -3,7 +3,7 @@
 import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech } from './economy.js';
+import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech, prestige, WORKSHOP_MACHINES } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
@@ -11,6 +11,8 @@ import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
+import * as settingsScreen from './ui/settings.js';
+
 
 const { state, error } = load();
 if (error) {
@@ -48,6 +50,13 @@ let motdResult = null;
 // Feedback messages for the save data panel in the shop. Transient.
 let exportMessage = null;
 let importError = null;
+
+// Feedback messages for the settings modal. Transient.
+let settingsExportMessage = null;
+let settingsImportError = null;
+let settingsOpen = false;
+
+
 
 // Which top-level screen is showing. Transient on purpose — where you were
 // browsing isn't game state, so a refresh lands back on home.
@@ -181,6 +190,65 @@ const actions = {
     else console.warn(`Cold Call: tech not hired: ${reason}`);
     render();
   },
+  sellBusiness() {
+    try {
+      prestige(state);
+      save(state);
+    } catch (e) {
+      console.error(e.message);
+    }
+    render();
+  },
+  buyWorkshopMachine(machineType) {
+    const info = WORKSHOP_MACHINES[machineType];
+    if (!info) return;
+    if (state.player.cash < info.buyPrice) return;
+    state.player.cash -= info.buyPrice;
+
+    // Pick a random fault for this machineType
+    const matchingFaults = Object.values(faults).filter(f => f.machineType === machineType);
+    const fault = matchingFaults.length > 0
+      ? matchingFaults[Math.floor(Math.random() * matchingFaults.length)]
+      : Object.values(faults)[0];
+
+    const machineId = Math.random().toString(36).substring(2, 9);
+    state.workshop.machines.push({
+      id: machineId,
+      machineType,
+      faultId: fault.id,
+      status: 'broken',
+    });
+    save(state);
+    render();
+  },
+  repairWorkshopMachine(machineId) {
+    const machine = state.workshop.machines.find(m => m.id === machineId);
+    if (!machine || machine.status !== 'broken') return;
+    const fault = faults[machine.faultId];
+    if (!fault) return;
+
+    const next = mulberry32(Date.now());
+    startJob(state, fault, 'workshop-' + machine.id, next);
+    save(state);
+    render();
+  },
+  sellWorkshopMachine(machineId) {
+    const index = state.workshop.machines.findIndex(m => m.id === machineId);
+    if (index === -1) return;
+    const machine = state.workshop.machines[index];
+    if (machine.status !== 'repaired') return;
+
+    const info = WORKSHOP_MACHINES[machine.machineType];
+    if (info) {
+      const multiplier = state.player.founderBonus || 1.0;
+      const earned = Math.round(info.sellPrice * multiplier);
+      state.player.cash += earned;
+      state.player.lifetimeEarnings += earned;
+      state.workshop.machines.splice(index, 1);
+    }
+    save(state);
+    render();
+  },
   dismissOfflineReport() {
     offlineReport = null;
     render();
@@ -218,14 +286,23 @@ const actions = {
     screen = 'home';
     render();
   },
-  async exportSave() {
+  async exportSave(inputEl) {
     const blob = exportSave(state);
     try {
+      if (inputEl && inputEl.select) {
+        inputEl.select();
+      }
       await navigator.clipboard.writeText(blob);
-      exportMessage = 'Copied to clipboard.';
+      settingsExportMessage = 'Copied to clipboard.';
     } catch {
-      window.prompt('Copy this to transfer your save to another device:', blob);
-      exportMessage = null;
+      if (inputEl && inputEl.select) {
+        inputEl.select();
+        document.execCommand('copy');
+        settingsExportMessage = 'Copied to clipboard.';
+      } else {
+        window.prompt('Copy this to transfer your save to another device:', blob);
+        settingsExportMessage = null;
+      }
     }
     render();
   },
@@ -237,8 +314,36 @@ const actions = {
       rawSave(newState);
       window.location.reload();
     } catch (e) {
-      importError = String(e.message ?? e);
+      settingsImportError = String(e.message ?? e);
       render();
+    }
+  },
+  openSettings() {
+    settingsExportMessage = null;
+    settingsImportError = null;
+    settingsOpen = true;
+    render();
+  },
+  closeSettings() {
+    settingsExportMessage = null;
+    settingsImportError = null;
+    settingsOpen = false;
+    render();
+  },
+  toggleAudio() {
+    state.settings.audio = !state.settings.audio;
+    save(state);
+    render();
+  },
+  toggleGraphics() {
+    state.settings.graphicsMode = state.settings.graphicsMode === 'vector' ? 'rendered' : 'vector';
+    save(state);
+    render();
+  },
+  resetProgress() {
+    if (confirm("Are you sure you want to reset all game progress? This cannot be undone.")) {
+      localStorage.removeItem(SAVE_KEY);
+      window.location.reload();
     }
   },
   async copyCorruptSave() {
@@ -293,6 +398,18 @@ function render() {
       screen,
       actions,
     });
+  }
+
+  if (settingsOpen) {
+    const modalHtml = settingsScreen.renderModal(state, {
+      exportMessage: settingsExportMessage,
+      importError: settingsImportError,
+    });
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = modalHtml;
+    const modalEl = tempDiv.firstElementChild;
+    app.appendChild(modalEl);
+    settingsScreen.wire(modalEl, actions);
   }
 }
 

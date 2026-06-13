@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -21,6 +21,8 @@ export function defaultState() {
       reputation: 0,
       lifetimeEarnings: 0, // prestige gate later; cheap to track from day one
       tierUnlocked: STARTING.tierUnlocked,
+      prestigeCount: 0,
+      founderBonus: 1.0,
     },
 
     tools: {
@@ -46,6 +48,10 @@ export function defaultState() {
       callbacks: [],
     },
 
+    workshop: {
+      machines: [], // { id, machineType, faultId, status }
+    },
+
     motd: {
       lastPlayedDate: null, // UTC date string "YYYY-MM-DD", doubles as the puzzle seed
       streak: 0,
@@ -60,6 +66,7 @@ export function defaultState() {
 
     settings: {
       audio: true,
+      graphicsMode: 'vector',
     },
 
     // Fractional offline-job carry: sub-job remainder from the last offline
@@ -183,6 +190,46 @@ export const MIGRATIONS = {
     old.schemaVersion = 9;
     return old;
   },
+  // v9 -> v10: Machine of the Day is scored by simulated diagnostic minutes, not
+  // wall-clock time, so interruptions (calls, sleep, refreshes, accessibility pauses)
+  // can never worsen a shared-puzzle result (GDD §5). A stored result predates the
+  // simMinutes field and its old wall-clock `timeMs` is no longer a fair score, so
+  // normalise simMinutes to null ("unknown" — the result screen and share card then
+  // show tests only). The legacy timeMs is left in place but is never read again.
+  9: (old) => {
+    if (old.motd.lastResult && typeof old.motd.lastResult.simMinutes !== 'number') {
+      old.motd.lastResult.simMinutes = null;
+    }
+    old.schemaVersion = 10;
+    return old;
+  },
+  // v10 -> v11: prestigeCount, founderBonus, and workshop added.
+  10: (old) => {
+    if (old.player) {
+      if (typeof old.player.prestigeCount !== 'number') {
+        old.player.prestigeCount = 0;
+      }
+      if (typeof old.player.founderBonus !== 'number') {
+        old.player.founderBonus = 1.0;
+      }
+    }
+    if (!old.workshop) {
+      old.workshop = { machines: [] };
+    }
+    old.schemaVersion = 11;
+    return old;
+  },
+  // v11 -> v12: add settings.graphicsMode (defaults to 'vector' for animated SVG visuals)
+  11: (old) => {
+    if (!old.settings) {
+      old.settings = { audio: true };
+    }
+    if (typeof old.settings.graphicsMode !== 'string') {
+      old.settings.graphicsMode = 'vector';
+    }
+    old.schemaVersion = 12;
+    return old;
+  },
 };
 
 /**
@@ -237,13 +284,15 @@ export function validateState(s) {
   const checks = [
     ['player', 'object'], ['player.cash', 'number'], ['player.reputation', 'number'],
     ['player.lifetimeEarnings', 'number'], ['player.tierUnlocked', 'number'],
+    ['player.prestigeCount', 'number'], ['player.founderBonus', 'number'],
     ['tools', 'object'], ['tools.multimeterTier', 'number'],
     ['van', 'object'], ['van.slots', 'number'], ['van.stock', 'object'],
     ['techs', 'array'], ['routes', 'array'],
     ['jobs', 'object'], ['jobs.callbacks', 'array'],
+    ['workshop', 'object'], ['workshop.machines', 'array'],
     ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],
     ['stats.jobsCompleted', 'number'], ['stats.cleanStreak', 'number'],
-    ['offlineJobCarry', 'number'],
+    ['offlineJobCarry', 'number'], ['settings.graphicsMode', 'string'],
   ];
   for (const [path, type] of checks) {
     let value = s;

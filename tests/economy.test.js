@@ -12,6 +12,8 @@ import {
   dueCallbacks,
   claimCallback,
   expireCallbacks,
+  prestige,
+  WORKSHOP_MACHINES,
 } from '../js/economy.js';
 
 function makeFault() {
@@ -545,3 +547,63 @@ test('restockVan: refuses when van already full', () => {
   assert(!result.ok, 'should refuse when already full');
   assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
 });
+
+test('prestige resets progress but keeps founder bonus and prestigeCount', () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = 250000;
+  state.player.reputation = 100;
+  state.player.cash = 50000;
+  state.player.tierUnlocked = 3;
+  state.tools.multimeterTier = 2;
+  state.tools.thermalCamera = true;
+  state.van.slots = 6;
+  state.van.stock['generic-parts'] = 2;
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: 0 });
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+
+  prestige(state);
+
+  assertEqual(state.player.prestigeCount, 1);
+  assertEqual(state.player.founderBonus, 2.0, '1.0 + 100 * 0.01 = 2.0');
+  assertEqual(state.player.cash, STARTING.cash);
+  assertEqual(state.player.reputation, 0);
+  assertEqual(state.player.lifetimeEarnings, 0);
+  assertEqual(state.player.tierUnlocked, STARTING.tierUnlocked);
+  assertEqual(state.tools.multimeterTier, STARTING.multimeterTier);
+  assertEqual(state.tools.thermalCamera, false);
+  assertEqual(state.van.slots, STARTING.vanSlots);
+  assertEqual(state.van.stock['generic-parts'], STARTING.vanSlots);
+  assertEqual(state.techs, []);
+  assertEqual(state.routes, []);
+});
+
+test('prestige throws error if below threshold', () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = 249999;
+  let threw = false;
+  try {
+    prestige(state);
+  } catch {
+    threw = true;
+  }
+  assert(threw, 'should throw error when lifetime earnings < 250,000');
+});
+
+test('founder bonus multiplies correct fix cash and reputation gains', () => {
+  const state = defaultState();
+  state.player.founderBonus = 2.0;
+  const cashBefore = state.player.cash;
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 1e6 });
+  
+  // payout: 120, parts: 30 -> net 90. Multiplied by 2.0 -> 180.
+  assertEqual(earned, 180);
+  assertEqual(state.player.cash, cashBefore + 180);
+  assertEqual(state.player.reputation, Math.round(REPUTATION.correctFix * 2.0));
+});
+
+test('WORKSHOP_MACHINES exists and has expected buy/sell prices', () => {
+  assert(WORKSHOP_MACHINES['slushie-machine'].buyPrice === 100);
+  assert(WORKSHOP_MACHINES['slushie-machine'].sellPrice === 200);
+});
+
+

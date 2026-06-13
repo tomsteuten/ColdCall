@@ -114,7 +114,7 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 
 ## 5. Viral / Retention Hooks
 
-- **Machine of the Day:** one daily seeded diagnosis puzzle, same for all players, scored on tests used + time. Shareable emoji-grid result (Wordle pattern). This is the single cheapest growth mechanic available — prioritise it for launch.
+- **Machine of the Day:** one daily seeded diagnosis puzzle, same for all players, scored on tests used first, then simulated diagnostic minutes (never wall-clock time — interruptions must not worsen a shared result; see session 20). Shareable emoji-grid result (Wordle pattern). This is the single cheapest growth mechanic available — prioritise it for launch.
 - **Callback shame / clean-streak stats** on the share card.
 - **Pun-heavy job flavour text** — screenshot bait.
 

@@ -529,3 +529,15 @@ test('v8 migration leaves an already-present evidence array intact', () => {
 
   assertEqual(migrated.jobs.callbacks[0].evidence, ['error-log', 'temp-probe']);
 });
+
+test('v11 save migrates to v12: settings.graphicsMode added at "vector"', () => {
+  const v11Fixture = defaultState();
+  v11Fixture.schemaVersion = 11;
+  delete v11Fixture.settings.graphicsMode;
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v11Fixture)));
+
+  assertEqual(migrated.schemaVersion, SCHEMA_VERSION);
+  assertEqual(migrated.settings.graphicsMode, 'vector');
+});
+

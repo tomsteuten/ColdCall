@@ -1,0 +1,23 @@
+{
+  "id": "froyo-thermistor-drift",
+  "lesson": "When product is soupy but the refrigeration is running non-stop, check the actual temp against the machine's sensor. If they don't match, the thermistor has drifted and is lying to the controller.",
+  "machineType": "froyo-multihead",
+  "tier": 3,
+  "symptoms": [
+    "Froyo is coming out like soup, but only on the middle tap.",
+    "No error codes on the display.",
+    "Refrigeration system is running constantly."
+  ],
+  "tests": {
+    "error-log": "LOG EMPTY. System status: cooling active.",
+    "temp-probe": "Independent probe reads 42°F (5.5°C) in the middle barrel. The machine panel claims it is at 16°F (-9°C).",
+    "inspect-beater": "Beater assembly looks fine, scraper blades are sharp.",
+    "continuity-test": "Middle barrel thermistor resistance reads 5.2k ohms at 42°F (expected: ~15k ohms). Sensor has drifted out of calibration."
+  },
+  "correctFix": "replace-barrel-thermistor",
+  "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-display-board"],
+  "payout": 240,
+  "partsCost": 35,
+  "flavour": "Thermistor was lying to the CPU. The new one tells the icy truth.",
+  "authenticityNote": "Thermistors can drift due to moisture ingress or thermal cycling. If they drift to read 'cold' when the barrel is warm, the controller won't engage the cooling valve, leaving the froyo melted."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "granita-clogged-condenser-drain",
+  "lesson": "Water pooling under a machine when the bowls aren't leaking is almost always a clogged condensate drain tube. Replacing bowl gaskets or shaft seals is a waste of parts.",
+  "machineType": "granita-slushie",
+  "tier": 3,
+  "symptoms": [
+    "Water is pooling underneath the unit.",
+    "A musty, damp smell is coming from the ventilation grilles.",
+    "All bowls are cooling and turning properly."
+  ],
+  "tests": {
+    "error-log": "LOG EMPTY.",
+    "temp-probe": "Evaporator temps are in spec, hovering around 26°F (-3°C).",
+    "inspect-beater": "Augers and bowls look clean, no leaks from rear seals.",
+    "continuity-test": "No electrical faults detected on any motor or sensor."
+  },
+  "correctFix": "clear-condensate-drain-tube",
+  "wrongFixes": ["replace-bowl-gasket", "replace-rear-shaft-seal", "replace-evaporator-fan"],
+  "payout": 180,
+  "partsCost": 0,
+  "flavour": "Cleared the pipe. No more indoor water features.",
+  "authenticityNote": "Humid air condensing on the cold evaporator barrels drips into a tray and drains through a tube. If dust, sugar, or slime clogs this tube, the condensate tray overflows and drips directly under the base of the machine."
+}

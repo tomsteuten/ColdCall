@@ -1,0 +1,23 @@
+{
+  "id": "granita-mix-scale-insulation",
+  "lesson": "When the refrigerant line is freezing cold but the product stays warm, the evaporator cylinder is insulated. Check for a buildup of sugar scale on the cylinder and scrub it off.",
+  "machineType": "granita-slushie",
+  "tier": 3,
+  "symptoms": [
+    "Slushie is taking hours to freeze down.",
+    "Compressor is running hot and long.",
+    "Bowls look full and augers are turning."
+  ],
+  "tests": {
+    "error-log": "MAX COOLING TIME EXCEEDED.",
+    "temp-probe": "Refrigerant line is 15°F (-9°C), but slush mix is stuck at 39°F (4°C).",
+    "inspect-beater": "Auger removed. The outer surface of the stainless steel evaporator cylinder is coated in a thick, crusty layer of white sugar scale, insulating the mix from the cold.",
+    "continuity-test": "Evaporator thermistor resistance matches actual temp. Compressor contactor has continuity."
+  },
+  "correctFix": "descale-evaporator-cylinder",
+  "wrongFixes": ["regas-refrigeration", "replace-auger-spiral", "replace-thermostat"],
+  "payout": 190,
+  "partsCost": 0,
+  "flavour": "Scrubbed the sugar crust. The cold can finally get through.",
+  "authenticityNote": "If the operators do not scrub the cylinder surface during sanitisation, a microscopic layer of sugar and milk solids (in dairy slushies) or hard water minerals will build up. This scale acts as a thermal insulator, preventing heat exchange between the refrigerant and the slush."
+}

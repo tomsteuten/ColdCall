@@ -43,14 +43,14 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   font-size: var(--text-base);
   line-height: 1.5;
 }
 
 /* ── App shell ───────────────────────────────────────────────── */
 #app {
-  max-width: 480px;
+  max-width: 380px;
   margin: 0 auto;
   padding: var(--space);
   min-height: 100dvh;
@@ -179,7 +179,6 @@ body {
   gap: var(--space-sm);
   width: 100%;
 }
-/* The fill bar grows left-to-right as the player holds; --success when sealed. */
 .repair-bolt {
   position: relative;
   overflow: hidden;
@@ -195,6 +194,7 @@ body {
   cursor: pointer;
   user-select: none;
   touch-action: none; /* hold gesture must not scroll the page */
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .repair-bolt:focus-visible {
   outline: 2px solid var(--accent);
@@ -206,12 +206,12 @@ body {
   width: 0;
   background: color-mix(in srgb, var(--success) 45%, transparent);
   pointer-events: none;
+  transition: width 0.05s linear;
 }
 .repair-bolt-label {
-  position: relative;
-  z-index: 1;
   font-weight: 600;
   color: var(--accent);
+  transition: color 0.2s, font-weight 0.2s;
 }
 
 /* ── Component: horizontal divider ──────────────────────────── */
@@ -939,4 +939,581 @@ body {
   color: var(--text-dim);
   font-size: var(--text-sm);
   margin: var(--space-xs) 0 0;
+}
+
+/* ── Machine SVG & LED Animations ────────────────────────────── */
+@keyframes led-pulse-working {
+  0% { opacity: 0.25; r: 5.5px; }
+  50% { opacity: 0.65; r: 6.5px; }
+  100% { opacity: 0.25; r: 5.5px; }
+}
+@keyframes led-blink-fault {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.8; }
+}
+@keyframes warn-blink {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.machine-state-working .machine-led--glow {
+  animation: led-pulse-working 2s ease-in-out infinite;
+}
+.machine-state-fault .machine-led--glow,
+.machine-state-open .machine-led--glow {
+  animation: led-blink-fault 0.8s steps(1, start) infinite;
+}
+.machine-warn-led {
+  transform-origin: 104px 30px; /* default for soft serve */
+  animation: warn-blink 1.2s ease-in-out infinite;
+}
+/* For slushie machine warning dot center is (107, 53.5) */
+.machine-state-fault .machine-warn-led {
+  transform-origin: 107px 53.5px;
+}
+
+/* ── Liquid & Agitator Animations ────────────────────────────── */
+@keyframes fluid-slosh-left {
+  0%, 100% { transform: skewY(0.5deg) scaleY(1); }
+  50% { transform: skewY(-0.5deg) scaleY(0.96); }
+}
+@keyframes fluid-slosh-right {
+  0%, 100% { transform: skewY(-0.5deg) scaleY(0.96); }
+  50% { transform: skewY(0.5deg) scaleY(1); }
+}
+.machine-state-working .machine-fluid--left {
+  transform-origin: 20px 42px;
+  animation: fluid-slosh-left 4s ease-in-out infinite;
+}
+.machine-state-working .machine-fluid--right {
+  transform-origin: 85px 42px;
+  animation: fluid-slosh-right 4s ease-in-out infinite;
+}
+
+/* Agitator rotation for working slushie machine */
+@keyframes agitator-spin {
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(-0.1) skewY(2deg); }
+  100% { transform: scaleX(1); }
+}
+.machine-state-working .machine-agitator-group--left {
+  transform-origin: 47px 25px;
+  animation: agitator-spin 1.5s linear infinite;
+}
+.machine-state-working .machine-agitator-group--right {
+  transform-origin: 112px 25px;
+  animation: agitator-spin 1.5s linear infinite;
+}
+
+/* Evaporator coil pulsing glow when open/working */
+@keyframes evaporator-pulse {
+  0%, 100% { stroke-width: 1.5; opacity: 0.5; }
+  50% { stroke-width: 2.2; opacity: 0.85; stroke: var(--accent); }
+}
+.machine-state-open .machine-evaporator {
+  animation: evaporator-pulse 2.5s ease-in-out infinite;
+}
+
+/* Digital screen text glow */
+@keyframes text-glow {
+  0%, 100% { opacity: 0.9; fill: var(--success); filter: drop-shadow(0 0 1px var(--success)); }
+  50% { opacity: 1; fill: #fff; filter: drop-shadow(0 0 3px var(--success)); }
+}
+.machine-state-working .machine-screen-text {
+  animation: text-glow 1.5s ease-in-out infinite;
+}
+
+/* ── Repair Screen Bolt Polish ───────────────────────────────── */
+@keyframes rattle {
+  0% { transform: translate(0, 0) rotate(calc(var(--repair-progress, 0) * 360deg)); }
+  25% { transform: translate(-1.5px, 1px) rotate(calc(var(--repair-progress, 0) * 360deg - 2deg)); }
+  50% { transform: translate(1px, -1.5px) rotate(calc(var(--repair-progress, 0) * 360deg + 3deg)); }
+  75% { transform: translate(-1px, -1px) rotate(calc(var(--repair-progress, 0) * 360deg - 1deg)); }
+  100% { transform: translate(1.5px, 1px) rotate(calc(var(--repair-progress, 0) * 360deg + 2deg)); }
+}
+
+.repair-screw-icon {
+  transform: rotate(calc(var(--repair-progress, 0) * 360deg));
+  transform-origin: center;
+  color: var(--accent);
+  transition: transform 0.05s linear;
+}
+
+.repair-bolt.is-holding .repair-screw-icon {
+  animation: rattle 0.1s linear infinite;
+  color: var(--success);
+}
+
+@keyframes success-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(168, 216, 168, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(168, 216, 168, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(168, 216, 168, 0); }
+}
+
+.repair-bolt[style*="--repair-progress: 1"] {
+  border-color: var(--success);
+  animation: success-pulse 1s ease-out infinite;
+}
+.repair-bolt[style*="--repair-progress: 1"] .repair-screw-icon {
+  color: var(--success);
+  transform: rotate(360deg) scale(1.15);
+}
+.repair-bolt[style*="--repair-progress: 1"] .repair-bolt-label {
+  color: var(--success);
+  font-weight: 700;
+}
+
+
+/* ── Job Screen Columns ──────────────────────────────────────── */
+.job-cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.job-col-left, .job-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+/* ── Repair Screen Columns ────────────────────────────────────── */
+.repair-layout-cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  width: 100%;
+}
+
+.repair-col-left, .repair-col-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: var(--space);
+}
+
+/* ── Settings Modal Overlay (Retro Styled) ────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 28, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space);
+}
+
+.modal-content {
+  background: var(--surface);
+  border: 3px double var(--accent); /* retro double border */
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 380px; /* matches mobile max-width */
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed var(--surface-hi);
+  padding-bottom: var(--space-sm);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: var(--text-xl);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-close-modal:hover {
+  color: var(--warn);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.btn-toggle {
+  font: inherit;
+  font-size: var(--text-sm);
+  background: var(--surface-hi);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-toggle.active {
+  background: var(--accent);
+  color: var(--text-inv);
+}
+
+.btn-toggle:hover {
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.settings-textbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.settings-textbox-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.settings-input {
+  font: inherit;
+  font-size: var(--text-sm);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--text-dim);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-input[readonly] {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.btn-settings-action {
+  font: inherit;
+  font-size: var(--text-sm);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-settings-action:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.settings-ok {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--success);
+}
+
+.settings-err {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--warn);
+  word-break: break-all;
+}
+
+.btn-reset-progress {
+  font: inherit;
+  font-size: var(--text-sm);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  padding: 0.55rem;
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-reset-progress:hover {
+  background: color-mix(in srgb, var(--warn) 15%, transparent);
+  box-shadow: 0 0 6px var(--warn);
+}
+
+/* ── Desktop Layout (> 600px) ─────────────────────────────────── */
+@media (min-width: 601px) {
+  #app {
+    max-width: 900px;
+  }
+
+  .job-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .repair-layout-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
+}
+
+/* ── Job Screen Columns ──────────────────────────────────────── */
+.job-cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.job-col-left, .job-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+/* ── Repair Screen Columns ────────────────────────────────────── */
+.repair-layout-cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  width: 100%;
+}
+
+.repair-col-left, .repair-col-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: var(--space);
+}
+
+/* ── Settings Modal Overlay (Retro Styled) ────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 28, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space);
+}
+
+.modal-content {
+  background: var(--surface);
+  border: 3px double var(--accent); /* retro double border */
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 380px; /* matches mobile max-width */
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed var(--surface-hi);
+  padding-bottom: var(--space-sm);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.btn-close-modal {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: var(--text-xl);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-close-modal:hover {
+  color: var(--warn);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.btn-toggle {
+  font: inherit;
+  font-size: var(--text-sm);
+  background: var(--surface-hi);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-toggle.active {
+  background: var(--accent);
+  color: var(--text-inv);
+}
+
+.btn-toggle:hover {
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.settings-textbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.settings-textbox-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.settings-input {
+  font: inherit;
+  font-size: var(--text-sm);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--text-dim);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-input[readonly] {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
+.btn-settings-action {
+  font: inherit;
+  font-size: var(--text-sm);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-settings-action:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.settings-ok {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--success);
+}
+
+.settings-err {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--warn);
+  word-break: break-all;
+}
+
+.btn-reset-progress {
+  font: inherit;
+  font-size: var(--text-sm);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  padding: 0.55rem;
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+}
+
+.btn-reset-progress:hover {
+  background: color-mix(in srgb, var(--warn) 15%, transparent);
+  box-shadow: 0 0 6px var(--warn);
+}
+
+/* ── Desktop Layout (> 600px) ─────────────────────────────────── */
+@media (min-width: 601px) {
+  #app {
+    max-width: 900px;
+  }
+
+  .job-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .repair-layout-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    align-items: center;
+  }
 }

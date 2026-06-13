@@ -4,12 +4,13 @@
  */
 
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
-import { dueCallbacks, speedBonus } from '../economy.js';
+import { dueCallbacks, speedBonus, WORKSHOP_MACHINES } from '../economy.js';
+
 import { DIAGNOSIS, JOBS, REPUTATION } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
-import { machineSvg } from '../machine-art.js';
-import { clientPortraitSvg } from '../character-art.js';
+import { machineImageSrc, machineSvg } from '../machine-art.js';
+import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
 
 /** Player-facing label for a callback's source (GDD §3.1). */
 export function sourceLabel(callback) {
@@ -181,6 +182,154 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
        </div>`
     : '';
 
+  const bonusPct = ((state.player.founderBonus || 1.0) * 100).toFixed(0);
+
+  const bonusCopy = state.player.founderBonus > 1.0 ? ` · Founder Bonus: ${bonusPct}%` : '';
+
+
+
+  const prestigeBonusGained = Math.max(0, state.player.reputation) * 0.01;
+
+  const currentFounderBonus = state.player.founderBonus || 1.0;
+
+  const nextFounderBonus = currentFounderBonus + prestigeBonusGained;
+
+
+
+  const prestigeSection = state.player.lifetimeEarnings >= 250000
+
+    ? `<div class="panel">
+
+         <h3 class="panel-label">Sell the Business</h3>
+
+         <p class="home-offline-detail" style="margin-top: 0;">Congratulations! Your lifetime earnings reached <strong>$${state.player.lifetimeEarnings}</strong> (threshold $250k).</p>
+
+         <p class="home-offline-detail">Sell the business to start fresh in a new region with a permanent <strong>Founder Bonus</strong>.</p>
+
+         <ul class="home-offline-techs" style="margin-bottom: var(--space-sm); list-style-type: none; padding-left: 0;">
+
+           <li class="home-offline-tech">Current Founder Bonus: <strong>${(currentFounderBonus * 100).toFixed(0)}%</strong></li>
+
+           <li class="home-offline-tech">Reputation Value: <strong>+${(prestigeBonusGained * 100).toFixed(0)}%</strong></li>
+
+           <li class="home-offline-tech">New Founder Bonus: <strong>${(nextFounderBonus * 100).toFixed(0)}%</strong></li>
+
+         </ul>
+
+         <button class="btn btn-primary" style="border-color: var(--amber); color: var(--amber);" data-action="sell-business">Sell the Business</button>
+
+       </div>`
+
+    : '';
+
+
+
+  let buyOptions = '';
+
+  for (const [id, info] of Object.entries(WORKSHOP_MACHINES)) {
+
+    if (state.player.tierUnlocked >= info.tierRequired) {
+
+      const canBuy = state.player.cash >= info.buyPrice;
+
+      buyOptions += `
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
+
+          <span>${escapeHtml(info.name)} ($${info.buyPrice})</span>
+
+          <button class="btn btn-sm btn-buy" data-buy-workshop-machine="${id}" ${canBuy ? '' : 'disabled'}>Buy</button>
+
+        </div>`;
+
+    }
+
+  }
+
+
+
+  let ownedMachines = '';
+
+  const machinesInWorkshop = state.workshop?.machines ?? [];
+
+  if (machinesInWorkshop.length > 0) {
+
+    ownedMachines = machinesInWorkshop.map((m) => {
+
+      const info = WORKSHOP_MACHINES[m.machineType];
+
+      const name = info ? info.name : m.machineType;
+
+      if (m.status === 'broken') {
+
+        return `
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
+
+            <span style="color: var(--warn);">⚠️ ${escapeHtml(name)} (Broken)</span>
+
+            <button class="btn btn-sm btn-primary" data-repair-workshop-machine="${m.id}">Repair</button>
+
+          </div>`;
+
+      } else {
+
+        const multiplier = state.player.founderBonus || 1.0;
+
+        const sellVal = Math.round(info.sellPrice * multiplier);
+
+        return `
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
+
+            <span style="color: var(--success);">✅ ${escapeHtml(name)} (Refurbished)</span>
+
+            <button class="btn btn-sm" style="border-color: var(--success); color: var(--success);" data-sell-workshop-machine="${m.id}">Sell ($${sellVal})</button>
+
+          </div>`;
+
+      }
+
+    }).join('');
+
+  } else {
+
+    ownedMachines = `<p style="font-size: var(--text-sm); color: var(--text-dim); margin: 0;">No machines in the workshop. Buy a damaged machine to refurbish.</p>`;
+
+  }
+
+
+
+  const workshopSection = `
+
+    <div class="panel" style="margin-top: var(--space-sm);">
+
+      <h3 class="panel-label">Refurbishing Workshop</h3>
+
+      
+
+      <div style="margin-bottom: var(--space-sm);">
+
+        <p style="font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin: 0 0 var(--space-xs);">Buy Damaged Machines</p>
+
+        ${buyOptions}
+
+      </div>
+
+      
+
+      <div>
+
+        <p style="font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin: 0 0 var(--space-xs);">Your Workshop Inventory</p>
+
+        ${ownedMachines}
+
+      </div>
+
+    </div>`;
+
+
+
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
@@ -189,15 +338,22 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
         <h1 class="game-wordmark"><span class="word-cold">Cold</span> <span class="word-call">Call</span></h1>
         <p class="game-tagline">Field tech. Frozen tech. Your problem now.</p>
       </div>
-      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row` : ''}</p>
+      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row` : ''}${bonusCopy}</p>
+
       ${unlockBanner}
       ${corruptBanner}
       ${offlineBanner}
       ${expiryBanner}
+      ${prestigeSection}
+
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
       ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
+      ${workshopSection}
+
       <button class="btn" data-action="open-shop">Tools shop</button>
+      <button class="btn" data-action="open-settings">Settings</button>
+
       ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
         ? `<button class="btn btn-restock" data-action="restock-van">Restock van</button>`
         : ''}
@@ -310,7 +466,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
   const clientName = job.motd ? 'Machine of the Day' : (client ? escapeHtml(client.name) : escapeHtml(job.clientId));
   const safeMachineName = escapeHtml(machineName);
-  const portrait = !job.motd && client ? clientPortraitSvg(client.portrait) : null;
+  const clientImg = !job.motd && client ? clientPortraitImageSrc(client.id) : null;
+  const portrait = !job.motd && client ? (clientImg ? `<img src="${clientImg}" alt="" width="64" height="64">` : clientPortraitSvg(client.portrait)) : null;
   const contact = !job.motd && client?.contact ? client.contact : null;
   const contactName = contact?.name ? escapeHtml(contact.name) : 'Caller details unavailable';
   const contactRole = contact?.role ? escapeHtml(contact.role) : '';
@@ -329,56 +486,113 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   // Art state: 'open' once the player has run at least one test (machine is being
   // inspected); 'fault' before that (machine showing symptoms, panel closed).
   const artState = job.testsRun.length > 0 ? 'open' : 'fault';
-  const svg = machineSvg(job.machineType, artState);
-  const artSlotClass = svg ? 'art-slot art-slot--has-image' : 'art-slot';
-  const artSlotContent = svg ?? `[ ${safeMachineName} ]`;
+  const imageSrc = machineImageSrc(job.machineType, artState, state.settings.graphicsMode);
+  const svg = imageSrc ? null : machineSvg(job.machineType, artState);
+  const artSlotClass = imageSrc || svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const artSlotContent = imageSrc
+    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
+    : (svg ?? `[ ${safeMachineName} ]`);
 
   return `
     ${statusBar(state)}
     <section class="screen screen-job">
-      <div class="panel">
-        ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
-        ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
-        <h2 class="job-client">${clientName}</h2>
-        <p class="job-machine">${safeMachineName}</p>
-        ${portraitHtml}
-        ${clockBar}
-      </div>
+      <div class="job-cols">
 
-      <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
+        <div class="job-col-left">
 
-      <div class="panel">
-        <h3 class="panel-label">Reported symptoms</h3>
-        ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
-          <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
-          <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
-          <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
-        </div>` : ''}
-        <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
-      </div>
+          <div class="panel">
 
-      <div class="panel">
-        <h3 class="panel-label">Diagnostics</h3>
-        <ul class="tests">${testRows}</ul>
-      </div>
+            ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
 
-      <div class="panel">
-        <h3 class="panel-label">Commit fix</h3>
-        ${firstJob && !pendingFirstFixId
-          ? `<p class="fix-guidance">Choose when the evidence is strong enough. Your first selection gets one confirmation.</p>`
-          : ''}
-        ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
-          <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
-        ${pendingFirstFixId
-          ? `<div class="first-fix-warning" role="alert">
-              <p><strong>Commit ${pendingFixLabel}?</strong></p>
-              <p>This ends diagnosis. A wrong fix causes a reduced-rate callback tomorrow.</p>
-              <div class="first-fix-actions">
-                <button class="btn btn-primary" data-action="confirm-first-fix">Commit fix</button>
-                <button class="btn btn-sm" data-action="cancel-first-fix">Keep diagnosing</button>
-              </div>
-            </div>`
-          : `<div class="fixes">${fixButtons}</div>`}
+            ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
+
+            <h2 class="job-client">${clientName}</h2>
+
+            <p class="job-machine">${safeMachineName}</p>
+
+            ${portraitHtml}
+
+            ${clockBar}
+
+          </div>
+
+
+
+          <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
+
+
+
+          <div class="panel">
+
+            <h3 class="panel-label">Reported symptoms</h3>
+
+            ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
+
+              <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
+
+              <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
+
+              <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
+
+            </div>` : ''}
+
+            <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
+
+          </div>
+
+        </div>
+
+
+        <div class="job-col-right">
+
+          <div class="panel">
+
+            <h3 class="panel-label">Diagnostics</h3>
+
+            <ul class="tests">${testRows}</ul>
+
+          </div>
+
+
+
+          <div class="panel">
+
+            <h3 class="panel-label">Commit fix</h3>
+
+            ${firstJob && !pendingFirstFixId
+
+              ? `<p class="fix-guidance">Choose when the evidence is strong enough. Your first selection gets one confirmation.</p>`
+
+              : ''}
+
+            ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
+
+              <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
+
+            ${pendingFirstFixId
+
+              ? `<div class="first-fix-warning" role="alert">
+
+                  <p><strong>Commit ${pendingFixLabel}?</strong></p>
+
+                  <p>This ends diagnosis. A wrong fix causes a reduced-rate callback tomorrow.</p>
+
+                  <div class="first-fix-actions">
+
+                    <button class="btn btn-primary" data-action="confirm-first-fix">Commit fix</button>
+
+                    <button class="btn btn-sm" data-action="cancel-first-fix">Keep diagnosing</button>
+
+                  </div>
+
+                </div>`
+
+              : `<div class="fixes">${fixButtons}</div>`}
+
+          </div>
+
+        </div>
+
       </div>
     </section>`;
 }
@@ -394,34 +608,92 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
  * @returns {string}
  */
 export function repairView({ state, repairBeat }) {
-  const svg = machineSvg(repairBeat.machineType, 'working');
-  const artSlotClass = svg ? 'art-slot art-slot--has-image' : 'art-slot';
-  const artSlotContent = svg ?? '[ repaired ]';
+  const imageSrc = machineImageSrc(repairBeat.machineType, 'working', state.settings.graphicsMode);
+  const svg = imageSrc ? null : machineSvg(repairBeat.machineType, 'working');
+  const artSlotClass = imageSrc || svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const artSlotContent = imageSrc
+    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
+    : (svg ?? '[ repaired ]');
 
   return `
     ${statusBar(state)}
     <section class="screen screen-repair">
-      <p class="repair-headline">Running cold again.</p>
-      <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
-      <div class="repair-beat">
-        <div class="repair-bolt" data-repair-hold role="button" tabindex="0"
-             aria-label="Hold to tighten the panel, or press Enter to finish">
-          <span class="repair-bolt-fill"></span>
-          <span class="repair-bolt-label">Hold to tighten</span>
+      <div class="repair-layout-cols">
+
+        <div class="repair-col-left">
+
+          <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
+
         </div>
-        <button class="btn btn-sm" data-action="finish-repair">Skip</button>
+
+        <div class="repair-col-right">
+
+          <p class="repair-headline">Running cold again.</p>
+
+          <div class="repair-beat">
+
+            <div class="repair-bolt" data-repair-hold role="button" tabindex="0"
+
+                 aria-label="Hold to tighten the panel, or press Enter to finish">
+
+              <span class="repair-bolt-fill"></span>
+
+              <span class="repair-bolt-label">Hold to tighten</span>
+
+            </div>
+
+            <button class="btn btn-sm" data-action="finish-repair">Skip</button>
+
+          </div>
+
+        </div>
       </div>
     </section>`;
 }
 
 export function invoiceView({ state, invoice }) {
-  const { correct, fault, earned, chosenFix, callback, callbackSource, unlockedTier } = invoice;
+  const { correct, fault, earned, chosenFix, callback, callbackSource, unlockedTier, isWorkshop } = invoice;
+
 
   let lineItems;
   let outcomeClass;
   let outcomeText;
+  let receiptNote = '';
 
-  if (correct && callback) {
+
+
+  if (isWorkshop) {
+
+    if (correct) {
+
+      outcomeClass = 'receipt-outcome--good';
+
+      outcomeText = 'Refurbished!';
+
+      lineItems = `
+
+        <div class="receipt-line"><span>Status</span><span>Refurbished</span></div>
+
+        <div class="receipt-line receipt-line--total"><span>Earned</span><span>$0</span></div>`;
+
+      receiptNote = `<p class="receipt-note">You can now sell this machine from the Workshop panel on the home screen for a profit.</p>`;
+
+    } else {
+
+      outcomeClass = 'receipt-outcome--bad';
+
+      outcomeText = 'Failed!';
+
+      lineItems = `
+
+        <div class="receipt-line"><span>Status</span><span>Still Damaged</span></div>`;
+
+      receiptNote = `<p class="receipt-note">The machine is still broken. Try repairing it again.</p>`;
+
+    }
+
+  } else if (correct && callback) {
+
     outcomeClass = 'receipt-outcome--good';
     outcomeText = 'Fixed!';
     lineItems = `
@@ -429,6 +701,8 @@ export function invoiceView({ state, invoice }) {
       <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
       <div class="receipt-line"><span>${callbackSource === 'tech' ? 'Rescue rate' : 'Callback rate'}</span><span>×${callbackRatePct(callbackSource)}%</span></div>
       <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
+    receiptNote = '';
+
   } else if (correct) {
     const bonus = speedBonus(invoice.minutesSpent ?? 0);
     outcomeClass = 'receipt-outcome--good';
@@ -438,23 +712,23 @@ export function invoiceView({ state, invoice }) {
       <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
       <div class="receipt-line"><span>Speed bonus</span><span>+$${bonus}</span></div>
       <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
+    receiptNote = '';
+
   } else if (callback) {
     outcomeClass = 'receipt-outcome--bad';
     outcomeText = 'Callback.';
     lineItems = `
       <div class="receipt-line"><span>Repeat miss</span><span>$0</span></div>`;
+    receiptNote = `<p class="receipt-note">Wrong again — back on the board tomorrow. No charge.</p>`;
+
   } else {
     outcomeClass = 'receipt-outcome--bad';
     outcomeText = 'Callback.';
     lineItems = `
       <div class="receipt-line"><span>Partial payout</span><span>$${earned}</span></div>`;
-  }
+    receiptNote = `<p class="receipt-note">Wrong call — that machine will be back tomorrow.</p>`;
 
-  const receiptNote = (!correct && callback)
-    ? `<p class="receipt-note">Wrong again — back on the board tomorrow. No charge.</p>`
-    : (!correct)
-      ? `<p class="receipt-note">Wrong call — that machine will be back tomorrow.</p>`
-      : '';
+  }
 
   // Failure is a lesson (GDD §2.1): contrast the player's pick with the correct
   // fix and explain the discriminating clue so the next call is a better one.
@@ -503,6 +777,24 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="open-shop"]').forEach((el) =>
     el.addEventListener('click', actions.openShop)
   );
+  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
+    el.addEventListener('click', actions.openSettings)
+  );
+  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
+    el.addEventListener('click', actions.openSettings)
+  );
+  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
+    el.addEventListener('click', actions.openSettings)
+  );
+  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
+    el.addEventListener('click', actions.openSettings)
+  );
+  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
+
+    el.addEventListener('click', actions.openSettings)
+
+  );
+
   root.querySelectorAll('[data-action="start-motd"]').forEach((el) =>
     el.addEventListener('click', actions.startMotd)
   );
@@ -545,6 +837,30 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="finish-repair"]').forEach((el) =>
     el.addEventListener('click', actions.finishRepair)
   );
+  root.querySelectorAll('[data-action="sell-business"]').forEach((el) =>
+
+    el.addEventListener('click', actions.sellBusiness)
+
+  );
+
+  root.querySelectorAll('[data-buy-workshop-machine]').forEach((el) =>
+
+    el.addEventListener('click', () => actions.buyWorkshopMachine(el.dataset.buyWorkshopMachine))
+
+  );
+
+  root.querySelectorAll('[data-repair-workshop-machine]').forEach((el) =>
+
+    el.addEventListener('click', () => actions.repairWorkshopMachine(el.dataset.repairWorkshopMachine))
+
+  );
+
+  root.querySelectorAll('[data-sell-workshop-machine]').forEach((el) =>
+
+    el.addEventListener('click', () => actions.sellWorkshopMachine(el.dataset.sellWorkshopMachine))
+
+  );
+
   wireRepairHold(root, actions);
 }
 

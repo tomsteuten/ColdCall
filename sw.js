@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v12';
+const CACHE = 'coldcall-v14';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).
@@ -70,7 +70,18 @@ const APP_SHELL = [
   'data/faults/slushie-thermostat-stuck.json',
   'data/faults/staff-didnt-prime-it.json',
   'data/faults/voltage-sag-resets.json',
-  'data/faults/worn-scraper-blades.json',
+  "data/faults/worn-scraper-blades.json",
+  "data/faults/froyo-agitator-intermittent-freeze.json",
+  "data/faults/froyo-thermistor-drift.json",
+  "data/faults/froyo-draw-valve-microswitch.json",
+  "data/faults/froyo-intermittent-solenoid-valve.json",
+  "data/faults/granita-intermittent-gear-motor.json",
+  "data/faults/granita-clogged-condenser-drain.json",
+  "data/faults/granita-mix-scale-insulation.json",
+  "data/faults/ice-machine-clogged-water-distributor.json",
+  "data/faults/ice-machine-intermittent-water-inlet-valve.json",
+  "data/faults/ice-machine-harvest-switch-drift.json",
+  "data/faults/ice-machine-leaking-hot-gas-valve.json"
 ].map((path) => BASE + path);
 
 self.addEventListener('install', (e) => {

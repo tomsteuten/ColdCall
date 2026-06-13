@@ -10,6 +10,21 @@
       "id": "soft-serve-commercial",
       "name": "FrostKing 4500 Soft Serve",
       "tier": 2
+    },
+    {
+      "id": "froyo-multihead",
+      "name": "YogurtMaster 3000 Multihead Froyo",
+      "tier": 3
+    },
+    {
+      "id": "granita-slushie",
+      "name": "GlacierGlide Triple-Bowl Granita",
+      "tier": 3
+    },
+    {
+      "id": "commercial-ice-dispenser",
+      "name": "IceO-Matic 9000 Commercial Ice Maker",
+      "tier": 3
     }
   ]
 }

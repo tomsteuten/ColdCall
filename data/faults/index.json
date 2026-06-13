@@ -38,5 +38,16 @@
   "voltage-sag-resets.json",
   "door-gasket-deteriorated.json",
   "brushless-drive-position-fault.json",
-  "heat-treat-lid-left-open.json"
+  "heat-treat-lid-left-open.json",
+  "froyo-agitator-intermittent-freeze.json",
+  "froyo-thermistor-drift.json",
+  "froyo-draw-valve-microswitch.json",
+  "froyo-intermittent-solenoid-valve.json",
+  "granita-intermittent-gear-motor.json",
+  "granita-clogged-condenser-drain.json",
+  "granita-mix-scale-insulation.json",
+  "ice-machine-clogged-water-distributor.json",
+  "ice-machine-intermittent-water-inlet-valve.json",
+  "ice-machine-harvest-switch-drift.json",
+  "ice-machine-leaking-hot-gas-valve.json"
 ]

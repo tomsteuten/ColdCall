@@ -20,7 +20,7 @@
     },
     {
       "id": "burgertown-high-st",
-      "name": "Burgertown \u2014 High Street",
+      "name": "Burgertown — High Street",
       "tier": 2,
       "contact": {
         "name": "Cheryl Voss",
@@ -33,6 +33,40 @@
         "shirt": "#38445c",
         "accent": "#f0917f",
         "expression": "weary"
+      }
+    },
+    {
+      "id": "kwiktrip-servo",
+      "name": "QuickTrip Service Station",
+      "tier": 3,
+      "contact": {
+        "name": "Sanjay Kapoor",
+        "role": "Station Supervisor & Midnight Shift Survivor",
+        "flavour": "If the ice dispenser is down, taxi drivers will riot."
+      },
+      "portrait": {
+        "skin": "#a67c52",
+        "hair": "#111111",
+        "shirt": "#b83b3b",
+        "accent": "#f2cb05",
+        "expression": "weary"
+      }
+    },
+    {
+      "id": "yo-go-froyo",
+      "name": "Yo-Go Froyo Paradise",
+      "tier": 3,
+      "contact": {
+        "name": "Chloe Vance",
+        "role": "Lead Froyo Consultant & Part-time Student",
+        "flavour": "Like, the self-serve levers are totally jammed or whatever."
+      },
+      "portrait": {
+        "skin": "#fbe3b5",
+        "hair": "#e5a3bf",
+        "shirt": "#9bc4e2",
+        "accent": "#df8ec2",
+        "expression": "bright"
       }
     }
   ]

@@ -44,7 +44,6 @@ export function render(root, ctx) {
     .join('');
 
   const staffSection = staffHTML(state);
-  const saveSection = saveDataHTML(exportMessage, importError);
 
   root.innerHTML = `
     ${statusBar(state)}
@@ -52,7 +51,6 @@ export function render(root, ctx) {
       <h2 class="section-title">Tools shop</h2>
       <ul class="shop-list">${toolCards}</ul>
       ${staffSection}
-      ${saveSection}
       <button class="btn btn-primary" data-action="close-shop">Back</button>
     </section>`;
 
@@ -65,31 +63,6 @@ export function render(root, ctx) {
   root.querySelectorAll('[data-action="hire-tech"]').forEach((el) =>
     el.addEventListener('click', actions.hireTech)
   );
-  root.querySelectorAll('[data-action="export-save"]').forEach((el) =>
-    el.addEventListener('click', actions.exportSave)
-  );
-  root.querySelectorAll('[data-action="import-save"]').forEach((el) =>
-    el.addEventListener('click', () => {
-      const blob = root.querySelector('.import-textarea')?.value ?? '';
-      actions.importSave(blob);
-    })
-  );
-}
-
-function saveDataHTML(exportMessage, importError) {
-  return `
-    <h2 class="section-title">Save data</h2>
-    <div class="shop-card">
-      <p class="shop-tool-blurb">Copy your save to clipboard and paste it on another device to transfer your progress.</p>
-      <button class="btn btn-buy" data-action="export-save">Export save — copy to clipboard</button>
-      ${exportMessage ? `<p class="settings-ok">${exportMessage}</p>` : ''}
-    </div>
-    <div class="shop-card">
-      <p class="shop-tool-blurb">Paste a save blob exported from another device. This replaces your current save and reloads the game.</p>
-      <textarea class="import-textarea" placeholder="Paste save blob here…" rows="3"></textarea>
-      <button class="btn btn-buy" data-action="import-save">Import save — replace &amp; reload</button>
-      ${importError ? `<p class="settings-err">${escapeHtml(importError)}</p>` : ''}
-    </div>`;
 }
 
 /** Plain-English explainer of what a hire delivers — shown before the purchase. */

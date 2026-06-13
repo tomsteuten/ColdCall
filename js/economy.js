@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -63,6 +63,8 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   // as a player obligation, the lower rate, so the change never over-pays.
   const source = callback ? callback.source ?? 'player' : 'player';
   let earned;
+  const multiplier = state.player.founderBonus || 1.0;
+
   if (correct) {
     if (fault.partsCost > 0) {
       const inStock = state.van.stock['generic-parts'] ?? 0;
@@ -74,11 +76,22 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
     const callbackMult =
       source === 'tech' ? JOBS.rescueCallbackPayoutMult : JOBS.callbackJobPayoutMult;
     earned = callback ? Math.round(net * callbackMult) : net + speedBonus(minutesSpent);
-    state.player.reputation += REPUTATION.correctFix;
+
+    // Apply founderBonus to correct fix cash earned
+    earned = Math.round(earned * multiplier);
+
+    // Apply founderBonus to correct fix reputation gain
+    const repGain = Math.round(REPUTATION.correctFix * multiplier);
+    state.player.reputation += repGain;
+
     state.stats.jobsCompleted += 1;
     if (!callback) state.stats.cleanStreak += 1;
   } else {
     earned = callback ? 0 : Math.round(fault.payout * JOBS.wrongFixPayoutMult);
+
+    // Apply founderBonus to wrong fix cash earned (if any)
+    earned = Math.round(earned * multiplier);
+
     state.player.reputation -= callback
       ? REPUTATION.repeatCallbackPenalty
       : REPUTATION.callbackPenalty;
@@ -274,3 +287,73 @@ export function buyTool(state, toolId) {
   tool.apply(state);
   return { ok: true, reason: null };
 }
+
+export const WORKSHOP_MACHINES = {
+  'slushie-machine': {
+    name: 'Polar Twister Twin-Bowl Slushie',
+    buyPrice: 100,
+    sellPrice: 200,
+    tierRequired: 1,
+  },
+  'soft-serve-commercial': {
+    name: 'FrostKing 4500 Soft Serve',
+    buyPrice: 250,
+    sellPrice: 500,
+    tierRequired: 2,
+  },
+  'froyo-multihead': {
+    name: 'YogurtMaster 3000 Multihead Froyo',
+    buyPrice: 500,
+    sellPrice: 1000,
+    tierRequired: 3,
+  },
+};
+
+/**
+ * Perform prestige ("Sell the Business").
+ * Resets cash, active/queued jobs, van stock, upgrades, routes, and hired techs.
+ * Keeps stats (like jobsCompleted, cleanStreak, etc.) and prestigeCount/founderBonus.
+ * Calculates the new founderBonus based on current reputation.
+ * GDD says: "keep a Founder Bonus (permanent multiplier from lifetime reputation)".
+ * @param {object} state game state (mutated)
+ */
+export function prestige(state) {
+  if (state.player.lifetimeEarnings < PRESTIGE.lifetimeEarningsThreshold) {
+    throw new Error('Cannot sell the business: lifetime earnings below threshold.');
+  }
+
+  const reputation = Math.max(0, state.player.reputation);
+  const bonusIncrease = reputation * 0.01;
+  state.player.founderBonus = Number(((state.player.founderBonus || 1.0) + bonusIncrease).toFixed(4));
+  state.player.prestigeCount = (state.player.prestigeCount || 0) + 1;
+
+  // Reset progress variables
+  state.player.cash = STARTING.cash;
+  state.player.reputation = 0;
+  state.player.lifetimeEarnings = 0;
+  state.player.tierUnlocked = STARTING.tierUnlocked;
+
+  // Reset tools
+  state.tools.multimeterTier = STARTING.multimeterTier;
+  state.tools.thermalCamera = false;
+
+  // Reset van
+  state.van.slots = STARTING.vanSlots;
+  state.van.stock = { 'generic-parts': STARTING.vanSlots };
+
+  // Reset techs & routes
+  state.techs = [];
+  state.routes = [];
+
+  // Reset active and queued jobs
+  state.jobs.active = null;
+  state.jobs.callbacks = [];
+
+  // Reset workshop machines
+  state.workshop = { machines: [] };
+
+  // Reset offlineJobCarry
+  state.offlineJobCarry = 0;
+}
+
+

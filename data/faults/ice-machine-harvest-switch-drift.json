@@ -1,0 +1,23 @@
+{
+  "id": "ice-machine-harvest-switch-drift",
+  "lesson": "An ice machine that freezes into a solid block because it never initiates harvest is often caused by a failed curtain/harvest switch. If the switch reads closed constantly, the controller thinks the ice sheet is still on the plate.",
+  "machineType": "commercial-ice-dispenser",
+  "tier": 3,
+  "symptoms": [
+    "Ice machine is frozen into a single solid block of ice.",
+    "Compressor and water pump are running, but no ice is harvested.",
+    "Machine is making a grinding noise as the ice sheet hits the thick ice on the plate."
+  ],
+  "tests": {
+    "error-log": "MAX FREEZE TIME EXCEEDED.",
+    "temp-probe": "Evaporator plate reads 5°F (-15°C).",
+    "inspect-beater": "N/A. Evaporator plate is completely encased in a thick, solid block of ice that has bridged across the grid.",
+    "continuity-test": "Harvest switch (curtain switch) reads closed circuit (0 ohms) regardless of whether the curtain is open or closed. The magnetic reed switch has failed closed."
+  },
+  "correctFix": "replace-harvest-curtain-switch",
+  "wrongFixes": ["replace-hot-gas-valve", "replace-evaporator-plate", "replace-thermostat"],
+  "payout": 250,
+  "partsCost": 30,
+  "flavour": "A new switch to close the curtain on this ice age.",
+  "authenticityNote": "Ice machines detect when ice has fallen off the evaporator plate during harvest using a plastic curtain with a magnet and a reed switch. If the reed switch fails closed (magnetised or shorted), the machine will keep freezing indefinitely, eventually creating a solid freeze-up block."
+}

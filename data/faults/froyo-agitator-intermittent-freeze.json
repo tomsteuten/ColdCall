@@ -1,0 +1,23 @@
+{
+  "id": "froyo-agitator-intermittent-freeze",
+  "lesson": "Intermittent beater overload errors are often caused by frozen mix scale buildup inside the barrel. A simple barrel descaling and cleaning procedure solves this without wasting parts.",
+  "machineType": "froyo-multihead",
+  "tier": 3,
+  "symptoms": [
+    "Froyo texture is grainy and uneven.",
+    "Agitator motor occasionally stops and hums.",
+    "Intermittent squealing sound during dispense."
+  ],
+  "tests": {
+    "error-log": "BEATER OVERLOAD - CURRENT SPIKE (intermittent).",
+    "temp-probe": "Barrel temp is running at 18°F (-8°C), within normal limits.",
+    "inspect-beater": "Beater blades are coated in a layer of rock-solid frozen mix scale, physically binding the agitator when the barrel gets cold.",
+    "continuity-test": "Agitator motor windings measure 12 ohms (normal). No short to ground."
+  },
+  "correctFix": "descale-beater-assembly",
+  "wrongFixes": ["replace-beater-motor", "replace-scraper-blades", "replace-beater-shaft-seal"],
+  "payout": 220,
+  "partsCost": 0,
+  "flavour": "Scaled back the resistance, now it spins like a dream.",
+  "authenticityNote": "Froyo mix contains a high sugar and mineral content that can crystallise and scale on the heat transfer surface. If the operator doesn't clean the barrel thoroughly, the scale builds up, and when the refrigerant cools the barrel, it contracts and freezes the agitator, causing an overload error. A simple descale/deep clean resolves this."
+}

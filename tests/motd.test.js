@@ -112,10 +112,11 @@ test('canPlayToday returns true the next day even if played yesterday', () => {
 // --- streak rules ---
 
 function playMotd(state, correct, dateStr, prevState = null) {
-  // Helper: simulate a settled motd run with injectable time.
+  // Helper: simulate a settled motd run. The 5th arg is simulated diagnostic
+  // minutes (the interruption-safe score), not wall time.
   const now = new Date(dateStr + 'T12:00:00Z').getTime();
   const fault = makeFaults()['fault-alpha'];
-  return settleMotd(state, fault, correct, ['error-log'], now - 30000, now);
+  return settleMotd(state, fault, correct, ['error-log'], 2, now);
 }
 
 test('first solve: streak becomes 1', () => {
@@ -176,15 +177,28 @@ test('solve after solve on same day does not double-count (guard: lastPlayedDate
 
 // --- settleMotd state mutations ---
 
-test('settleMotd stores testsUsed, timeMs, solved and the faultId in lastResult', () => {
+test('settleMotd stores testsUsed, simMinutes, solved and the faultId in lastResult', () => {
   const state = defaultState();
   const now = Date.UTC(2026, 5, 12, 12, 0, 0);
   const fault = makeFaults()['fault-alpha'];
-  settleMotd(state, fault, true, ['error-log', 'temp-probe'], now - 45000, now);
+  settleMotd(state, fault, true, ['error-log', 'temp-probe'], 7, now);
   assertEqual(state.motd.lastResult.testsUsed, 2);
   assertEqual(state.motd.lastResult.solved, true);
-  assert(state.motd.lastResult.timeMs > 0);
+  assertEqual(state.motd.lastResult.simMinutes, 7, 'stores simulated minutes, not wall time');
   assertEqual(state.motd.lastResult.faultId, 'fault-alpha', 'result must pin its fault');
+});
+
+test('settleMotd score is interruption-safe: simMinutes is the passed sim time, not wall-clock elapsed', () => {
+  // A real settle passes Date.now() as `now`, but the score must be the simulated
+  // minutes argument — independent of how long the player was actually away.
+  const state = defaultState();
+  const fault = makeFaults()['fault-alpha'];
+  const startedAt = Date.UTC(2026, 5, 12, 12, 0, 0);
+  // Simulate a 3-hour real-world interruption between start and settle.
+  const settledAt = startedAt + 3 * 60 * 60 * 1000;
+  const result = settleMotd(state, fault, true, ['error-log'], 5, settledAt, '2026-06-12');
+  assertEqual(result.simMinutes, 5, 'wall-clock gap must not inflate the score');
+  assertEqual(state.motd.lastResult.simMinutes, 5);
 });
 
 test('settleMotd does not touch cash or reputation', () => {
@@ -193,7 +207,7 @@ test('settleMotd does not touch cash or reputation', () => {
   const repBefore = state.player.reputation;
   const fault = makeFaults()['fault-alpha'];
   const now = Date.UTC(2026, 5, 12, 12, 0, 0);
-  settleMotd(state, fault, true, [], now - 10000, now);
+  settleMotd(state, fault, true, [], 0, now);
   assertEqual(state.player.cash, cashBefore, 'MotD must never change cash');
   assertEqual(state.player.reputation, repBefore, 'MotD must never change reputation');
 });
@@ -232,6 +246,26 @@ test('share card: day number advances correctly from epoch', () => {
   assert(card2.includes('Day 2'), `expected Day 2 in: ${card2}`);
 });
 
+test('share card: simulated minutes appear as the secondary score after the grid', () => {
+  const result = { testsUsed: 2, solved: true, streak: 1, simMinutes: 13 };
+  const card = buildShareCard(result, '2026-06-12');
+  assert(card.includes('🔬🔬✅ · 13 min'), `expected grid + minutes in: ${card}`);
+});
+
+test('share card: never shows wall-clock seconds — only the simulated-minute suffix', () => {
+  const result = { testsUsed: 1, solved: true, streak: 1, simMinutes: 5 };
+  const card = buildShareCard(result, '2026-06-12');
+  assert(!card.includes('s\n') && !/\d+\.\d+s/.test(card), `card must not show seconds: ${card}`);
+  assert(card.includes('5 min'), `expected minutes in: ${card}`);
+});
+
+test('share card: legacy result with no simMinutes omits the minutes suffix', () => {
+  const result = { testsUsed: 2, solved: true, streak: 1 }; // pre-v10 shape, no simMinutes
+  const card = buildShareCard(result, '2026-06-12');
+  assert(card.includes('🔬🔬✅'), `grid still renders: ${card}`);
+  assert(!card.includes('min'), `no minutes suffix for legacy results: ${card}`);
+});
+
 test('getTodayDateStr returns a YYYY-MM-DD string for a known epoch', () => {
   const now = Date.UTC(2026, 5, 12, 15, 30, 0); // 2026-06-12T15:30Z
   assertEqual(getTodayDateStr(now), '2026-06-12');
@@ -243,10 +277,9 @@ test('puzzle date is pinned to start day even if settled after UTC midnight', ()
   // Simulate: puzzle started at 23:55 on 2026-06-12, settled at 00:05 on 2026-06-13.
   const state = defaultState();
   const fault = makeFaults()['fault-alpha'];
-  const startedAt = Date.UTC(2026, 5, 12, 23, 55, 0); // 23:55 on June 12
   const settledAt = Date.UTC(2026, 5, 13,  0,  5, 0); // 00:05 on June 13
   const puzzleDateStr = '2026-06-12';
-  settleMotd(state, fault, true, ['error-log'], startedAt, settledAt, puzzleDateStr);
+  settleMotd(state, fault, true, ['error-log'], 8, settledAt, puzzleDateStr);
   assertEqual(state.motd.lastPlayedDate, '2026-06-12', 'lastPlayedDate must be the start day');
   assertEqual(state.motd.lastResult.puzzleDateStr, '2026-06-12', 'lastResult.puzzleDateStr must be the start day');
 });
@@ -256,9 +289,9 @@ test('streak still increments correctly when settled across midnight (puzzle dat
   const state = defaultState();
   const fault = makeFaults()['fault-alpha'];
   // Day 1 play
-  settleMotd(state, fault, true, [], Date.UTC(2026, 5, 12, 12, 0, 0), Date.UTC(2026, 5, 12, 12, 0, 0), '2026-06-12');
+  settleMotd(state, fault, true, [], 0, Date.UTC(2026, 5, 12, 12, 0, 0), '2026-06-12');
   // Day 2 play — started on June 13, settled on June 14, puzzleDateStr keeps it as June 13
-  const result = settleMotd(state, fault, true, [], Date.UTC(2026, 5, 13, 23, 50, 0), Date.UTC(2026, 5, 14, 0, 5, 0), '2026-06-13');
+  const result = settleMotd(state, fault, true, [], 0, Date.UTC(2026, 5, 14, 0, 5, 0), '2026-06-13');
   assertEqual(result.streak, 2, 'streak should increment because puzzleDateStr is June 13 (day after June 12)');
   assertEqual(state.motd.lastPlayedDate, '2026-06-13');
 });

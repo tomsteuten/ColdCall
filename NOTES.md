@@ -7,18 +7,31 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (Session 20 — interruption-safe Machine of the Day scoring)
+## Status (Session 20 done; external Antigravity work also landed)
 
-Session 19 is complete. Proceed with Session 20 from the roadmap below
-("Session 20 — Interruption-safe Machine of the Day scoring"). It needs one design
-decision before coding (default recommendation in the roadmap: rank/share by tests
-used first, simulated minutes second; never elapsed wall time). Read `GDD.md` §5,
-`CLAUDE.md`, and this file first; inspect `js/motd.js`, `settleMotd`/`buildShareCard`
-in `js/economy.js`/`js/motd.js`, and the share/result UI. Strongest model — shared
-puzzle scoring is a correctness contract; keep deterministic date pinning and equal
-tool access intact, and keep old saved results readable. Run `node tests/run.js`
-before changing code; bump the sw.js cache if app-shell files change; don't push
-without Tom's approval.
+**Session 20 — interruption-safe Machine of the Day scoring — is complete.** The MotD
+is scored/shared by tests used first, simulated diagnostic minutes second; wall-clock
+solve time is gone (see "What session 20 added" below). Decision taken: the roadmap
+default (tests first, then simulated minutes, never elapsed wall time).
+
+**Heads-up for the next session — the tree contains a lot of un-handover'd work.**
+After the Session 20 turn, the workspace was reconstructed by an external agent
+(Google Antigravity; see `walkthrough.md` in Downloads, untracked). That recovery:
+- added substantial NEW features not yet documented here: Tier 3 cold-side machine
+  SVGs (`froyo-multihead`, `granita-slushie`, `commercial-ice-dispenser`), prestige
+  (`player.prestigeCount`/`founderBonus`), a workshop (`workshop.machines`, schema
+  10→11→12), a settings screen (`js/ui/settings.js`), the `Outfit` web font, and
+  CSS keyframe animations (LED pulse, fluid slosh, agitator spin, repair rattle);
+- but left Session 20 half-reverted: `state.js`+`diagnosis.js` used `simMinutes`
+  while `js/motd.js`, `js/ui/motd.js`, and `tests/motd.test.js` had snapped back to
+  the old wall-clock `timeMs`, which would have shown a ~54-year solve time in game.
+  This commit re-applies the Session 20 `simMinutes` versions of those three files to
+  make the tree internally consistent (matching Antigravity's stated intent in the
+  walkthrough). `node tests/run.js` → 221 passing.
+
+Next session: read `walkthrough.md`, verify Antigravity's Tier 3 / prestige / workshop
+features against `GDD.md`, and write a proper handover entry for them — they are in the
+code and tests but not yet in this file. Don't push without Tom's approval.
 
 ### What session 19 added (callback, staff, and offline clarity — GDD §3.1/§3.2)
 

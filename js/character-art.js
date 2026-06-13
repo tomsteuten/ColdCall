@@ -3,6 +3,22 @@
 const SAFE_COLOUR = /^#[0-9a-f]{6}$/i;
 const EXPRESSIONS = new Set(['bright', 'weary', 'stern']);
 
+const GENERATED_PORTRAITS = {
+  'kwik-stop-corner': 'assets/generated/nina-patel.webp',
+  'burgertown-high-st': 'assets/generated/cheryl-voss.webp',
+  'kwiktrip-servo': 'assets/generated/cheryl-voss.webp',
+  'yo-go-froyo': 'assets/generated/cheryl-voss.webp',
+};
+
+/**
+ * Return the generated raster portrait for a known client.
+ * @param {string} clientId
+ * @returns {string|null}
+ */
+export function clientPortraitImageSrc(clientId) {
+  return GENERATED_PORTRAITS[clientId] ?? null;
+}
+
 function colour(value, fallback) {
   return typeof value === 'string' && SAFE_COLOUR.test(value) ? value : fallback;
 }
