@@ -1,5 +1,6 @@
 {
   "id": "slushie-motor-brushes-worn",
+  "lesson": "An agitator that runs then drops out, with arcing at the vents and brushes worn to stubs, is a brush-wear fault. The windings are healthy — only the brushes are gone.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

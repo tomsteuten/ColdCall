@@ -21,6 +21,7 @@ can't list a directory, so that manifest is how the loader finds fault files.
 | `payout` | number | yes | Base payout in $ for a correct first-time fix. Stays within the tier's range in `config/balance.js`. |
 | `partsCost` | number | yes | Cost in $ of parts consumed by the correct fix. `0` for procedure-only fixes. |
 | `flavour` | string | yes | One-liner shown on the invoice. Pun-heavy, screenshot bait. |
+| `lesson` | string | yes | Player-facing diagnostic reasoning shown on a **failure** receipt (GDD §2.1). Name the discriminating clue and why the obvious wrong fix is a trap, in 1–2 sentences. Plain player language — do **not** paste `authenticityNote` verbatim. |
 | `authenticityNote` | string | no | Real-world note for contributors — why this fault is genuine. Never shown in game. |
 
 ## Test ids (launch set)
@@ -56,6 +57,7 @@ Defined by the diagnosis engine; faults may only reference these:
   "payout": 90,
   "partsCost": 10,
   "flavour": "Sealed the deal for the price of a rubber band.",
+  "lesson": "A leak at the dispense door is almost always the O-ring — never the door or barrel seal. It's obvious enough that extra tests just burn job time you'll want later.",
   "authenticityNote": "Door O-rings are a routine wear item; leaks at the door are almost never anything else."
 }
 ```

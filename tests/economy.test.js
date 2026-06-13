@@ -85,6 +85,38 @@ test('wrong fix on a tech rescue re-queues it still tagged tech-caused', () => {
   assertEqual(state.jobs.callbacks[0].techName, 'Mike');
 });
 
+test('wrong fix saves the tests run as callback evidence (player obligation)', () => {
+  const state = defaultState();
+  settleJob(state, makeFault(), false, 'client-1', { testsRun: ['error-log', 'temp-probe'] });
+  assertEqual(state.jobs.callbacks[0].evidence, ['error-log', 'temp-probe'],
+    'the gathered evidence is preserved for the return visit');
+});
+
+test('a blind wrong fix saves no evidence (null, a clean return)', () => {
+  const state = defaultState();
+  settleJob(state, makeFault(), false, 'client-1', { testsRun: [] });
+  assertEqual(state.jobs.callbacks[0].evidence, null);
+});
+
+test('a re-botched tech rescue also captures the player-gathered evidence', () => {
+  const state = defaultState();
+  settleJob(state, makeFault(), false, 'client-1', {
+    callback: { misses: 1, source: 'tech', techId: 'tech-2', techName: 'Mike' },
+    testsRun: ['inspect-beater'],
+  });
+  assertEqual(state.jobs.callbacks[0].source, 'tech');
+  assertEqual(state.jobs.callbacks[0].evidence, ['inspect-beater'],
+    'evidence the player gathered survives onto the re-queued callback');
+});
+
+test('stored evidence is a copy, not a live reference to the active testsRun', () => {
+  const state = defaultState();
+  const testsRun = ['error-log'];
+  settleJob(state, makeFault(), false, 'client-1', { testsRun });
+  testsRun.push('temp-probe'); // mutating the source must not leak into the save
+  assertEqual(state.jobs.callbacks[0].evidence, ['error-log']);
+});
+
 test('wrong fix: reputation drops, clean streak resets, callbacksCaused counts', () => {
   const state = defaultState();
   settleJob(state, makeFault(), true, 'client-1');

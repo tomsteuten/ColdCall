@@ -1,5 +1,6 @@
 {
   "id": "slushie-thermostat-stuck",
+  "lesson": "A frozen block with the bowl driven far below setpoint means a thermostat stuck closed. The temp probe separates it from weak mix, which freezes at a perfectly normal temperature.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

@@ -1,5 +1,6 @@
 {
   "id": "heat-treat-lid-left-open",
+  "lesson": "HTR FAIL after a refill, with the log showing a lid-open event and the latch not fully clicked, means the lid aborted the cycle. Latch it before re-running, or it just fails again.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

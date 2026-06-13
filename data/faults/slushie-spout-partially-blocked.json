@@ -1,5 +1,6 @@
 {
   "id": "slushie-spout-partially-blocked",
+  "lesson": "A slow pour with no alarms and healthy internals points to a plug of crystallised syrup in the spout. Check and clear it before reaching for pumps or parts.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

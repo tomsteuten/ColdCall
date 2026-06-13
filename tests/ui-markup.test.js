@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, testCostCopy } from '../js/ui/job.js';
+import { isFirstJobOnboarding, jobView, invoiceView, testCostCopy } from '../js/ui/job.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
@@ -91,4 +91,66 @@ test('returning players do not receive first-job guidance or confirmation fricti
   assert(!html.includes('diagnosis-guide'), 'returning job should omit onboarding');
   assert(!html.includes('Your first selection gets one confirmation.'), 'returning fix should commit directly');
   assert(html.includes('data-fix="right-fix"'), 'normal fix buttons should remain available');
+});
+
+// --- failure-as-learning receipt (GDD §2.1) ---
+
+const lessonFault = {
+  ...fault,
+  lesson: 'A warm bowl with the compressor flat out means iced coils, not low gas — defrost it.',
+};
+
+test('a wrong fresh fix teaches: chosen vs correct fix and the discriminating clue', () => {
+  const state = defaultState();
+  const invoice = {
+    correct: false,
+    fault: lessonFault,
+    earned: 40,
+    chosenFix: 'wrong-fix',
+    callback: false,
+    callbackSource: null,
+    unlockedTier: null,
+    minutesSpent: 5,
+  };
+  const html = invoiceView({ state, invoice });
+  assert(html.includes('Where it went wrong'), 'failure receipt should frame the lesson');
+  assert(html.includes('You committed') && html.includes('Wrong fix'), 'should name the chosen fix');
+  assert(html.includes('Correct fix') && html.includes('Right fix'), 'should reveal the correct fix');
+  assert(html.includes(lessonFault.lesson), 'should explain the discriminating clue');
+  assert(html.includes('saved for the return visit'), 'a fresh miss should mention preserved evidence');
+});
+
+test('a repeat callback miss teaches but omits the fresh-miss evidence line', () => {
+  const state = defaultState();
+  const invoice = {
+    correct: false,
+    fault: lessonFault,
+    earned: 0,
+    chosenFix: 'wrong-fix',
+    callback: true,
+    callbackSource: 'player',
+    unlockedTier: null,
+    minutesSpent: 0,
+  };
+  const html = invoiceView({ state, invoice });
+  assert(html.includes('Where it went wrong'), 'a repeat miss is still a teaching moment');
+  assert(html.includes('Correct fix') && html.includes('Right fix'), 'should still reveal the correct fix');
+  assert(!html.includes('saved for the return visit'), 'the repeat-miss receipt already states it returns');
+});
+
+test('a correct fix shows no failure lesson and hides the correct-fix reveal', () => {
+  const state = defaultState();
+  const invoice = {
+    correct: true,
+    fault: lessonFault,
+    earned: 90,
+    chosenFix: 'right-fix',
+    callback: false,
+    callbackSource: null,
+    unlockedTier: null,
+    minutesSpent: 0,
+  };
+  const html = invoiceView({ state, invoice });
+  assert(!html.includes('Where it went wrong'), 'a win is not a lesson in failure');
+  assert(!html.includes('Correct fix'), 'do not reveal answers on a successful job');
 });

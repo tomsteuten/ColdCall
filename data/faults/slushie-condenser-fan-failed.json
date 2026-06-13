@@ -1,5 +1,6 @@
 {
   "id": "slushie-condenser-fan-failed",
+  "lesson": "Overtemp trips on a timer with a hot condenser outlet and a fan that will not spin means a seized fan motor. Look at the fan before reaching for the gauges.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

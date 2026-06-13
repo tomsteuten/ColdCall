@@ -1,5 +1,6 @@
 {
   "id": "slushie-drain-valve-stuck-open",
+  "lesson": "Product bleeding out with the machine idle and a drain valve held open by crystallised syrup is a stuck valve. Trace the leak before blaming the float or gasket.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

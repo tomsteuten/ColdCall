@@ -1,5 +1,6 @@
 {
   "id": "mix-pump-failed",
+  "lesson": "A LOW MIX alarm with a full hopper, rising barrel temp and open-circuit pump windings is a burned-out mix pump. It runs silently when healthy, so check the windings.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

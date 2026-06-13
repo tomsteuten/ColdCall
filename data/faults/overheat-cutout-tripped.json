@@ -1,5 +1,6 @@
 {
   "id": "overheat-cutout-tripped",
+  "lesson": "A dead machine in a hot, enclosed corner with a popped thermal cutout button just needs a reset — but fix the airflow or it trips again. It is not a compressor fault.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

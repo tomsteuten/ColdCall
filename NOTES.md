@@ -7,29 +7,70 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (Session 17 — failure as learning)
+## Next session prompt (Session 18 — light repair interaction and payoff)
 
-Session 16 is complete. Proceed with Session 17 from the roadmap below.
+Session 17 is complete. Proceed with Session 18 from the roadmap below.
 
-Start by reading `GDD.md`, `CLAUDE.md`, and `NOTES.md`, then inspect fault data,
-job settlement, callback state, and the invoice UI. Run the full test suite before
-changing code. Implement only Session 17: make wrong answers educational by
-showing the chosen fix, correct fix, and concise fault-specific reasoning after
-failure; preserve or review gathered evidence on player-caused callbacks so the
-return visit continues the investigation. Keep tech rescues clean unless a better
-small, explicit rule is justified.
+Start by reading `GDD.md` §2.3, `CLAUDE.md`, and `NOTES.md`, then inspect the
+active-job → invoice settlement path (`js/diagnosis.js commitFix`, `js/main.js
+commitSelectedFix`, `js/ui/job.js invoiceView`) and the `working`-state machine
+art (`js/machine-art.js`). Run the full test suite before changing code. Implement
+only Session 18: after a correct diagnosis, add a brief satisfying repair beat
+(hold-to-tighten or a short tap sequence), then show the machine's `working` art
+before the invoice. It is feedback, not a second skill gate — no economy or
+simulated-time penalty, accessible on touch, skippable/instant-safe, and
+interruption-safe. Refresh must neither duplicate nor lose a reward: choose and
+test an explicit settlement boundary (today settlement happens inside `commitFix`
+and the invoice is transient — decide where the repair beat sits relative to that
+money-moving call, and do not move cash twice).
 
-Treat saves as sacred. This work is likely to change persisted callback or active
-job state, so add a schema migration and migration tests for any shape change.
-Validate any new player-facing fault explanation field through the existing fault
-schema/load path. Do not expose the correct answer before commit, and do not
-implement Session 18's repair interaction, MotD timing changes, staff/idle
-changes, desktop redesign, or broad balance retuning.
+Treat saves as sacred. If the repair beat needs any persisted shape, add a schema
+migration + migration tests. Do not implement MotD timing changes (Session 20),
+callback/staff/offline clarity (Session 19), desktop redesign, audio, or broad
+balance retuning.
 
-Run `node tests/run.js`, manually verify fresh failure, player callback evidence,
-tech rescue behavior, and repeat failure at approximately 380px and desktop
-width, bump the service-worker cache if app-shell files change, and update this
-handover. Do not push without Tom's approval.
+Run `node tests/run.js`, manually verify the repair beat, the visible `working`
+art, and refresh-safety at ~380px and desktop width, bump the service-worker
+cache if app-shell files change, and update this handover. Do not push without
+Tom's approval.
+
+### What session 17 added (failure as learning + callback evidence persistence)
+
+- **Failure receipt teaches (GDD §2.1).** A wrong fix now renders a "Where it went
+  wrong" card below the receipt: the fix the player committed (warn-red) vs the
+  correct fix (green), then concise fault-specific reasoning naming the
+  discriminating clue and why the obvious wrong answer is a trap. A fresh miss adds
+  "Your evidence so far is saved for the return visit"; the repeat-miss receipt
+  omits it (it already says the machine returns). Correct fixes reveal nothing —
+  the answer is never exposed before commit.
+- **New `lesson` fault field.** Every fault now carries a required, player-facing
+  `lesson` string (authored fresh, not the contributor `authenticityNote`),
+  validated in `js/faults.js` like `flavour` and documented in
+  `data/faults/SCHEMA.md`. The invoice falls back to a generic prompt if a future
+  fault somehow lacks one. `commitFix` now returns `chosenFix` for the receipt.
+- **Player-callback evidence persistence.** A wrong fix stores the tests the player
+  ran as `evidence` on the queued callback (`settleJob`, new `testsRun` opt;
+  `null` when committed blind). Claiming the callback restores those tests into the
+  job's `testsRun` and recomputes the simulated clock (`startJob`), so the return
+  visit continues the investigation — already-run tests show their real results
+  immediately instead of charging for repeated button presses. Repeat misses
+  accumulate evidence; idle-generated tech rescues carry no evidence and start
+  clean, but a tech rescue the *player* then re-botches keeps the evidence they
+  gathered. Restore filters out any test id no longer in the catalogue.
+- **Schema v8 → v9 + migration.** Existing callbacks gain `evidence: null` (no
+  invented history); an already-present evidence array is left intact.
+- **PWA/tests.** `sw.js` cache bumped v9 → v10 (app-shell JS changed). `node
+  tests/run.js` → 203 passing, 0 failed (+15): v9 migration (with and without
+  prior evidence), settleJob evidence capture for both sources + blind + copy
+  safety, commitFix `chosenFix`, the full claim → restore → repeat-miss round trip,
+  tech-rescue clean start, unknown-test-id filtering, the new `lesson` validation,
+  and three failure-receipt markup checks (fresh miss, repeat miss, correct-fix
+  reveals nothing).
+- **Manual verification.** At ~375px and desktop: fresh failure receipt shows
+  chosen/correct fix + lesson + evidence note; the claimed callback opens with
+  "Pull and inspect beater assembly" already resolved under the "Callback — reduced
+  rate" badge; the lesson card stays in the centered column with no overflow at
+  desktop width; no console errors through the whole flow.
 
 ### What session 16 added (diagnosis comprehension + first-job onboarding)
 
@@ -446,7 +487,8 @@ update this file at the end.
   knowingly irreversible; inspection art no longer looks repaired; full suite
   and manual checks are green.
 
-### Session 17 — Failure as learning
+### Session 17 — Failure as learning ✓ DONE
+- See "What session 17 added" near the top of this file.
 - **Model:** strongest. This may change callback/active-job state and therefore
   touches save migrations and the settlement path.
 - **Start with:** "proceed with session 17 from notes.md" — specified, but decide

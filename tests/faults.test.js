@@ -21,6 +21,7 @@ function goodFault() {
     payout: 90,
     partsCost: 10,
     flavour: 'Sealed the deal for the price of a rubber band.',
+    lesson: 'A leak at the dispense door is almost always the O-ring, never the door or barrel seal.',
   };
 }
 const FILE = 'door-o-ring-gone.json';
@@ -78,6 +79,13 @@ test('non-positive payout and negative partsCost are named', () => {
   const errors = validateFault(f, FILE, MACHINES);
   assert(errors.some((e) => e.includes('"payout"')), errors.join(' | '));
   assert(errors.some((e) => e.includes('"partsCost"')), errors.join(' | '));
+});
+
+test('missing lesson is named (failure-receipt copy is required)', () => {
+  const f = goodFault();
+  delete f.lesson;
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(errors.some((e) => e.includes('"lesson"')), errors.join(' | '));
 });
 
 test('non-object input fails without throwing', () => {

@@ -1,5 +1,6 @@
 {
   "id": "hopper-lid-magnet-missing",
+  "lesson": "A LID OPEN alarm with the lid shut and the hall sensor reading zero field means the lid retention magnet has fallen out — an $8 part, not the board.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

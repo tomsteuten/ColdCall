@@ -1,5 +1,6 @@
 {
   "id": "expansion-valve-iced",
+  "lesson": "Soft product, a frosted suction line and near-zero superheat point to a stuck-closed expansion valve starving the evaporator — not overcharge. Check superheat.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

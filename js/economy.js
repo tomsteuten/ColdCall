@@ -50,13 +50,15 @@ export function speedBonus(minutesSpent) {
  * @param {object} fault the fault that was (or wasn't) fixed
  * @param {boolean} correct whether the committed fix was the correct one
  * @param {string} clientId for the callback queue entry
- * @param {{callback?: {misses: number, source?: string, techId?: string|null, techName?: string|null}|null, minutesSpent?: number, now?: number}} [opts]
+ * @param {{callback?: {misses: number, source?: string, techId?: string|null, techName?: string|null}|null, minutesSpent?: number, testsRun?: string[], now?: number}} [opts]
  *   callback context (source defaults to 'player' — the conservative lower rate),
- *   simulated minutes spent from the active job, and an injectable clock for tests
+ *   simulated minutes spent from the active job, the tests the player ran (saved
+ *   as evidence on a wrong-fix callback so the return visit continues the
+ *   investigation, GDD §2.1), and an injectable clock for tests
  * @returns {{earned: number, unlockedTier: number|null}} for the invoice screen
  */
 export function settleJob(state, fault, correct, clientId, opts = {}) {
-  const { callback = null, minutesSpent = 0, now = Date.now() } = opts;
+  const { callback = null, minutesSpent = 0, testsRun = [], now = Date.now() } = opts;
   // A callback with no source predates the split (old in-flight job) — treat it
   // as a player obligation, the lower rate, so the change never over-pays.
   const source = callback ? callback.source ?? 'player' : 'player';
@@ -90,6 +92,10 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
       misses: callback ? callback.misses + 1 : 1,
       // A botched rescue stays a rescue; a fresh miss is the player's obligation.
       source: callback ? source : 'player',
+      // Save the tests the player ran so the return visit continues the
+      // investigation instead of repeating button presses (GDD §2.1). Null when
+      // the player committed blind — nothing to restore, a clean start.
+      evidence: testsRun.length ? testsRun.slice() : null,
       ...(callback && source === 'tech'
         ? {
             techId: typeof callback.techId === 'string' ? callback.techId : null,
@@ -144,7 +150,7 @@ export function dueCallbacks(state, now = Date.now()) {
  * @param {Object<string, object>} faults fault library keyed by id
  * @param {number} index position in state.jobs.callbacks to claim
  * @param {number} [now] ms epoch, injectable for tests
- * @returns {{faultId: string, clientId: string, dueDay: string, expiryDay: string, misses: number, source: string, techId?: string|null, techName?: string|null}|null}
+ * @returns {{faultId: string, clientId: string, dueDay: string, expiryDay: string, misses: number, source: string, techId?: string|null, techName?: string|null, evidence?: string[]|null}|null}
  */
 export function claimCallback(state, faults, index, now = Date.now()) {
   const today = utcDateStringAfter(0, now);

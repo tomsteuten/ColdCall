@@ -1,5 +1,6 @@
 {
   "id": "display-controller-failed",
+  "lesson": "A blank display on a machine that is otherwise cooling and dispensing fine, with a dead data bus to the display chip, means the display board — not the main controller.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

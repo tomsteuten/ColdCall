@@ -1,5 +1,6 @@
 {
   "id": "slushie-mix-too-weak",
+  "lesson": "A frozen block at a normal bowl temperature means the mix is under syrup ratio, not a refrigeration fault — sugar is the antifreeze. Drain and re-mix it.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

@@ -1,5 +1,6 @@
 {
   "id": "mix-feed-valve-stuck-closed",
+  "lesson": "A LOW MIX alarm with the pump audibly running and a full hopper points to a stuck feed valve, not a dead pump. Confirm the pump is actually running before condemning it.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

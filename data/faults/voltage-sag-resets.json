@@ -1,5 +1,6 @@
 {
   "id": "voltage-sag-resets",
+  "lesson": "Reboots only at peak service, with the terminal voltage sagging to 196 V, mean an undersized supply cable. It is an electrician’s problem wearing a machine-fault disguise.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

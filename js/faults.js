@@ -74,6 +74,10 @@ export function validateFault(fault, fileName, machineTypeIds = null) {
   if (typeof fault.flavour !== 'string' || fault.flavour === '') {
     errors.push(`field "flavour" must be a non-empty string`);
   }
+  // Player-facing diagnostic reasoning shown on a failure receipt (GDD §2.1).
+  if (typeof fault.lesson !== 'string' || fault.lesson === '') {
+    errors.push(`field "lesson" must be a non-empty string`);
+  }
   if ('authenticityNote' in fault && typeof fault.authenticityNote !== 'string') {
     errors.push(`field "authenticityNote" must be a string when present`);
   }

@@ -1,5 +1,6 @@
 {
   "id": "draw-valve-microswitch-fault",
+  "lesson": "A DRAW HANDLE OPEN alarm with the handle shut and the microswitch reading triggered means a bent actuator arm — a $12 switch, not the controller board.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

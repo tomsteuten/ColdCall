@@ -1,5 +1,6 @@
 {
   "id": "door-o-ring-gone",
+  "lesson": "A leak at the dispense door is almost always the O-ring — a routine wear item, never the door or barrel seal. It is obvious enough that extra tests just burn job time you will want later.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": ["Mix leaking from the dispense door."],

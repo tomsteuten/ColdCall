@@ -1,5 +1,6 @@
 {
   "id": "barrel-freeze-up",
+  "lesson": "A first-start overcurrent with the barrel frozen solid means an interrupted overnight standby cycle, not a dead capacitor. Look inside and meter the motor before swapping parts — defrost and have a word with the closing shift.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

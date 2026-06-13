@@ -1,5 +1,6 @@
 {
   "id": "heat-treat-sensor-fault",
+  "lesson": "When the same HTR FAIL repeats night after night and continuity shows the mix sensor going open-circuit once hot, the sensor is the culprit. Re-running just burns another night.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

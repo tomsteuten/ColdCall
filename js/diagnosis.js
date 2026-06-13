@@ -55,8 +55,10 @@ export function shuffled(arr, next) {
  * @param {object} fault validated fault from the library
  * @param {string} clientId client this ticket came from
  * @param {function(): number} next PRNG in [0,1) for the option shuffle
- * @param {{misses: number, source?: string, techId?: string|null, techName?: string|null}|null} [callback] set when replaying a claimed
- *   callback — carries the miss count so settlement can dampen repeat penalties
+ * @param {{misses: number, source?: string, techId?: string|null, techName?: string|null, evidence?: string[]|null}|null} [callback] set when replaying a claimed
+ *   callback — carries the miss count so settlement can dampen repeat penalties,
+ *   and any `evidence` (tests run before the wrong fix) to restore so the return
+ *   visit continues the investigation rather than starting from a blank panel.
  * @param {boolean} [motd] true when this is a Machine of the Day run
  * @param {string|null} [puzzleDateStr] UTC date "YYYY-MM-DD" the MotD puzzle was
  *   started on; stored so settlement uses the start-day date even across UTC midnight.
@@ -64,13 +66,19 @@ export function shuffled(arr, next) {
  */
 export function startJob(state, fault, clientId, next, callback = null, motd = false, puzzleDateStr = null) {
   if (state.jobs.active) throw new Error('A job is already active');
+  // Restore preserved evidence from a player-worked callback (GDD §2.1). Filter
+  // to known test ids — the array is save-derived — and recompute the clock from
+  // them, since each test only costs simulated minutes on its first run.
+  const restored = Array.isArray(callback?.evidence)
+    ? callback.evidence.filter((id) => id in TESTS)
+    : [];
   state.jobs.active = {
     faultId: fault.id,
     clientId,
     machineType: fault.machineType,
     startedAt: Date.now(),
-    testsRun: [],
-    minutesSpent: 0, // simulated job clock (GDD §2.1) — drives the speed bonus
+    testsRun: restored.slice(),
+    minutesSpent: restored.reduce((m, id) => m + (DIAGNOSIS.testMinutes[id] ?? 0), 0),
     fixOptions: shuffled([fault.correctFix, ...fault.wrongFixes], next),
     callback,
     motd,
@@ -138,9 +146,10 @@ export function runTest(state, testId, faults) {
  * @param {object} state game state (mutated: job cleared, economy applied)
  * @param {string} fixId one of the job's fixOptions
  * @param {Object<string, object>} faults fault library keyed by id
- * @returns {{correct: boolean, fault: object, earned: number, callback: boolean, callbackSource: string|null, unlockedTier: number|null, minutesSpent: number}}
+ * @returns {{correct: boolean, fault: object, earned: number, chosenFix: string, callback: boolean, callbackSource: string|null, unlockedTier: number|null, minutesSpent: number}}
  *   for the invoice screen (minutesSpent lets it show the speed bonus earned;
- *   callbackSource lets it show the right callback rate)
+ *   callbackSource lets it show the right callback rate; chosenFix lets a failure
+ *   receipt contrast the player's pick with the correct fix, GDD §2.1)
  */
 export function commitFix(state, fixId, faults) {
   const job = state.jobs.active;
@@ -162,12 +171,14 @@ export function commitFix(state, fixId, faults) {
   const { earned, unlockedTier } = settleJob(state, fault, correct, job.clientId, {
     callback,
     minutesSpent,
+    testsRun: job.testsRun,
   });
   state.jobs.active = null;
   return {
     correct,
     fault,
     earned,
+    chosenFix: fixId,
     callback: callback !== null,
     callbackSource: callback ? callback.source ?? 'player' : null,
     unlockedTier,

@@ -1,5 +1,6 @@
 {
   "id": "brushless-drive-position-fault",
+  "lesson": "A BEATER FAULT with a freely-spinning beater, healthy windings and an erratic Hall sensor is a position-sensor fault. The cap-start swap is the trap for techs trained on older machines.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

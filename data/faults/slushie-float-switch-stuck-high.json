@@ -1,5 +1,6 @@
 {
   "id": "slushie-float-switch-stuck-high",
+  "lesson": "A MIX LOW alarm with full stock and a float stuck in the raised position means the switch is lying about the level. Replace the float switch.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

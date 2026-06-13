@@ -1,5 +1,6 @@
 {
   "id": "slushie-condenser-clogged",
+  "lesson": "Warm slush, warm exhaust air and a dust-matted intake grille mean the condenser cannot reject heat. Clean it — the refrigerant was fine, so regassing is the expensive miss.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

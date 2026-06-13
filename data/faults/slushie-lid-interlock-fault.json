@@ -1,5 +1,6 @@
 {
   "id": "slushie-lid-interlock-fault",
+  "lesson": "A LID OPEN alarm with the lid shut and the reed switch reading open means the magnet has drifted out of alignment. Realign it — do not swap the board.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

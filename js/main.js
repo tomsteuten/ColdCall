@@ -104,6 +104,7 @@ const actions = {
         source: cb.source,
         techId: cb.techId ?? null,
         techName: cb.techName ?? null,
+        evidence: cb.evidence ?? null,
       });
       screen = 'home';
       save(state);

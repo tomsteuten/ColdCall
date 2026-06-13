@@ -199,3 +199,88 @@ test('reputation moves by the configured amounts', () => {
 test('fixLabel turns kebab ids into readable labels', () => {
   assertEqual(fixLabel('replace-scraper-blades'), 'Replace scraper blades');
 });
+
+// --- failure as learning: chosenFix on the receipt, evidence across a callback ---
+
+test('commitFix returns the fix the player chose (for the failure receipt)', () => {
+  const wrong = freshJobState();
+  assertEqual(commitFix(wrong, 'wrong-a', FAULTS).chosenFix, 'wrong-a');
+  const right = freshJobState();
+  assertEqual(commitFix(right, 'right-fix', FAULTS).chosenFix, 'right-fix');
+});
+
+test('a wrong fix preserves the run tests as evidence on the queued callback', () => {
+  const state = freshJobState();
+  runTest(state, 'temp-probe', FAULTS);
+  runTest(state, 'error-log', FAULTS);
+  commitFix(state, 'wrong-a', FAULTS);
+  assertEqual(state.jobs.callbacks[0].evidence, ['temp-probe', 'error-log']);
+});
+
+/** Mirror main.js takeCallback: claim restores misses/source/evidence onto the job. */
+function takeCallback(state, cb) {
+  startJob(state, FAULTS[cb.faultId], cb.clientId, mulberry32(99), {
+    misses: cb.misses,
+    source: cb.source,
+    techId: cb.techId ?? null,
+    techName: cb.techName ?? null,
+    evidence: cb.evidence ?? null,
+  });
+}
+
+test('claiming a player callback restores the gathered evidence and clock', () => {
+  const state = freshJobState();
+  runTest(state, 'temp-probe', FAULTS); // 5 simulated minutes, reveals the clue
+  commitFix(state, 'wrong-a', FAULTS);
+  const cb = state.jobs.callbacks.shift();
+
+  takeCallback(state, cb);
+  const job = state.jobs.active;
+  assertEqual(job.testsRun, ['temp-probe'], 'the return visit continues the investigation');
+  assertEqual(job.minutesSpent, DIAGNOSIS.testMinutes['temp-probe'], 'clock recomputed from restored tests');
+  // The already-run test still reads its real result, not the generic line.
+  assert(job.fixOptions.includes('right-fix'), 'fix options reshuffled for the callback');
+});
+
+test('a repeat miss accumulates evidence across the return visit', () => {
+  const state = freshJobState();
+  runTest(state, 'temp-probe', FAULTS);
+  commitFix(state, 'wrong-a', FAULTS);
+  const cb1 = state.jobs.callbacks.shift();
+
+  takeCallback(state, cb1);
+  runTest(state, 'error-log', FAULTS); // gather one more clue before missing again
+  commitFix(state, 'wrong-b', FAULTS);
+
+  const cb2 = state.jobs.callbacks[0];
+  assertEqual(cb2.misses, 2, 'repeat miss increments the count');
+  assertEqual(cb2.evidence.slice().sort(), ['error-log', 'temp-probe'],
+    'evidence grows with the second visit, nothing is forgotten');
+});
+
+test('a tech rescue with no evidence starts the claim clean', () => {
+  const state = defaultState();
+  takeCallback(state, {
+    faultId: 'test-fault',
+    clientId: 'burgertown-high-st',
+    misses: 1,
+    source: 'tech',
+    techId: 'tech-1',
+    techName: 'Dave',
+    evidence: null,
+  });
+  assertEqual(state.jobs.active.testsRun, [], 'an idle-generated rescue is a blank investigation');
+  assertEqual(state.jobs.active.minutesSpent, 0);
+});
+
+test('restored evidence ignores test ids no longer in the catalogue', () => {
+  const state = defaultState();
+  takeCallback(state, {
+    faultId: 'test-fault',
+    clientId: 'burgertown-high-st',
+    misses: 1,
+    source: 'player',
+    evidence: ['temp-probe', 'x-ray-vision'], // a since-removed test id
+  });
+  assertEqual(state.jobs.active.testsRun, ['temp-probe'], 'unknown test ids are dropped on restore');
+});

@@ -1,5 +1,6 @@
 {
   "id": "heat-treat-cycle-failed",
+  "lesson": "HTR FAIL with the log showing the lid open mid-cycle and every component reading healthy means the cycle was simply interrupted. Re-run it — no parts needed.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

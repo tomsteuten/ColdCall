@@ -1,5 +1,6 @@
 {
   "id": "compressor-start-relay-failed",
+  "lesson": "No freezing, a clicking compressor bay and healthy windings with an open start relay is a $25 relay, not a $900 compressor. Meter the relay first.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

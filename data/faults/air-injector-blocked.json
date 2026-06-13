@@ -1,5 +1,6 @@
 {
   "id": "air-injector-blocked",
+  "lesson": "Dense, heavy product with overrun reading 3% in the service menu means the air injector is scaled shut. Descale it — the scraper blades are fine.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

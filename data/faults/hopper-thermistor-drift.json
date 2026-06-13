@@ -1,5 +1,6 @@
 {
   "id": "hopper-thermistor-drift",
+  "lesson": "A high hopper reading with product that tastes and pours fine, while an independent probe shows the hopper actually in spec, means a drifted thermistor — not refrigeration failure. Replacing the compressor is the expensive wrong answer.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

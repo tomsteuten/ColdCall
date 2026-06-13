@@ -1,5 +1,6 @@
 {
   "id": "beater-motor-capacitor",
+  "lesson": "A beater that hums, stalls and trips with healthy windings but a dead run capacitor is the textbook test-before-you-swap fault. The motor is fine; condemning it is the expensive miss.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

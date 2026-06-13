@@ -1,5 +1,6 @@
 {
   "id": "mix-level-sensor-failed",
+  "lesson": "A LOW MIX alarm with a full hopper, a clear feed line and a sensor reading open-circuit is a dead level probe. Its sudden onset is the tell — scale chokes a line gradually.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

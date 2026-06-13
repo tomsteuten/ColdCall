@@ -1,5 +1,6 @@
 {
   "id": "heat-exchanger-scaled",
+  "lesson": "An HTR SLOW cycle with a healthy heater drawing correct current means scale on the heat exchanger is throttling heat transfer. Descale it — do not swap the element.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

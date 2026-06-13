@@ -479,3 +479,53 @@ test('v7 migration preserves technician attribution already present', () => {
   assertEqual(migrated.jobs.callbacks[0].techId, 'tech-2');
   assertEqual(migrated.jobs.callbacks[0].techName, 'Mike');
 });
+
+test('v8 save migrates callbacks to evidence = null (no invented evidence)', () => {
+  const v8Fixture = defaultState();
+  v8Fixture.schemaVersion = 8;
+  v8Fixture.jobs.callbacks = [
+    {
+      faultId: 'worn-scraper-blades',
+      clientId: 'burgertown-high-st',
+      dueDay: '2026-06-13',
+      expiryDay: '2026-06-16',
+      misses: 1,
+      source: 'player',
+    },
+    {
+      faultId: 'door-o-ring-gone',
+      clientId: 'burgertown-high-st',
+      dueDay: '2026-06-13',
+      expiryDay: '2026-06-16',
+      misses: 1,
+      source: 'tech',
+      techId: 'tech-1',
+      techName: 'Dave',
+    },
+  ];
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v8Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.jobs.callbacks[0].evidence, null, 'pre-v9 callbacks start with no evidence');
+  assertEqual(migrated.jobs.callbacks[1].evidence, null, 'tech callbacks also normalised to null');
+  assertEqual(migrated.jobs.callbacks[1].techName, 'Dave', 'existing fields untouched');
+});
+
+test('v8 migration leaves an already-present evidence array intact', () => {
+  const v8Fixture = defaultState();
+  v8Fixture.schemaVersion = 8;
+  v8Fixture.jobs.callbacks = [{
+    faultId: 'worn-scraper-blades',
+    clientId: 'burgertown-high-st',
+    dueDay: '2026-06-13',
+    expiryDay: '2026-06-16',
+    misses: 1,
+    source: 'player',
+    evidence: ['error-log', 'temp-probe'],
+  }];
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v8Fixture)));
+
+  assertEqual(migrated.jobs.callbacks[0].evidence, ['error-log', 'temp-probe']);
+});

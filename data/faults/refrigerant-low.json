@@ -1,5 +1,6 @@
 {
   "id": "refrigerant-low",
+  "lesson": "Persistently soft product with the compressor always running and low suction pressure is undercharge. The low suction read is the tell, not the soft product alone.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

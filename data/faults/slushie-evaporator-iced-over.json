@@ -1,5 +1,6 @@
 {
   "id": "slushie-evaporator-iced-over",
+  "lesson": "Warm runny product with the compressor running flat out and coils packed with ice means blocked airflow, not low gas. Defrost and clean — regassing fixes nothing.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [

@@ -1,5 +1,6 @@
 {
   "id": "condenser-fan-seized",
+  "lesson": "Soft product and overtemp trips with high head pressure read like overcharge, but a seized condenser fan is the real cause. Check the fan before reaching for the gauges.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [

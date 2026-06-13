@@ -309,8 +309,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     </section>`;
 }
 
-function invoiceView({ state, invoice }) {
-  const { correct, fault, earned, callback, callbackSource, unlockedTier } = invoice;
+export function invoiceView({ state, invoice }) {
+  const { correct, fault, earned, chosenFix, callback, callbackSource, unlockedTier } = invoice;
 
   let lineItems;
   let outcomeClass;
@@ -351,6 +351,24 @@ function invoiceView({ state, invoice }) {
       ? `<p class="receipt-note">Wrong call — that machine will be back tomorrow.</p>`
       : '';
 
+  // Failure is a lesson (GDD §2.1): contrast the player's pick with the correct
+  // fix and explain the discriminating clue so the next call is a better one.
+  // The lesson is authored per fault; fall back to a generic prompt if absent.
+  const lessonText = (typeof fault.lesson === 'string' && fault.lesson.trim())
+    ? fault.lesson
+    : `The fix was ${fixLabel(fault.correctFix)}. Re-read the symptoms and run the test that points to it.`;
+  const learningBlock = !correct
+    ? `<div class="failure-lesson">
+         <p class="failure-lesson-title">Where it went wrong</p>
+         <div class="failure-fixes">
+           <p class="failure-fix failure-fix--chosen"><span class="failure-fix-label">You committed</span><span class="failure-fix-name">${escapeHtml(fixLabel(chosenFix))}</span></p>
+           <p class="failure-fix failure-fix--correct"><span class="failure-fix-label">Correct fix</span><span class="failure-fix-name">${escapeHtml(fixLabel(fault.correctFix))}</span></p>
+         </div>
+         <p class="failure-why">${escapeHtml(lessonText)}</p>
+         ${callback ? '' : `<p class="failure-followup">Your evidence so far is saved for the return visit.</p>`}
+       </div>`
+    : '';
+
   return `
     ${statusBar(state)}
     <section class="screen screen-invoice">
@@ -362,6 +380,7 @@ function invoiceView({ state, invoice }) {
         ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
         ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>
+      ${learningBlock}
       <div class="invoice-actions">
         <button class="btn btn-primary" data-action="dismiss-invoice">Done</button>
       </div>

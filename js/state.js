@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -38,9 +38,11 @@ export function defaultState() {
 
     jobs: {
       active: null, // in-flight diagnosis job; callback context also carries optional techId/techName attribution
-      // { faultId, clientId, dueDay, expiryDay, misses, source, techId?, techName? } — source is
-      // 'player' (obligation, 40% rate) or 'tech' (rescue, ~90% rate); misses
-      // counts wrong fixes so far; expiryDay is when it falls off the board.
+      // { faultId, clientId, dueDay, expiryDay, misses, source, techId?, techName?, evidence? } —
+      // source is 'player' (obligation, 40% rate) or 'tech' (rescue, ~90% rate);
+      // misses counts wrong fixes so far; expiryDay is when it falls off the board;
+      // evidence is the tests the player ran before the wrong fix (null when none),
+      // restored on the return visit so a callback continues the investigation.
       callbacks: [],
     },
 
@@ -167,6 +169,18 @@ export const MIGRATIONS = {
       if (typeof activeCallback.techName !== 'string') activeCallback.techName = null;
     }
     old.schemaVersion = 8;
+    return old;
+  },
+  // v8 -> v9: a player-worked callback can now carry the evidence (tests run)
+  // gathered before the wrong fix, so the return visit continues the investigation
+  // instead of starting from a blank panel (GDD §2.1 failure-as-learning). Existing
+  // callbacks predate captured evidence; normalise the field to null so the claim
+  // path treats them as a clean start — no evidence is invented for old saves.
+  8: (old) => {
+    for (const cb of old.jobs.callbacks) {
+      if (!Array.isArray(cb.evidence)) cb.evidence = null;
+    }
+    old.schemaVersion = 9;
     return old;
   },
 };

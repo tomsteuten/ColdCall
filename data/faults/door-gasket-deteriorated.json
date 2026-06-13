@@ -1,5 +1,6 @@
 {
   "id": "door-gasket-deteriorated",
+  "lesson": "HOPPER TEMP HIGH only on hot afternoons, with a cracked door gasket, means warm air is leaking in. The refrigeration and thermistor are both fine.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [
