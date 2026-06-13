@@ -1,0 +1,17 @@
+{
+  "name": "Cold Call",
+  "short_name": "Cold Call",
+  "description": "Fix the burger chain's eternally broken ice cream machines.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#10141c",
+  "theme_color": "#7fd4f0",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

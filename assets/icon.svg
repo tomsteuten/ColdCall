@@ -1,0 +1,19 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- maskable-safe background fills the whole tile -->
+  <rect width="512" height="512" fill="#10141c"/>
+  <!-- cone -->
+  <path d="M185 300 L256 455 L327 300 Z" fill="#f0b84a"/>
+  <line x1="185" y1="300" x2="256" y2="455" stroke="#c8892a" stroke-width="4"/>
+  <line x1="327" y1="300" x2="256" y2="455" stroke="#c8892a" stroke-width="4"/>
+  <line x1="207" y1="333" x2="305" y2="333" stroke="#c8892a" stroke-width="3"/>
+  <line x1="222" y1="366" x2="290" y2="366" stroke="#c8892a" stroke-width="2"/>
+  <!-- soft-serve swirls stacked — mint-ice blue accent -->
+  <ellipse cx="256" cy="305" rx="78" ry="44" fill="#7fd4f0"/>
+  <ellipse cx="256" cy="260" rx="63" ry="38" fill="#7fd4f0"/>
+  <ellipse cx="256" cy="220" rx="49" ry="32" fill="#7fd4f0"/>
+  <ellipse cx="256" cy="186" rx="34" ry="24" fill="#7fd4f0"/>
+  <!-- twist tip -->
+  <ellipse cx="256" cy="162" rx="18" ry="16" fill="#7fd4f0"/>
+  <!-- highlight on top swirl -->
+  <ellipse cx="238" cy="253" rx="18" ry="9" fill="#b8e8f8" opacity="0.5"/>
+</svg>

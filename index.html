@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Cold Call — fix the burger chain's eternally broken ice cream machines.">
+  <meta name="theme-color" content="#7fd4f0">
   <title>Cold Call</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -12,5 +15,10 @@
     <noscript>Cold Call needs JavaScript to run.</noscript>
   </main>
   <script type="module" src="js/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </body>
 </html>
