@@ -1,15 +1,39 @@
 {
-  "_comment": "Client definitions. Burgertown is the narrative spine (GDD §4). More clients in a later session.",
+  "_comment": "Client definitions. Burgertown is the narrative spine (GDD section 4).",
   "clients": [
     {
       "id": "kwik-stop-corner",
       "name": "Kwik Stop Corner Shop",
-      "tier": 1
+      "tier": 1,
+      "contact": {
+        "name": "Nina Patel",
+        "role": "Owner, cashier, and apparently refrigeration department",
+        "flavour": "If the slushie stops turning, the school run gets personal."
+      },
+      "portrait": {
+        "skin": "#9a6548",
+        "hair": "#202633",
+        "shirt": "#4a5470",
+        "accent": "#7fd4f0",
+        "expression": "bright"
+      }
     },
     {
       "id": "burgertown-high-st",
-      "name": "Burgertown — High Street",
-      "tier": 2
+      "name": "Burgertown \u2014 High Street",
+      "tier": 2,
+      "contact": {
+        "name": "Cheryl Voss",
+        "role": "Shift manager, frozen-dessert crisis coordinator",
+        "flavour": "Head office says the machine is fine. The queue says otherwise."
+      },
+      "portrait": {
+        "skin": "#d6a074",
+        "hair": "#6d3f35",
+        "shirt": "#38445c",
+        "accent": "#f0917f",
+        "expression": "weary"
+      }
     }
   ]
 }

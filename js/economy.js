@@ -50,7 +50,7 @@ export function speedBonus(minutesSpent) {
  * @param {object} fault the fault that was (or wasn't) fixed
  * @param {boolean} correct whether the committed fix was the correct one
  * @param {string} clientId for the callback queue entry
- * @param {{callback?: {misses: number, source?: string}|null, minutesSpent?: number, now?: number}} [opts]
+ * @param {{callback?: {misses: number, source?: string, techId?: string|null, techName?: string|null}|null, minutesSpent?: number, now?: number}} [opts]
  *   callback context (source defaults to 'player' — the conservative lower rate),
  *   simulated minutes spent from the active job, and an injectable clock for tests
  * @returns {{earned: number, unlockedTier: number|null}} for the invoice screen
@@ -90,6 +90,12 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
       misses: callback ? callback.misses + 1 : 1,
       // A botched rescue stays a rescue; a fresh miss is the player's obligation.
       source: callback ? source : 'player',
+      ...(callback && source === 'tech'
+        ? {
+            techId: typeof callback.techId === 'string' ? callback.techId : null,
+            techName: typeof callback.techName === 'string' ? callback.techName : null,
+          }
+        : {}),
     });
   }
   state.player.cash += earned;
@@ -138,7 +144,7 @@ export function dueCallbacks(state, now = Date.now()) {
  * @param {Object<string, object>} faults fault library keyed by id
  * @param {number} index position in state.jobs.callbacks to claim
  * @param {number} [now] ms epoch, injectable for tests
- * @returns {{faultId: string, clientId: string, dueDay: string, expiryDay: string, misses: number, source: string}|null}
+ * @returns {{faultId: string, clientId: string, dueDay: string, expiryDay: string, misses: number, source: string, techId?: string|null, techName?: string|null}|null}
  */
 export function claimCallback(state, faults, index, now = Date.now()) {
   const today = utcDateStringAfter(0, now);

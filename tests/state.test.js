@@ -425,3 +425,57 @@ test('v6 save that somehow already has offlineJobCarry keeps it unchanged', () =
 
   assertEqual(migrated.offlineJobCarry, 0.75, 'existing carry value should survive migration');
 });
+
+test('v7 save migrates tech callbacks to neutral technician attribution', () => {
+  const v7Fixture = defaultState();
+  v7Fixture.schemaVersion = 7;
+  v7Fixture.jobs.callbacks = [
+    {
+      faultId: 'worn-scraper-blades',
+      clientId: 'burgertown-high-st',
+      dueDay: '2026-06-13',
+      expiryDay: '2026-06-16',
+      misses: 1,
+      source: 'tech',
+    },
+    {
+      faultId: 'door-o-ring-gone',
+      clientId: 'burgertown-high-st',
+      dueDay: '2026-06-13',
+      expiryDay: '2026-06-16',
+      misses: 1,
+      source: 'player',
+    },
+  ];
+  v7Fixture.jobs.active = {
+    callback: { misses: 1, source: 'tech' },
+  };
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v7Fixture)));
+
+  assertEqual(migrated.jobs.callbacks[0].techId, null);
+  assertEqual(migrated.jobs.callbacks[0].techName, null);
+  assert(!('techId' in migrated.jobs.callbacks[1]), 'player callbacks do not gain tech fields');
+  assertEqual(migrated.jobs.active.callback.techId, null);
+  assertEqual(migrated.jobs.active.callback.techName, null);
+});
+
+test('v7 migration preserves technician attribution already present', () => {
+  const v7Fixture = defaultState();
+  v7Fixture.schemaVersion = 7;
+  v7Fixture.jobs.callbacks = [{
+    faultId: 'worn-scraper-blades',
+    clientId: 'burgertown-high-st',
+    dueDay: '2026-06-13',
+    expiryDay: '2026-06-16',
+    misses: 1,
+    source: 'tech',
+    techId: 'tech-2',
+    techName: 'Mike',
+  }];
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v7Fixture)));
+
+  assertEqual(migrated.jobs.callbacks[0].techId, 'tech-2');
+  assertEqual(migrated.jobs.callbacks[0].techName, 'Mike');
+});

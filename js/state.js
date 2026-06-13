@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -37,8 +37,8 @@ export function defaultState() {
     routes: [], // { id, clientId }
 
     jobs: {
-      active: null, // in-flight diagnosis job, survives refresh; carries minutesSpent (simulated clock) and, for callbacks, { callback: { misses, source } }
-      // { faultId, clientId, dueDay, expiryDay, misses, source } — source is
+      active: null, // in-flight diagnosis job; callback context also carries optional techId/techName attribution
+      // { faultId, clientId, dueDay, expiryDay, misses, source, techId?, techName? } — source is
       // 'player' (obligation, 40% rate) or 'tech' (rescue, ~90% rate); misses
       // counts wrong fixes so far; expiryDay is when it falls off the board.
       callbacks: [],
@@ -149,6 +149,24 @@ export const MIGRATIONS = {
   6: (old) => {
     if (typeof old.offlineJobCarry !== 'number') old.offlineJobCarry = 0;
     old.schemaVersion = 7;
+    return old;
+  },
+  // v7 -> v8: tech callbacks record the responsible technician. Existing tech
+  // callbacks cannot be attributed reliably, so preserve them with explicit
+  // nulls; the UI renders the neutral "tech miss" fallback.
+  7: (old) => {
+    for (const cb of old.jobs.callbacks) {
+      if (cb.source === 'tech') {
+        if (typeof cb.techId !== 'string') cb.techId = null;
+        if (typeof cb.techName !== 'string') cb.techName = null;
+      }
+    }
+    const activeCallback = old.jobs.active?.callback;
+    if (activeCallback?.source === 'tech') {
+      if (typeof activeCallback.techId !== 'string') activeCallback.techId = null;
+      if (typeof activeCallback.techName !== 'string') activeCallback.techName = null;
+    }
+    old.schemaVersion = 8;
     return old;
   },
 };

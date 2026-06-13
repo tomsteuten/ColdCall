@@ -9,10 +9,14 @@ import { JOBS } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { machineSvg } from '../machine-art.js';
+import { clientPortraitSvg } from '../character-art.js';
 
 /** Player-facing label for a callback's source (GDD §3.1). */
-function sourceLabel(source) {
-  return source === 'tech' ? "Dave's miss" : 'your miss';
+export function sourceLabel(callback) {
+  if (callback?.source !== 'tech') return 'your miss';
+  return typeof callback.techName === 'string' && callback.techName.trim()
+    ? `${callback.techName.trim()}'s miss`
+    : 'tech miss';
 }
 
 /** The net-payout rate a callback pays when fixed correctly, as a whole percent. */
@@ -145,7 +149,7 @@ function callbacksView({ state, faults, clients }) {
       return `
         <li class="callback-card">
           <p class="callback-client">${client ? client.name : escapeHtml(cb.clientId)}</p>
-          <p class="callback-meta">${escapeHtml(machineName)} · ${sourceLabel(cb.source)} · pays ${callbackRatePct(cb.source)}% of net</p>
+          <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceLabel(cb))} · pays ${callbackRatePct(cb.source)}% of net</p>
           <button class="btn btn-callback-take" data-take="${index}">Take callback</button>
         </li>`;
     })
@@ -205,8 +209,23 @@ function jobView({ state, faults, machines, clients }) {
     .map((id) => `<button class="btn btn-fix" data-fix="${escapeHtml(id)}" ${outOfParts ? 'disabled' : ''}>${escapeHtml(fixLabel(id))}</button>`)
     .join('');
 
-  const clientName = job.motd ? 'Machine of the Day' : (client ? client.name : escapeHtml(job.clientId));
+  const clientName = job.motd ? 'Machine of the Day' : (client ? escapeHtml(client.name) : escapeHtml(job.clientId));
   const safeMachineName = escapeHtml(machineName);
+  const portrait = !job.motd && client ? clientPortraitSvg(client.portrait) : null;
+  const contact = !job.motd && client?.contact ? client.contact : null;
+  const contactName = contact?.name ? escapeHtml(contact.name) : 'Caller details unavailable';
+  const contactRole = contact?.role ? escapeHtml(contact.role) : '';
+  const contactFlavour = contact?.flavour ? escapeHtml(contact.flavour) : '';
+  const portraitHtml = !job.motd
+    ? `<div class="client-callout${portrait ? '' : ' client-callout--text-only'}">
+        ${portrait ? `<div class="client-portrait">${portrait}</div>` : ''}
+        <div class="client-copy">
+          <p class="client-contact">${contactName}</p>
+          ${contactRole ? `<p class="client-role">${contactRole}</p>` : ''}
+          ${contactFlavour ? `<p class="client-flavour">"${contactFlavour}"</p>` : ''}
+        </div>
+      </div>`
+    : '';
 
   // Art state: 'open' once the player has run at least one test (machine is being
   // inspected); 'fault' before that (machine showing symptoms, panel closed).
@@ -223,6 +242,7 @@ function jobView({ state, faults, machines, clients }) {
         ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
         <h2 class="job-client">${clientName}</h2>
         <p class="job-machine">${safeMachineName}</p>
+        ${portraitHtml}
         ${clockBar}
       </div>
 

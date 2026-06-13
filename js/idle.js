@@ -83,6 +83,8 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
           expiryDay: utcDateStringAfter(1 + JOBS.callbackExpiryDays, now),
           misses: 1,
           source: 'tech',
+          techId: tech.id,
+          techName: tech.name,
         });
         techCallbacks++;
         callbacksAdded++;

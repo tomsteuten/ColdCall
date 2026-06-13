@@ -75,10 +75,14 @@ test('wrong fix: callback queued as a player obligation with due day, expiry and
 
 test('wrong fix on a tech rescue re-queues it still tagged tech-caused', () => {
   const state = defaultState();
-  settleJob(state, makeFault(), false, 'client-1', { callback: { misses: 1, source: 'tech' } });
+  settleJob(state, makeFault(), false, 'client-1', {
+    callback: { misses: 1, source: 'tech', techId: 'tech-2', techName: 'Mike' },
+  });
   assertEqual(state.jobs.callbacks.length, 1);
   assertEqual(state.jobs.callbacks[0].source, 'tech', 'a botched rescue stays a rescue');
   assertEqual(state.jobs.callbacks[0].misses, 2);
+  assertEqual(state.jobs.callbacks[0].techId, 'tech-2');
+  assertEqual(state.jobs.callbacks[0].techName, 'Mike');
 });
 
 test('wrong fix: reputation drops, clean streak resets, callbacksCaused counts', () => {

@@ -55,7 +55,7 @@ export function shuffled(arr, next) {
  * @param {object} fault validated fault from the library
  * @param {string} clientId client this ticket came from
  * @param {function(): number} next PRNG in [0,1) for the option shuffle
- * @param {{misses: number}|null} [callback] set when replaying a claimed
+ * @param {{misses: number, source?: string, techId?: string|null, techName?: string|null}|null} [callback] set when replaying a claimed
  *   callback — carries the miss count so settlement can dampen repeat penalties
  * @param {boolean} [motd] true when this is a Machine of the Day run
  * @param {string|null} [puzzleDateStr] UTC date "YYYY-MM-DD" the MotD puzzle was

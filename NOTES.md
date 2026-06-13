@@ -7,12 +7,66 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (session 15)
+## Next session prompt (senior game-dev review)
 
-Session 14 (machine sprites) has landed. Proceed with
-"proceed with session 15 from notes.md" — the art-source decision has been
-resolved (SVG inline illustrations, see session 14 notes below), so session 15
-can begin immediately. Read the session 15 scope below before starting.
+Session 15 (character portraits and technician callback attribution) has landed.
+Do not begin Session 16 yet. Perform a holistic review of the current game as a
+senior game developer, focused on UX, UI, onboarding, moment-to-moment
+playability, pacing, clarity, mobile ergonomics, feedback, and whether the core
+diagnosis loop is genuinely enjoyable.
+
+Start by reading `GDD.md`, `CLAUDE.md`, and `NOTES.md`, then inspect the complete
+implementation and run the full test suite. Play through the game locally at
+approximately 380px mobile width and at desktop width. Exercise fresh tickets,
+tests and fixes, callbacks from both sources, van restocking, tools, technician
+hiring/offline progress, save export/import, and Machine of the Day.
+
+Review from the player's perspective rather than primarily as a code auditor.
+Prioritise findings that affect comprehension, fun, friction, pacing, visual
+hierarchy, touch interaction, emotional payoff, and reasons to continue playing.
+Check whether the player understands what to do, whether diagnosis feels like
+deduction instead of button exhaustion, whether rewards and penalties are
+legible, whether recurring characters add personality, and whether the UI feels
+coherent and intentional across every screen.
+
+Deliver findings first, ordered by severity and supported by concrete screen,
+flow, and file references. Separate confirmed problems from taste-level polish.
+Include a short assessment of the core loop, the strongest current elements,
+the highest-value improvements before launch, and a practical recommended order
+of work. Do not implement fixes during this review unless explicitly asked.
+
+### What session 15 added (character portraits + callback attribution)
+
+- **Client portraits and character flavour.** `data/clients.json` now stores a
+  recurring contact, role, flavour line, and compact portrait palette/expression
+  data for Nina Patel at Kwik Stop and Cheryl Voss at Burgertown High Street.
+  `js/character-art.js` turns that data into blocky inline SVG portraits, matching
+  the machine-art direction without adding raster assets or runtime requests.
+- **Reliable fallback.** Missing/invalid portrait data returns `null`; the job UI
+  keeps the caller name/flavour in a text-only layout and never shows a broken
+  image frame. Portrait colours are allowlisted as six-digit hex values before
+  interpolation into SVG.
+- **Job UI personality.** The active ticket header now includes the caller
+  portrait, name, role, and a short character line. MotD remains caller-free.
+- **Correct tech attribution.** New idle callbacks store `techId` and `techName`.
+  Claiming a callback copies both onto the active job, and a repeat failed rescue
+  requeues them unchanged. Callback labels now show the actual responsible tech
+  (for example, "Mike's miss") instead of hard-coding Dave.
+- **Safe migration.** Schema v7 -> v8 adds explicit null attribution to legacy
+  queued and active tech callbacks because their responsible tech cannot be
+  reconstructed. The UI renders those as neutral "tech miss"; player callbacks
+  remain "your miss".
+- **Save-derived escaping.** Technician names are escaped at the callback-list
+  innerHTML boundary. Tests include an imported-name HTML/onerror payload.
+- **PWA.** `sw.js` cache bumped v7 -> v8 and `js/character-art.js` added to the
+  app shell. No external portrait assets were added.
+- **Tests.** `node tests/run.js` -> 183 passing, 0 failed. Added focused coverage
+  for v7 migration, preserved attribution, Dave/Mike offline attribution, repeat
+  rescue attribution, portrait rendering, invalid portrait data, text fallback,
+  neutral source labels, and save-derived technician-name escaping.
+- **Manual verification still useful:** open locally at about 380px and desktop
+  width to inspect portrait proportions and caller copy wrapping. Syntax checks
+  and the complete automated suite are green.
 
 ### What session 13 added (save & idle hardening)
 
@@ -302,7 +356,7 @@ update this file at the end.
 - **Done when:** at least the tier-1/2 star machines show state-appropriate
   sprites, missing-art fallback verified, PWA still caches offline.
 
-### Session 15 — Character portraits + correct tech attribution (REVIEW_FINDINGS #8)
+### Session 15 — Character portraits + correct tech attribution (REVIEW_FINDINGS #8) ✓ DONE
 - **Model:** Sonnet (wiring/CSS + flavour; #8 is a tiny shape change — if it grows
   a migration, that part is still simple).
 - **Start with:** shares session 14's art-source decision — once that's settled,

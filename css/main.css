@@ -372,6 +372,55 @@ body {
   font-size: var(--text-sm);
 }
 
+.client-callout {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--surface-hi);
+}
+
+.client-callout--text-only {
+  grid-template-columns: 1fr;
+}
+
+.client-portrait {
+  width: 4rem;
+  height: 4rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-hi);
+}
+
+.client-copy {
+  min-width: 0;
+}
+
+.client-contact,
+.client-role,
+.client-flavour {
+  margin: 0;
+}
+
+.client-contact {
+  font-weight: 700;
+}
+
+.client-role {
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+}
+
+.client-flavour {
+  margin-top: var(--space-xs);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
 .job-callback-tag {
   margin: 0;
   font-size: var(--text-sm);

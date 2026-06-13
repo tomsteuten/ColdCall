@@ -123,6 +123,8 @@ test('failed jobs add callbacks to state.jobs.callbacks', () => {
     assert(typeof cb.dueDay === 'string', 'callback should have a dueDay');
     assertEqual(cb.misses, 1, 'first miss starts at 1');
     assertEqual(cb.source, 'tech', 'an idle tech botched it — it is a tech-caused rescue');
+    assertEqual(cb.techId, 'tech-1', 'callback records the responsible tech id');
+    assertEqual(cb.techName, 'Dave', 'callback records the responsible tech name');
     assertEqual(cb.expiryDay, utcDateStringAfter(1 + JOBS.callbackExpiryDays, now),
       'expiry = due day + callbackExpiryDays');
   }
@@ -148,6 +150,26 @@ test('tech report lists the tech by name', () => {
   assert(report !== null, 'should have a report');
   assert(report.techReports.length === 1, 'one tech, one report');
   assertEqual(report.techReports[0].name, 'Dave');
+});
+
+test('two-tech failures are attributed to the technician who generated them', () => {
+  const now = Date.UTC(2026, 5, 13, 12, 0, 0);
+  const state = defaultState();
+  state.lastSeen = now - 8 * HOUR_MS;
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+  state.techs.push(
+    { id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: now },
+    { id: 'tech-2', name: 'Mike', skill: 1, routeId: 'burgertown-south', hiredAt: now }
+  );
+
+  simulateOfflineProgress(state, makeFaults(), now);
+
+  const mikeCallbacks = state.jobs.callbacks.filter((cb) => cb.techId === 'tech-2');
+  assert(mikeCallbacks.length > 0, 'fixture should produce at least one Mike callback');
+  assert(
+    mikeCallbacks.every((cb) => cb.techName === 'Mike'),
+    'Mike callbacks must not be labelled as Dave'
+  );
 });
 
 // --- session 13: offline carry tests (REVIEW_FINDINGS #2) ---

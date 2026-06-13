@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v7';
+const CACHE = 'coldcall-v8';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).
@@ -22,6 +22,7 @@ const APP_SHELL = [
   'js/motd.js',
   'js/utils.js',
   'js/machine-art.js',
+  'js/character-art.js',
   'js/ui/job.js',
   'js/ui/shop.js?v=2',
   'js/ui/motd.js',

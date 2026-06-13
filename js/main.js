@@ -84,6 +84,8 @@ const actions = {
       startJob(state, faults[cb.faultId], cb.clientId, next, {
         misses: cb.misses,
         source: cb.source,
+        techId: cb.techId ?? null,
+        techName: cb.techName ?? null,
       });
       screen = 'home';
       save(state);
