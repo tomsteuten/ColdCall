@@ -5,6 +5,7 @@ import {
   save,
   load,
   migrate,
+  makePersist,
   exportSave,
   importSave,
   SCHEMA_VERSION,
@@ -114,6 +115,93 @@ test('v2 save migrates to v3: van.stock gains generic-parts', () => {
   assertEqual(migrated.van.stock['generic-parts'], STARTING.vanSlots, 'should get starting parts');
 });
 
+test('v3 save migrates to v4: a played MotD result gains faultId = null', () => {
+  // Fixture: a v3 save with a result from before faultId was pinned.
+  const v3Fixture = defaultState();
+  v3Fixture.schemaVersion = 3;
+  v3Fixture.motd.lastPlayedDate = '2026-06-12';
+  v3Fixture.motd.lastResult = { testsUsed: 2, timeMs: 30000, solved: true };
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v3Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.motd.lastResult.faultId, null, 'old results cannot know their fault');
+  assertEqual(migrated.motd.lastResult.solved, true, 'result fields should be untouched');
+});
+
+test('v3 save with no MotD result migrates cleanly (lastResult stays null)', () => {
+  const v3Fixture = defaultState();
+  v3Fixture.schemaVersion = 3;
+  v3Fixture.motd.lastResult = null;
+  const migrated = migrate(JSON.parse(JSON.stringify(v3Fixture)));
+  assertEqual(migrated.motd.lastResult, null);
+});
+
+test('a save from a newer game version is rejected, blob left untouched', () => {
+  const storage = memoryStorage();
+  const future = defaultState();
+  future.schemaVersion = SCHEMA_VERSION + 1;
+  const blob = JSON.stringify(future);
+  storage.setItem(SAVE_KEY, blob);
+
+  const { fresh, error } = load(storage);
+
+  assert(fresh === true, 'future save should fall back to fresh state');
+  assert(typeof error === 'string' && error.includes('newer'), `error should explain: ${error}`);
+  assert(storage.getItem(SAVE_KEY) === blob, 'future-version blob must remain untouched');
+});
+
+test('a structurally broken save is rejected naming the bad field, blob untouched', () => {
+  const storage = memoryStorage();
+  const broken = defaultState();
+  delete broken.jobs; // valid JSON, current version, but the game would crash on it
+  const blob = JSON.stringify(broken);
+  storage.setItem(SAVE_KEY, blob);
+
+  const { fresh, error } = load(storage);
+
+  assert(fresh === true, 'broken save should fall back to fresh state');
+  assert(typeof error === 'string' && error.includes('"jobs"'), `error should name the field: ${error}`);
+  assert(storage.getItem(SAVE_KEY) === blob, 'broken blob must remain untouched');
+});
+
+test('a save with a wrong-typed field is rejected', () => {
+  const broken = defaultState();
+  broken.player.cash = 'lots'; // type confusion would corrupt every settlement
+  let threw = false;
+  try {
+    migrate(JSON.parse(JSON.stringify(broken)));
+  } catch (e) {
+    threw = true;
+    assert(String(e.message).includes('"player.cash"'), `should name the field: ${e.message}`);
+  }
+  assert(threw, 'wrong-typed field should be rejected');
+});
+
+test('makePersist refuses every save after a failed load (corrupt blob preserved)', () => {
+  const storage = memoryStorage();
+  storage.setItem(SAVE_KEY, '{not json at all');
+  const { state, error } = load(storage);
+  assert(error !== null, 'precondition: load failed');
+
+  const persist = makePersist(error, storage);
+  state.player.cash = 9999;
+  persist(state); // boot save
+  persist(state); // a later action save
+
+  assert(storage.getItem(SAVE_KEY) === '{not json at all', 'corrupt blob must survive every save');
+});
+
+test('makePersist saves normally when load succeeded', () => {
+  const storage = memoryStorage();
+  const { state, error } = load(storage); // fresh, no error
+  const persist = makePersist(error, storage);
+  state.player.cash = 4321;
+  persist(state);
+  const { state: reloaded } = load(storage);
+  assertEqual(reloaded.player.cash, 4321, 'persist should write through to storage');
+});
+
 test('exportSave -> importSave round-trips and migrates', () => {
   const state = defaultState();
   state.player.cash = 999;
@@ -138,4 +226,31 @@ test('importSave throws on garbage without side effects', () => {
     threw = true;
   }
   assert(threw, 'garbage input should throw');
+});
+
+test('importSave rejects a blob from a newer game version', () => {
+  const future = defaultState();
+  future.schemaVersion = SCHEMA_VERSION + 1;
+  const blob = exportSave(future);
+  let threw = false;
+  try {
+    importSave(blob);
+  } catch (e) {
+    threw = true;
+    assert(String(e.message).includes('newer'), `error should explain: ${e.message}`);
+  }
+  assert(threw, 'future-version blob should be rejected');
+});
+
+test('importSave rejects a structurally broken blob', () => {
+  const broken = defaultState();
+  delete broken.van;
+  const blob = exportSave(broken);
+  let threw = false;
+  try {
+    importSave(blob);
+  } catch {
+    threw = true;
+  }
+  assert(threw, 'broken blob should be rejected');
 });

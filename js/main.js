@@ -1,6 +1,6 @@
 /** @file Boot and screen routing: load save + fault library, route between home/job/invoice. */
 
-import { load, save } from './state.js';
+import { load, makePersist } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
 import { buyTool, claimDueCallback, restockVan, hireTech } from './economy.js';
@@ -17,6 +17,9 @@ if (error) {
   // Saves are sacred: the corrupt blob is still in localStorage, untouched.
   console.error(`Cold Call: existing save could not be loaded (${error}). Starting fresh without overwriting it.`);
 }
+// Every save this session goes through this gate — when load failed it
+// refuses to write, so the unreadable blob is never overwritten.
+const save = makePersist(error);
 
 const { faults, machines, clients } = await loadGameData();
 
@@ -121,8 +124,10 @@ const actions = {
   openMotdResult() {
     // Re-open today's result from the home screen after it's been played.
     if (state.motd.lastResult) {
-      // Recover the fault by re-running the same seeded draw for today's date.
-      const fault = pickMotdFault(faults, state.motd.lastPlayedDate);
+      // The result pins its faultId; pre-v4 saves don't have it (null), so
+      // fall back to re-running the seeded draw for the played date.
+      const fault =
+        faults[state.motd.lastResult.faultId] ?? pickMotdFault(faults, state.motd.lastPlayedDate);
       motdResult = { ...state.motd.lastResult, streak: state.motd.streak, fault };
       screen = 'motd';
       render();

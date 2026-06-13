@@ -2,7 +2,7 @@
 
 import { STARTING } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const SAVE_KEY = 'coldcall_save';
 
 /**
@@ -43,7 +43,7 @@ export function defaultState() {
     motd: {
       lastPlayedDate: null, // UTC date string "YYYY-MM-DD", doubles as the puzzle seed
       streak: 0,
-      lastResult: null, // { testsUsed, timeMs, solved }
+      lastResult: null, // { testsUsed, timeMs, solved, faultId } — faultId pins the puzzle so library updates can't rewrite history
     },
 
     stats: {
@@ -94,6 +94,17 @@ export const MIGRATIONS = {
     old.schemaVersion = 3;
     return old;
   },
+  // v3 -> v4: MotD results pin their faultId so a fault-library update can't
+  // change which puzzle the result screen shows. Old results predate the field
+  // and can't know it here (migrations have no fault library); null means
+  // "re-derive from the date", which main.js handles.
+  3: (old) => {
+    if (old.motd.lastResult && typeof old.motd.lastResult.faultId !== 'string') {
+      old.motd.lastResult.faultId = null;
+    }
+    old.schemaVersion = 4;
+    return old;
+  },
 };
 
 /**
@@ -105,13 +116,45 @@ export const MIGRATIONS = {
 export function migrate(parsed) {
   let s = parsed;
   let v = typeof s.schemaVersion === 'number' ? s.schemaVersion : 0;
+  if (v > SCHEMA_VERSION) {
+    throw new Error(
+      `Save is from a newer game version (save v${v}, game supports v${SCHEMA_VERSION}) — update the game to load it`
+    );
+  }
   while (v < SCHEMA_VERSION) {
     const step = MIGRATIONS[v];
     if (!step) throw new Error(`No migration from save version ${v}`);
     s = step(s);
     v = s.schemaVersion;
   }
+  validateState(s);
   return s;
+}
+
+/**
+ * Check a migrated save has every field the game dereferences without guards.
+ * Throws naming the first bad field. Deliberately shallow beyond what the code
+ * actually relies on — over-strict validation would brick saves needlessly.
+ * @param {object} s candidate state at SCHEMA_VERSION
+ */
+export function validateState(s) {
+  const checks = [
+    ['player', 'object'], ['player.cash', 'number'], ['player.reputation', 'number'],
+    ['player.lifetimeEarnings', 'number'], ['player.tierUnlocked', 'number'],
+    ['tools', 'object'], ['tools.multimeterTier', 'number'],
+    ['van', 'object'], ['van.slots', 'number'], ['van.stock', 'object'],
+    ['techs', 'array'], ['routes', 'array'],
+    ['jobs', 'object'], ['jobs.callbacks', 'array'],
+    ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],
+    ['stats.jobsCompleted', 'number'], ['stats.cleanStreak', 'number'],
+  ];
+  for (const [path, type] of checks) {
+    let value = s;
+    for (const key of path.split('.')) value = value?.[key];
+    const ok =
+      type === 'array' ? Array.isArray(value) : typeof value === type && value !== null;
+    if (!ok) throw new Error(`Save is missing or has a bad "${path}" (expected ${type})`);
+  }
 }
 
 /**
@@ -140,6 +183,29 @@ export function load(storage = globalThis.localStorage) {
   } catch (e) {
     return { state: defaultState(), fresh: true, error: String(e && e.message ? e.message : e) };
   }
+}
+
+/**
+ * Build the save function the session will use, gated on the boot load result.
+ * When load() reported an error the corrupt blob is still in storage, and
+ * every save this session must be refused so it is never overwritten (rule 1:
+ * saves are sacred). The player can still play; recovery UI can offer
+ * export/import of the preserved blob.
+ * @param {string|null} loadError the error from load(), or null
+ * @param {Storage} [storage] injectable for tests; defaults to localStorage
+ * @returns {function(object): void} save function for the whole session
+ */
+export function makePersist(loadError, storage = globalThis.localStorage) {
+  if (!loadError) return (state) => save(state, storage);
+  let warned = false;
+  return () => {
+    if (!warned) {
+      console.warn(
+        'Cold Call: not saving this session — the unreadable save is preserved in storage so it can be recovered.'
+      );
+      warned = true;
+    }
+  };
 }
 
 /**
