@@ -151,6 +151,12 @@ body {
   user-select: none;
   flex-shrink: 0;
 }
+/* When an SVG illustration is present, drop the placeholder border/text. */
+.art-slot--has-image {
+  border-color: transparent;
+  color: transparent;
+  padding: 0;
+}
 
 /* ── Component: horizontal divider ──────────────────────────── */
 .divider {

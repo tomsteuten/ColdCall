@@ -6,6 +6,7 @@
 import { TOOL_CATALOGUE } from '../economy.js';
 import { TECHS } from '../../config/balance.js';
 import { statusBar } from './job.js';
+import { escapeHtml } from '../utils.js';
 
 /**
  * Render the shop into root.
@@ -87,7 +88,7 @@ function saveDataHTML(exportMessage, importError) {
       <p class="shop-tool-blurb">Paste a save blob exported from another device. This replaces your current save and reloads the game.</p>
       <textarea class="import-textarea" placeholder="Paste save blob here…" rows="3"></textarea>
       <button class="btn btn-buy" data-action="import-save">Import save — replace &amp; reload</button>
-      ${importError ? `<p class="settings-err">${importError}</p>` : ''}
+      ${importError ? `<p class="settings-err">${escapeHtml(importError)}</p>` : ''}
     </div>`;
 }
 
@@ -100,7 +101,7 @@ function staffHTML(state) {
     ? state.techs.map((t) => {
         const route = state.routes.find((r) => r.id === t.routeId);
         const routeLabel = route ? 'Burgertown South Side' : 'Unassigned';
-        return `<li class="shop-card"><span class="shop-tool-name">${t.name}</span>
+        return `<li class="shop-card"><span class="shop-tool-name">${escapeHtml(t.name)}</span>
           <span class="shop-tool-blurb">Skill ${t.skill} · ${routeLabel}</span></li>`;
       }).join('')
     : `<li class="shop-card"><p class="shop-tool-blurb">No techs hired yet.</p></li>`;

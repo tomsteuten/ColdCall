@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -59,6 +59,10 @@ export function defaultState() {
     settings: {
       audio: true,
     },
+
+    // Fractional offline-job carry: sub-job remainder from the last offline
+    // simulation, added to the next session so short sessions accumulate fairly.
+    offlineJobCarry: 0,
   };
 }
 
@@ -140,6 +144,13 @@ export const MIGRATIONS = {
     old.schemaVersion = 6;
     return old;
   },
+  // v6 -> v7: add offlineJobCarry so short offline sessions accumulate fairly.
+  // Old saves had no carry field; start at 0 (no pending sub-job credit).
+  6: (old) => {
+    if (typeof old.offlineJobCarry !== 'number') old.offlineJobCarry = 0;
+    old.schemaVersion = 7;
+    return old;
+  },
 };
 
 /**
@@ -150,7 +161,25 @@ export const MIGRATIONS = {
  */
 export function migrate(parsed) {
   let s = parsed;
-  let v = typeof s.schemaVersion === 'number' ? s.schemaVersion : 0;
+  // Determine starting version.
+  // Missing (undefined) → pre-release "v0" flat shape (cash at top level).
+  // Present but invalid (string, NaN, negative, fractional) → refuse; preserving
+  // the blob untouched is the only safe action (saves are sacred, CLAUDE.md rule 1).
+  let v;
+  if (s.schemaVersion === undefined) {
+    v = 0;
+  } else if (
+    typeof s.schemaVersion !== 'number' ||
+    !Number.isFinite(s.schemaVersion) ||
+    s.schemaVersion < 0 ||
+    s.schemaVersion !== Math.floor(s.schemaVersion)
+  ) {
+    throw new Error(
+      'Save has an unrecognised schemaVersion — the blob has not been changed'
+    );
+  } else {
+    v = s.schemaVersion;
+  }
   if (v > SCHEMA_VERSION) {
     throw new Error(
       `Save is from a newer game version (save v${v}, game supports v${SCHEMA_VERSION}) — update the game to load it`
@@ -182,6 +211,7 @@ export function validateState(s) {
     ['jobs', 'object'], ['jobs.callbacks', 'array'],
     ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],
     ['stats.jobsCompleted', 'number'], ['stats.cleanStreak', 'number'],
+    ['offlineJobCarry', 'number'],
   ];
   for (const [path, type] of checks) {
     let value = s;

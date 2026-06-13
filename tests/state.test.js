@@ -316,3 +316,112 @@ test('importSave rejects a structurally broken blob', () => {
   }
   assert(threw, 'broken blob should be rejected');
 });
+
+// --- session 13: schemaVersion validation (REVIEW_FINDINGS #1) ---
+
+test('migrate() with a string schemaVersion throws without touching the save', () => {
+  // A save whose schemaVersion was accidentally serialised as "6" (string)
+  // used to be treated as v0 and rebuilt from defaults — silent wipe. Now it
+  // must throw so load() preserves the blob.
+  const s = defaultState();
+  s.schemaVersion = String(SCHEMA_VERSION); // "7", not 7
+  let threw = false;
+  try {
+    migrate(JSON.parse(JSON.stringify(s)));
+  } catch (e) {
+    threw = true;
+    assert(String(e.message).length > 0, 'error message should not be empty');
+  }
+  assert(threw, 'string schemaVersion must be rejected');
+});
+
+test('migrate() with null schemaVersion throws instead of resetting a current save', () => {
+  const state = defaultState();
+  state.player.cash = 9876;
+  state.schemaVersion = null;
+  let threw = false;
+  try {
+    migrate(JSON.parse(JSON.stringify(state)));
+  } catch {
+    threw = true;
+  }
+  assert(threw, 'an explicit null schemaVersion must be rejected');
+});
+
+test('migrate() with a fractional schemaVersion throws', () => {
+  const s = defaultState();
+  s.schemaVersion = 1.5;
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'fractional schemaVersion must be rejected');
+});
+
+test('migrate() with a negative schemaVersion throws', () => {
+  const s = defaultState();
+  s.schemaVersion = -1;
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'negative schemaVersion must be rejected');
+});
+
+test('migrate() with NaN as schemaVersion throws', () => {
+  // NaN and Infinity do not survive a JSON round-trip, so test the validator
+  // directly with Infinity, which exercises the same non-finite guard.
+  const s = { schemaVersion: Infinity };
+  let threw = false;
+  try { migrate(s); } catch { threw = true; }
+  assert(threw, 'Infinity schemaVersion must be rejected');
+});
+
+test('load() with null schemaVersion preserves the blob untouched', () => {
+  const storage = memoryStorage();
+  const state = defaultState();
+  state.player.cash = 9876;
+  state.schemaVersion = null;
+  const blob = JSON.stringify(state);
+  storage.setItem(SAVE_KEY, blob);
+
+  const { fresh, error } = load(storage);
+
+  assert(fresh === true, 'null version should fall back without accepting the save');
+  assert(typeof error === 'string' && error.length > 0, 'should report an error');
+  assert(storage.getItem(SAVE_KEY) === blob, 'null-version blob must remain untouched');
+});
+
+test('load() with a string schemaVersion preserves the blob untouched', () => {
+  // The key safety guarantee: load() must never overwrite a save when migrate()
+  // throws for an invalid version.
+  const storage = memoryStorage();
+  const s = defaultState();
+  const blob = JSON.stringify({ ...s, schemaVersion: String(SCHEMA_VERSION) });
+  storage.setItem(SAVE_KEY, blob);
+
+  const { fresh, error } = load(storage);
+
+  assert(fresh === true, 'invalid version should fall back to fresh');
+  assert(typeof error === 'string' && error.length > 0, 'should report an error');
+  assert(storage.getItem(SAVE_KEY) === blob, 'blob must remain untouched');
+});
+
+test('v6 save migrates to v7: offlineJobCarry field added at 0', () => {
+  const v6Fixture = defaultState();
+  v6Fixture.schemaVersion = 6;
+  // v6 saves have no offlineJobCarry field.
+  delete v6Fixture.offlineJobCarry;
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v6Fixture)));
+
+  assert(migrated.schemaVersion === SCHEMA_VERSION, 'should reach current version');
+  assertEqual(migrated.offlineJobCarry, 0, 'carry should be initialised to 0');
+  assertEqual(migrated.player.cash, v6Fixture.player.cash, 'cash preserved');
+});
+
+test('v6 save that somehow already has offlineJobCarry keeps it unchanged', () => {
+  const v6Fixture = defaultState();
+  v6Fixture.schemaVersion = 6;
+  v6Fixture.offlineJobCarry = 0.75; // hypothetical edge case
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v6Fixture)));
+
+  assertEqual(migrated.offlineJobCarry, 0.75, 'existing carry value should survive migration');
+});

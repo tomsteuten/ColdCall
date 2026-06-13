@@ -37,6 +37,19 @@ function stateWithTech(lastSeenMsAgo) {
   return { state, now };
 }
 
+/** State with both launch techs assigned to the same route. */
+function stateWithTwoTechs(lastSeenMsAgo) {
+  const { state, now } = stateWithTech(lastSeenMsAgo);
+  state.techs.push({
+    id: 'tech-2',
+    name: 'Mike',
+    skill: 1,
+    routeId: 'burgertown-south',
+    hiredAt: now,
+  });
+  return { state, now };
+}
+
 // --- invariant: active play always beats idle $/min ---
 
 test('active > idle: tech earnings per minute are always below the minimum active payout', () => {
@@ -135,4 +148,98 @@ test('tech report lists the tech by name', () => {
   assert(report !== null, 'should have a report');
   assert(report.techReports.length === 1, 'one tech, one report');
   assertEqual(report.techReports[0].name, 'Dave');
+});
+
+// --- session 13: offline carry tests (REVIEW_FINDINGS #2) ---
+
+test('two short absences equal one combined absence (carry accumulates)', () => {
+  // jobsPerHour = 2, so 45 min = 0.75h = 1.5 raw jobs per session.
+  // Without carry: floor(1.5) + floor(1.5) = 1 + 1 = 2 total jobs.
+  // With carry:    floor(1.5) = 1, carry = 0.5;
+  //                floor(1.5 + 0.5) = 2; total = 1 + 2 = 3 jobs.
+  // One combined 1.5h session: floor(3.0) = 3 jobs. Must match.
+  const elapsed = 0.75 * HOUR_MS;
+
+  // Two short sessions, manually advancing lastSeen between them.
+  const { state: sa, now: nowA } = stateWithTech(elapsed);
+  const r1 = simulateOfflineProgress(sa, makeFaults(), nowA);
+  const jobs1 = (r1?.jobsDone ?? 0) + (r1?.callbacksAdded ?? 0);
+  // Advance lastSeen to simulate the player saving between sessions.
+  sa.lastSeen = nowA;
+  const nowB = nowA + elapsed;
+  const r2 = simulateOfflineProgress(sa, makeFaults(), nowB);
+  const jobs2 = (r2?.jobsDone ?? 0) + (r2?.callbacksAdded ?? 0);
+  const twoShortTotal = jobs1 + jobs2;
+
+  // One combined session spanning the same total time.
+  const { state: sLong, now: nowLong } = stateWithTech(2 * elapsed);
+  const rLong = simulateOfflineProgress(sLong, makeFaults(), nowLong);
+  const longTotal = (rLong?.jobsDone ?? 0) + (rLong?.callbacksAdded ?? 0);
+
+  assertEqual(twoShortTotal, longTotal,
+    `two short sessions (${twoShortTotal}) should equal one long session (${longTotal})`);
+});
+
+test('carry accumulated from a short session is used in the next session', () => {
+  // 1 job/hr would need 30 min per job. With jobsPerHour = 2 each job is 30 min.
+  // Run a 25-minute session: 0.417 * 2 = 0.833 raw jobs → 0 completed, carry = 0.833.
+  // Run another 25-minute session: 0.417 * 2 + 0.833 = 1.667 → 1 completed, carry = 0.667.
+  const session = (25 / 60) * HOUR_MS;
+
+  const { state, now: now1 } = stateWithTech(session);
+  const r1 = simulateOfflineProgress(state, makeFaults(), now1);
+  // The first session produces 0 jobs (not enough for a whole job).
+  const firstJobs = (r1?.jobsDone ?? 0) + (r1?.callbacksAdded ?? 0);
+  assertEqual(firstJobs, 0, 'no complete jobs in a 25-min session');
+  assert(state.offlineJobCarry > 0, 'carry should be positive after partial session');
+
+  // Second session.
+  state.lastSeen = now1;
+  const now2 = now1 + session;
+  const r2 = simulateOfflineProgress(state, makeFaults(), now2);
+  const secondJobs = (r2?.jobsDone ?? 0) + (r2?.callbacksAdded ?? 0);
+  assertEqual(secondJobs, 1, 'carry from first session completes a job in the second');
+});
+
+test('carry does not bypass the 8h offline cap', () => {
+  // Give the state a large carry (close to 1 job) and a capped absence (>>8h).
+  // Total jobs should not exceed floor(capHours * jobsPerHour + carry).
+  const { state, now } = stateWithTech(48 * HOUR_MS); // 2 days elapsed
+  state.offlineJobCarry = 0.9; // pre-existing carry
+
+  const maxJobs = Math.floor(OFFLINE.baseCapHours * TECHS.jobsPerHour + 0.9);
+  const report = simulateOfflineProgress(state, makeFaults(), now);
+  const total = (report?.jobsDone ?? 0) + (report?.callbacksAdded ?? 0);
+
+  assert(total <= maxJobs,
+    `total jobs (${total}) must not exceed cap + carry ceiling (${maxJobs})`);
+});
+
+test('two-tech carry: short absences equal one combined absence', () => {
+  // Two techs at 2 jobs/hour generate 4 aggregate jobs/hour. Two 20-minute
+  // absences must therefore match one 40-minute absence.
+  const elapsed = (20 / 60) * HOUR_MS;
+
+  const { state: split, now: firstNow } = stateWithTwoTechs(elapsed);
+  const first = simulateOfflineProgress(split, makeFaults(), firstNow);
+  split.lastSeen = firstNow;
+  const second = simulateOfflineProgress(split, makeFaults(), firstNow + elapsed);
+  const splitJobs =
+    (first?.jobsDone ?? 0) + (first?.callbacksAdded ?? 0) +
+    (second?.jobsDone ?? 0) + (second?.callbacksAdded ?? 0);
+
+  const { state: combined, now: combinedNow } = stateWithTwoTechs(2 * elapsed);
+  const oneRun = simulateOfflineProgress(combined, makeFaults(), combinedNow);
+  const combinedJobs = (oneRun?.jobsDone ?? 0) + (oneRun?.callbacksAdded ?? 0);
+
+  assertEqual(
+    splitJobs,
+    combinedJobs,
+    `two-tech split sessions (${splitJobs}) should equal combined session (${combinedJobs})`
+  );
+  assertEqual(
+    split.offlineJobCarry,
+    combined.offlineJobCarry,
+    'aggregate carry should also match'
+  );
 });

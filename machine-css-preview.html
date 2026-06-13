@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Machine Art Preview — Cold Call</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1f2e;
+      color: #e2e8f0;
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      padding: 24px;
+    }
+
+    h1 { font-size: 18px; margin-bottom: 4px; color: #22d3ee; }
+    p.subtitle { color: #64748b; margin-bottom: 24px; font-size: 12px; }
+
+    .machine-section { margin-bottom: 32px; }
+    .machine-name { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .states-row { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .state-cell { display: flex; flex-direction: column; gap: 6px; }
+    .state-label {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* mirrors the game's .art-slot sizing */
+    .art-slot {
+      width: 280px;
+      aspect-ratio: 16 / 7;
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .art-slot--has-image {
+      border-color: transparent;
+    }
+    .art-slot svg {
+      display: block;
+    }
+
+    hr { border: none; border-top: 1px solid #2d3347; margin: 24px 0; }
+  </style>
+</head>
+<body>
+  <h1>Cold Call — Machine Art Preview</h1>
+  <p class="subtitle">Dev tool · mirrors the in-game .art-slot frame (280 × 122 px at this viewport)</p>
+
+  <div id="preview"></div>
+
+  <script type="module">
+    import { machineSvg } from './js/machine-art.js';
+
+    const MACHINES = [
+      { id: 'slushie-machine',       name: 'Polar Twister Twin-Bowl Slushie (Tier 1)' },
+      { id: 'soft-serve-commercial', name: 'FrostKing 4500 Soft Serve (Tier 2)' },
+    ];
+    const STATES = ['fault', 'open', 'working'];
+
+    const root = document.getElementById('preview');
+
+    MACHINES.forEach(({ id, name }, i) => {
+      const section = document.createElement('div');
+      section.className = 'machine-section';
+
+      const heading = document.createElement('p');
+      heading.className = 'machine-name';
+      heading.textContent = name;
+      section.appendChild(heading);
+
+      const row = document.createElement('div');
+      row.className = 'states-row';
+
+      STATES.forEach(state => {
+        const cell = document.createElement('div');
+        cell.className = 'state-cell';
+
+        const svg = machineSvg(id, state);
+        const slot = document.createElement('div');
+        slot.className = svg ? 'art-slot art-slot--has-image' : 'art-slot';
+        slot.innerHTML = svg ?? `[ ${id} ]`;
+
+        const label = document.createElement('p');
+        label.className = 'state-label';
+        label.textContent = state;
+
+        cell.appendChild(slot);
+        cell.appendChild(label);
+        row.appendChild(cell);
+      });
+
+      section.appendChild(row);
+      if (i < MACHINES.length - 1) section.insertAdjacentHTML('beforeend', '<hr>');
+      root.appendChild(section);
+    });
+  </script>
+</body>
+</html>

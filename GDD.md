@@ -136,7 +136,7 @@ All numbers are first guesses; balance via config, never hard-coded.
 
 ## 7. Art & Audio Direction
 
-- **Pixel art, 2x scale, limited palette** (e.g. 32-colour). Machines are the art priority: each machine type gets one detailed sprite with state variants (working / fault / open panel). Characters are simple portraits in ticket dialogs — cheap to produce, big personality return.
+- **Blocky inline SVG illustrations with a limited palette.** This intentionally replaces the original raster pixel-art plan: SVG stays crisp at every mobile/desktop size, supports working / fault / open-panel state variants without extra asset files, and remains editable inside the dependency-free DOM codebase. Machines are the art priority. Characters use simple illustrated portraits in ticket dialogs — cheap to produce, big personality return.
 - UI is clean DOM/CSS, not pixel-rendered — readable on mobile, fast to build.
 - Audio: light. Satisfying clicks, a soft-serve swirl jingle on perfect jobs, one chiptune loop. Use generated/CC0 assets; audio is a polish-phase task, not a launch blocker.
 
@@ -144,7 +144,7 @@ All numbers are first guesses; balance via config, never hard-coded.
 
 ## 8. Technical Summary (details in CLAUDE.md)
 
-- Vanilla JS, DOM-first UI (canvas only if a machine-panel view needs it later)
+- Vanilla JS, DOM-first UI with inline SVG illustrations (canvas only if a feature genuinely needs it later)
 - PWA: manifest + service worker, installable, fully offline
 - Saves: versioned JSON in localStorage with migration functions
 - Hosted on GitHub Pages, zero build step preferred (ES modules)

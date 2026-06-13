@@ -7,6 +7,8 @@ import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks, speedBonus } from '../economy.js';
 import { JOBS } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
+import { escapeHtml } from '../utils.js';
+import { machineSvg } from '../machine-art.js';
 
 /** Player-facing label for a callback's source (GDD §3.1). */
 function sourceLabel(source) {
@@ -142,8 +144,8 @@ function callbacksView({ state, faults, clients }) {
       const machineName = raw.charAt(0).toUpperCase() + raw.slice(1);
       return `
         <li class="callback-card">
-          <p class="callback-client">${client ? client.name : cb.clientId}</p>
-          <p class="callback-meta">${machineName} · ${sourceLabel(cb.source)} · pays ${callbackRatePct(cb.source)}% of net</p>
+          <p class="callback-client">${client ? client.name : escapeHtml(cb.clientId)}</p>
+          <p class="callback-meta">${escapeHtml(machineName)} · ${sourceLabel(cb.source)} · pays ${callbackRatePct(cb.source)}% of net</p>
           <button class="btn btn-callback-take" data-take="${index}">Take callback</button>
         </li>`;
     })
@@ -200,10 +202,18 @@ function jobView({ state, faults, machines, clients }) {
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
   const fixButtons = job.fixOptions
-    .map((id) => `<button class="btn btn-fix" data-fix="${id}" ${outOfParts ? 'disabled' : ''}>${fixLabel(id)}</button>`)
+    .map((id) => `<button class="btn btn-fix" data-fix="${escapeHtml(id)}" ${outOfParts ? 'disabled' : ''}>${escapeHtml(fixLabel(id))}</button>`)
     .join('');
 
-  const clientName = job.motd ? 'Machine of the Day' : (client ? client.name : job.clientId);
+  const clientName = job.motd ? 'Machine of the Day' : (client ? client.name : escapeHtml(job.clientId));
+  const safeMachineName = escapeHtml(machineName);
+
+  // Art state: 'open' once the player has run at least one test (machine is being
+  // inspected); 'fault' before that (machine showing symptoms, panel closed).
+  const artState = job.testsRun.length > 0 ? 'open' : 'fault';
+  const svg = machineSvg(job.machineType, artState);
+  const artSlotClass = svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const artSlotContent = svg ?? `[ ${safeMachineName} ]`;
 
   return `
     ${statusBar(state)}
@@ -212,11 +222,11 @@ function jobView({ state, faults, machines, clients }) {
         ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
         ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
         <h2 class="job-client">${clientName}</h2>
-        <p class="job-machine">${machineName}</p>
+        <p class="job-machine">${safeMachineName}</p>
         ${clockBar}
       </div>
 
-      <div class="art-slot" aria-hidden="true">[ ${machineName} ]</div>
+      <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
 
       <div class="panel">
         <h3 class="panel-label">Reported symptoms</h3>
@@ -248,50 +258,50 @@ function invoiceView({ state, invoice }) {
     outcomeClass = 'receipt-outcome--good';
     outcomeText = 'Fixed!';
     lineItems = `
-      <div class=”receipt-line”><span>Job payout</span><span>$${fault.payout}</span></div>
-      <div class=”receipt-line”><span>Parts</span><span>−$${fault.partsCost}</span></div>
-      <div class=”receipt-line”><span>${callbackSource === 'tech' ? 'Rescue rate' : 'Callback rate'}</span><span>×${callbackRatePct(callbackSource)}%</span></div>
-      <div class=”receipt-line receipt-line--total”><span>TOTAL</span><span>$${earned}</span></div>`;
+      <div class="receipt-line"><span>Job payout</span><span>$${fault.payout}</span></div>
+      <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
+      <div class="receipt-line"><span>${callbackSource === 'tech' ? 'Rescue rate' : 'Callback rate'}</span><span>×${callbackRatePct(callbackSource)}%</span></div>
+      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
   } else if (correct) {
     const bonus = speedBonus(invoice.minutesSpent ?? 0);
     outcomeClass = 'receipt-outcome--good';
     outcomeText = 'Fixed!';
     lineItems = `
-      <div class=”receipt-line”><span>Job payout</span><span>$${fault.payout}</span></div>
-      <div class=”receipt-line”><span>Parts</span><span>−$${fault.partsCost}</span></div>
-      <div class=”receipt-line”><span>Speed bonus</span><span>+$${bonus}</span></div>
-      <div class=”receipt-line receipt-line--total”><span>TOTAL</span><span>$${earned}</span></div>`;
+      <div class="receipt-line"><span>Job payout</span><span>$${fault.payout}</span></div>
+      <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
+      <div class="receipt-line"><span>Speed bonus</span><span>+$${bonus}</span></div>
+      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
   } else if (callback) {
     outcomeClass = 'receipt-outcome--bad';
     outcomeText = 'Callback.';
     lineItems = `
-      <div class=”receipt-line”><span>Repeat miss</span><span>$0</span></div>`;
+      <div class="receipt-line"><span>Repeat miss</span><span>$0</span></div>`;
   } else {
     outcomeClass = 'receipt-outcome--bad';
     outcomeText = 'Callback.';
     lineItems = `
-      <div class=”receipt-line”><span>Partial payout</span><span>$${earned}</span></div>`;
+      <div class="receipt-line"><span>Partial payout</span><span>$${earned}</span></div>`;
   }
 
   const receiptNote = (!correct && callback)
-    ? `<p class=”receipt-note”>Wrong again — back on the board tomorrow. No charge.</p>`
+    ? `<p class="receipt-note">Wrong again — back on the board tomorrow. No charge.</p>`
     : (!correct)
-      ? `<p class=”receipt-note”>Wrong call — that machine will be back tomorrow.</p>`
+      ? `<p class="receipt-note">Wrong call — that machine will be back tomorrow.</p>`
       : '';
 
   return `
     ${statusBar(state)}
-    <section class=”screen screen-invoice”>
-      <div class=”receipt”>
-        <div class=”receipt-header”>— COLD CALL SERVICES —</div>
-        <p class=”receipt-outcome ${outcomeClass}”>${outcomeText}</p>
+    <section class="screen screen-invoice">
+      <div class="receipt">
+        <div class="receipt-header">— COLD CALL SERVICES —</div>
+        <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
         ${lineItems}
         ${receiptNote}
-        ${unlockedTier ? `<p class=”receipt-unlock”>★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
-        ${correct ? `<p class=”receipt-flavour”>”${fault.flavour}”</p>` : ''}
+        ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
+        ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>
-      <div class=”invoice-actions”>
-        <button class=”btn btn-primary” data-action=”dismiss-invoice”>Done</button>
+      <div class="invoice-actions">
+        <button class="btn btn-primary" data-action="dismiss-invoice">Done</button>
       </div>
     </section>`;
 }

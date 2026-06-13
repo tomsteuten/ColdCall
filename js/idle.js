@@ -26,7 +26,9 @@ const MINUTE_MS = 60 * 1000;
 export function simulateOfflineProgress(state, faults, now = Date.now()) {
   if (!state.lastSeen || state.lastSeen === 0) return null;
 
-  const activeTechs = state.techs.filter((t) => t.routeId !== null);
+  const activeTechs = state.techs
+    .map((tech) => ({ tech, route: state.routes.find((r) => r.id === tech.routeId) }))
+    .filter(({ route }) => route);
   if (activeTechs.length === 0) return null;
 
   const elapsedMs = now - state.lastSeen;
@@ -36,21 +38,28 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
   const simulatedMs = Math.min(elapsedMs, capMs);
   const hours = simulatedMs / HOUR_MS;
 
+  // Carry is aggregate work across every assigned tech. This keeps several
+  // short absences equivalent to one combined absence even with two techs.
+  const prevCarry = typeof state.offlineJobCarry === 'number' ? state.offlineJobCarry : 0;
+  const rawJobs = hours * TECHS.jobsPerHour * activeTechs.length + prevCarry;
+  const totalJobs = Math.floor(rawJobs);
+  state.offlineJobCarry = rawJobs - totalJobs;
+
   let totalEarned = 0;
   let jobsDone = 0;
   let callbacksAdded = 0;
   const techReports = [];
 
-  for (const tech of activeTechs) {
-    const route = state.routes.find((r) => r.id === tech.routeId);
-    if (!route) continue;
+  const baseJobs = Math.floor(totalJobs / activeTechs.length);
+  const extraJobs = totalJobs % activeTechs.length;
 
+  for (const [techIndex, { tech, route }] of activeTechs.entries()) {
     // Tier-appropriate faults for the route's client tier — pick from tier 2
     // (the only contract route at launch). Falling back to all faults is safe.
     const routeFaults = Object.values(faults).filter((f) => f.tier === 2);
     const faultPool = routeFaults.length > 0 ? routeFaults : Object.values(faults);
 
-    const jobs = Math.floor(hours * TECHS.jobsPerHour);
+    const jobs = baseJobs + (techIndex < extraJobs ? 1 : 0);
     // Seed on tech id + lastSeen so the same offline period always produces the
     // same result — deterministic simulation is a GDD rule 6 requirement.
     const prng = mulberry32(`${tech.id}-${state.lastSeen}`);

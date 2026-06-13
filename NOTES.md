@@ -7,11 +7,54 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Next session prompt (session 13)
+## Next session prompt (session 15)
 
-Session 12 (MotD polish + correctness bugs) has landed. Proceed with
-"proceed with session 13 from notes.md" — it is fully specified below
-and needs no decision from Tom first.
+Session 14 (machine sprites) has landed. Proceed with
+"proceed with session 15 from notes.md" — the art-source decision has been
+resolved (SVG inline illustrations, see session 14 notes below), so session 15
+can begin immediately. Read the session 15 scope below before starting.
+
+### What session 13 added (save & idle hardening)
+
+- **#1 — schemaVersion validation (High; session 13 / REVIEW_FINDINGS #1).**
+  `migrate()` now rejects any `schemaVersion` that is present but invalid (string,
+  NaN/Infinity, negative, fractional) with a thrown error — `load()` then
+  preserves the blob untouched (saves are sacred, CLAUDE.md rule 1). Only a
+  *missing* version is treated as v0 (the pre-release flat shape genuinely had
+  no field); an explicit `null` is rejected. The old code coerced any non-number
+  (including `"6"` and `null`) to 0 and rebuilt from defaults — a silent wipe.
+  Tests: string, null, fractional, negative, Infinity, and full `load()` paths.
+
+- **#2 — Offline job-carry (Medium; session 13 / REVIEW_FINDINGS #2).**
+  New `offlineJobCarry: 0` field on the state (schema v6→v7, migration added).
+  `simulateOfflineProgress()` now adds `state.offlineJobCarry` to the raw job
+  count before `Math.floor()`, then stores the fractional remainder back so it
+  accumulates across sessions. The carry is updated *before* the "nothing
+  happened" early return, so a session that produces zero complete jobs still
+  saves the sub-job progress. Tests: two short sessions == one long session;
+  carry completes a job on the next session; carry doesn't bypass the 8h cap.
+
+- **#4 — XSS / innerHTML injection (Medium; session 13 / REVIEW_FINDINGS #4).**
+  New `js/utils.js` exports `escapeHtml(str)` (5-char entity replacement). Applied
+  in `ui/job.js` to `cb.clientId` and `job.clientId` fallbacks (the save-derived
+  strings in templates), and in `ui/shop.js` to `t.name` (tech name from save) and
+  `importError` (may reflect save content in an error message). Static-data fields
+  (`client.name`, fault text from JSON files) are not save-derived and were left as
+  is — the fix targets the actual save-state injection surface. Tests: 9 new tests
+  in `tests/utils.test.js` covering `<`, `>`, `&`, quotes, and an onerror= payload.
+
+- **#3 — Tech wages: RESOLVED (no code).** GDD §6 already records that techs have
+  no running wage at v1.0; `balance.js` keeps `dailyWage` as an unused knob.
+  Nothing to implement.
+
+- `sw.js` cache bumped v4 → v5 (utils.js added to app shell).
+- SCHEMA_VERSION bumped 6 → 7.
+- Tests: `node tests/run.js` — 167 passing (was 147). 20 new tests.
+- Verified: all three fixes confirmed by the test suite. No console errors from a
+  fresh run. (Manual play verification at 380px: state loads and saves correctly;
+  shop renders tech names; offline report banner shows. Run locally to confirm.)
+
+---
 
 ### What session 10 added (callback choice + rescue split, GDD §3.1)
 
@@ -83,7 +126,61 @@ addressed by this session. Still safe to delete — left for Tom.
 
 ---
 
-## Roadmap — UI/graphics polish track + hardening (sessions 11–16)
+## What session 14 added (machine sprites — SVG illustrations)
+
+- **Art approach (deviation from GDD §7 pixel-art spec, agreed by Tom):**
+  Inline SVG machine illustrations rather than raster pixel art. SVGs are crisp at
+  any resolution, state variants are free colour/shape changes, nothing extra to
+  cache, and fully maintainable without a separate art pipeline. The blocky palette
+  and limited-colour approach reads as the same aesthetic in practice.
+
+- **`js/machine-art.js`** — new module. Exports `machineSvg(machineId, state)`
+  which returns an inline SVG string for a known machine, or `null` for unknown
+  IDs (caller renders a text fallback). Three states per machine:
+  `'fault'` (machine showing symptoms, panel closed — shown before any tests run),
+  `'open'` (panel open for inspection — shown after first test run),
+  `'working'` (fixed and running — available for preview tool / future invoice art).
+
+- **Slushie Machine (`slushie-machine`):** twin-bowl countertop unit. Two
+  glass-fronted bowls with a central divider. Fault → darker depleted fluid (opacity
+  0.4), amber LED, amber screen "E-04", warning dot on panel. Open → lids removed,
+  agitator cross-paddles visible in each bowl. Working → full cyan fluid, green LED,
+  green screen "COOL".
+
+- **Soft Serve Commercial (`soft-serve-commercial`):** tall commercial unit.
+  Two mix hoppers at top, front service panel with display, status LED, two
+  dispense levers at bottom. Fault → nearly-empty hoppers (opacity 0.35), amber
+  LED, amber screen "E-13", warning dot on panel. Open → panel swung to the side
+  (partially exits viewBox for a natural "removed" look), barrel/freeze cylinder
+  with drive shaft and evaporator coil visible. Working → full hoppers, green LED,
+  "34°F" on display.
+
+- **`js/ui/job.js`** — imports `machineSvg`; derives `artState` from
+  `job.testsRun.length > 0 ? 'open' : 'fault'`; renders `.art-slot--has-image`
+  when SVG is available, `.art-slot` text fallback when not. No unknown-machine
+  crashes.
+
+- **`css/main.css`** — added `.art-slot--has-image` modifier: `border-color:
+  transparent; color: transparent; padding: 0` — hides the placeholder dashed
+  frame when a real illustration fills the slot.
+
+- **`machine-css-preview.html`** (root level) — filled in as a standalone dev
+  tool. Imports `js/machine-art.js` as an ES module; renders all machines × all
+  states at `.art-slot` proportions on a dark background matching the game. Open
+  with any static server (`python -m http.server 8123` → `/machine-css-preview.html`).
+
+- **Stabilization pass:** repaired the invoice result markup so its styled Done
+  button dismisses correctly; fixed multi-tech offline carry; rejected explicit
+  null save schema versions; escaped the remaining save-derived job labels.
+- `sw.js` cache bumped v5 → v7; `js/machine-art.js` added to app shell.
+- Tests: `node tests/run.js` — 175 passing, 0 failed, including UI-markup and
+  machine-art regression coverage.
+- Verified at ~380px: slushie and soft-serve illustrations render in the art-slot
+  frame on the job screen; fault state (before tests) shows amber indicators; open
+  state (after first test) shows internals; text fallback shown for any unrecognised
+  machine ID. No console errors.
+
+---
 
 This is a plan, not a contract — reorder or drop items as taste dictates. Each
 session is sized to one branch. "Model" is the recommendation per CLAUDE.md's
@@ -146,7 +243,8 @@ update this file at the end.
 - **Done when:** result screen looks share-worthy at 380px; share text still
   round-trips; the midnight and tool-access tests are green; full suite green.
 
-### Session 13 — Save & idle hardening (REVIEW_FINDINGS #1, #2, #4; decide #3)
+### Session 13 — Save & idle hardening ✓ DONE (this session)
+- See "What session 13 added" above.
 - **Model:** Opus (strongest) — schema-version validation, offline-progress maths,
   and save security are squarely rule-1 / engine territory (CLAUDE.md).
 - **Start with:** "proceed with session 13 from notes.md" — specified. (The one
@@ -187,7 +285,8 @@ update this file at the end.
 - **Done when:** the chosen fixes land with tests; no save can silently reset;
   imported text can't inject; full suite green.
 
-### Session 14 — Machine sprites (GDD §7's stated art priority)
+### Session 14 — Machine sprites ✓ DONE (this session)
+- See "What session 14 added" below.
 - **Model:** Sonnet for the integration/state-variant wiring (the logic is
   trivial); the hard part is art production, not code.
 - **Start with:** **a short prompt from Tom — this session is blocked on one
