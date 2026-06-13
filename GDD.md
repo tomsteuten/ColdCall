@@ -40,6 +40,11 @@ A deduction puzzle. Each machine has a hidden fault drawn from its fault tree. T
 
 **Why it works:** It's Wordle-shaped — narrow a hidden answer with limited probes. Skilled players learn real-ish fault patterns and get faster, which makes mastery feel earned rather than stat-gated.
 
+**Decisions of record (v1.0):**
+- Job time is a **simulated clock**, never wall-clock. Each test has a time cost in fictional minutes (in `config/balance.js`); the clock only advances when the player acts, so a phone interruption never punishes, and every run is deterministic and testable.
+- Payout = **base payout + speed bonus**. The bonus starts full and decays with simulated minutes spent on tests. Committing blind keeps the full bonus but risks the callback; running every test forfeits the bonus but never drops below base payout — being thorough is safe, being sharp is rewarded.
+- Economy invariant: informed diagnosis (a few targeted tests, correct fix) must beat both blind guessing and exhaustive testing in expected $/min.
+
 **Difficulty levers:** number of plausible faults per machine, ambiguous/overlapping symptoms, intermittent faults (symptom only appears on a re-test), red herrings ("operator error — the staff just didn't run the cleaning cycle," a free fix and a joke that doubles as the meme payoff).
 
 ### 2.2 Fault Library (launch content)
@@ -70,6 +75,11 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 - Hire techs and assign them to **contract routes** (a client cluster, e.g. "Burgertown South Side — 6 stores").
 - Each tech has a skill level → success rate and jobs/hour. Failed idle jobs become callbacks the *player* can rescue for bonus pay (feeds idle back into active play).
 - Techs earn ~40–60% of what active play earns per job. **Hard rule: active play is always the best $/min.**
+
+**Decision of record (v1.0) — callbacks are a choice, and there are two kinds:**
+- **Tech-caused (rescue):** your idle tech botched it and the client never paid — rescuing pays near fresh-ticket net (knob in balance.js, always ≤ fresh so farming rescues never beats taking new tickets). This is the §3.1 "bonus pay" loop feeding idle back into active.
+- **Player-caused (obligation, from §2.1):** you misdiagnosed and already took the partial — the return visit pays the 40%-of-net callback rate. Left unclaimed for N days it expires: reputation hit, job gone.
+- Callbacks are claimed from their own "Callbacks (n)" entry on the home screen. "Next ticket" never auto-claims one.
 
 ### 3.2 Offline Progress
 - Simulated on load from elapsed time (no background timers). Capped at 8h base, upgradeable to 24h ("Answering Service" upgrade).

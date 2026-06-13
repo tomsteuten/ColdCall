@@ -63,15 +63,66 @@ for session 9, commit in small logical commits, don't push until Tom says so.
 
 ---
 
-## Open design questions for Tom (from the Codex review, not blockers for v1.0 build)
+## Queued session prompts (decisions confirmed by Tom, recorded in GDD)
 
-- Diagnosis tests have no time/cost trade-off yet (review #4, GDD §2.1 says tests
-  cost job time). Needs a design call on how time pressure should feel on mobile —
-  its own session, before launch.
-- Due callbacks are auto-claimed by "Next ticket" (review #7). GDD §3.1 frames
-  callbacks as optional rescues. Decide: mandatory queue or player choice.
+### Session 9 prompt — diagnosis test costs (STRONGEST model: economy + state shape)
+
+Read GDD.md §2.1 (including the v1.0 decisions of record) and CLAUDE.md fully
+before doing anything. Tests: `node tests/run.js` must pass before and after.
+
+Implement the simulated job clock and speed bonus:
+
+- Each test in js/diagnosis.js TESTS gets a time cost in fictional minutes, in a
+  new DIAGNOSIS section of config/balance.js. Suggested starts: error log 2,
+  temp probe 5, inspect beater 15, continuity test 8. Tune freely.
+- The active job accumulates minutesSpent when a test runs. jobs.active persists
+  in saves, so this is a state-shape change: ship a schema migration (current
+  schema is v4; missing minutesSpent on an in-flight job defaults to 0) and a
+  migration test per CLAUDE.md rule 1.
+- settleJob: on a correct FRESH fix, payout = fault.payout + speed bonus, where
+  bonus = max(0, speedBonusMax − minutesSpent × bonusDecayPerMin), both knobs in
+  balance.js (suggested: bonus up to ~30% of tier payout). No bonus on callbacks
+  (already discounted) and none on MotD (pays nothing). Parts stay as-is.
+- The clock NEVER uses wall time — interruptions must not punish (GDD §2.1).
+- Job screen: show minutes spent and the remaining bonus so the trade-off is
+  visible before each test.
+- New invariant tests: (a) informed diagnosis (few targeted tests, correct fix)
+  beats both zero-test guessing in EXPECTED value (guess = correct-rate-weighted
+  mix of full bonus and callback outcomes) and exhaustive testing; (b) bonus
+  never makes a callback fix beat a fresh fix; (c) active > idle still holds.
+- Update the GDD if any decision shifts during implementation; note it in the
+  commit. Verify at ~380px. Don't push until Tom says so.
+
+### Session 10 prompt — callback choice + rescue split (STRONGEST model: economy + migration)
+
+Read GDD.md §2.1/§3.1 (v1.0 decisions of record) and CLAUDE.md fully before
+doing anything. Depends on session 9 landing first (shares settlement math).
+
+Split callbacks into obligations and rescues, and make claiming a choice:
+
+- Schema migration (+1 from current): each state.jobs.callbacks entry gains
+  source: 'player' | 'tech' and an expiry day. Existing entries migrate to
+  source 'player' (conservative: the lower rate) with expiry = dueDay +
+  callbackExpiryDays. Migration test with a previous-version fixture.
+- economy.js: settleJob's callback rate becomes source-dependent —
+  player-caused stays callbackJobPayoutMult (0.4 of net); tech-caused pays
+  rescueCallbackPayoutMult of net (suggested 0.9, MUST stay < 1.0 so rescues
+  never beat fresh tickets — add the invariant test). idle.js sets
+  source: 'tech' on the callbacks it queues.
+- Expiry is computed on load, deterministically, like offline progress: due
+  callbacks past their expiry day are removed with a reputation penalty
+  (knobs: callbackExpiryDays, expiredCallbackRepPenalty in balance.js) and the
+  loss is reported in the welcome-back/home banner.
+- UI: home gets a separate "Callbacks (n)" button listing due callbacks with
+  their rate and source ("your miss" vs "Dave's miss"); "Next ticket" never
+  auto-claims a callback. main.js actions.nextTicket loses the claimDueCallback
+  call; a new action claims a chosen callback.
+- All numbers in config/balance.js. Run tests, verify at ~380px, update this
+  file for the next session, small commits, don't push until Tom says so.
 
 ## v1.0 scope still open after session 7
 
 - PWA: manifest.json + sw.js, installable
 - Save export/import UI (functions exist in state.js, no screen yet)
+- (pre-launch, post-v1.0-build) session 9: diagnosis test costs; session 10:
+  callback choice/rescue split — prompts above
