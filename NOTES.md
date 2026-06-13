@@ -9,12 +9,14 @@ lives) belong in each machine's own Claude memory, not here.
 
 ## Next session prompt (session 11)
 
-Session 10 (callback choice + rescue split) has landed. State is now at schema
-v6. All v1.0 GDD §9 scope items plus every queued pre-launch design decision are
-now implemented — there is no queued session-11 prompt. Next steps are Tom's
-call: playtesting/balance tuning, art/audio polish (GDD §7), or starting v1.x
-(Tiers 3–4, prestige, workshop, tech specialisation — GDD §9). Pick one and
-write its prompt here at the end of that session.
+Session 10 (callback choice + rescue split) has landed and is pushed. State is at
+schema v6 — all GDD §9 v1.0 scope plus every queued pre-launch design decision is
+implemented. The game is now feature-complete but visually a programmer-art
+prototype; the next arc is a **UI/graphics polish track** (Tom's stated
+preference, and it serves the GDD §5 screenshot-based growth hook). The planned
+sessions 11–15 are laid out under "Roadmap" below — to begin one, just say
+"proceed with session N from notes.md" (decision-dependencies, where they exist,
+are flagged per session).
 
 ### What session 10 added (callback choice + rescue split, GDD §3.1)
 
@@ -53,10 +55,103 @@ addressed by this session. Still safe to delete — left for Tom.
 
 ---
 
+## Roadmap — UI/graphics polish track (sessions 11–15)
+
+This is a plan, not a contract — reorder or drop items as taste dictates. Each
+session is sized to one branch. "Model" is the recommendation per CLAUDE.md's
+guidance (CSS/wiring/flavour → mid model; state/economy/engine → strongest).
+"Start with" tells you whether the session is fully specified here (just say
+"proceed with session N from notes.md") or needs a decision/prompt from you first.
+
+General rules for every session below: read GDD §7 (art/audio direction) + §2/§5
+and CLAUDE.md before coding; keep the no-build / vanilla-DOM constraints; mobile
+-first at ~380px AND check desktop; run `node tests/run.js`; bump the sw.js cache
+name if app-shell files change; small commits; don't push until Tom says so;
+update this file at the end.
+
+### Session 11 — Visual identity & CSS/layout pass (no new assets)
+- **Model:** Sonnet (pure CSS/DOM, no architecture). 
+- **Start with:** just "proceed with session 11 from notes.md" — fully specified,
+  no decisions needed.
+- **Scope:** Make the whole app look intentional without adding image assets.
+  Replace the placeholder "dev-title" home with a real title/brand treatment;
+  establish a type scale, spacing rhythm, and button hierarchy in css/main.css
+  via the existing custom properties; add light screen-to-screen transitions;
+  make the invoice read like a printed receipt; make the diagnosis/job screen
+  read like *inspecting a machine*, not filling in a form (group symptoms/tests/
+  fix as distinct panels). Establish a small set of reusable component classes so
+  later art slots drop into a stable frame.
+- **Why first:** zero asset-pipeline risk, fully reversible, and you want the
+  frame settled before pouring sprites into it. De-risks sessions 13–14.
+- **Done when:** every screen (home, callbacks, job, invoice, shop, MotD result)
+  looks deliberate at 380px and on desktop; no test or console regressions;
+  screenshots in the handover.
+
+### Session 12 — Machine of the Day result & share card polish
+- **Model:** Sonnet (presentation + a small string-builder tweak in motd.js).
+- **Start with:** "proceed with session 12 from notes.md" — fully specified.
+- **Scope:** The MotD result screen is the growth engine (GDD §5) and is still an
+  emoji-text grid. Make the result screen genuinely screenshot-worthy on top of
+  the session-11 identity; refine buildShareCard() copy/layout (keep it
+  copy-paste plain text — that's the Wordle-pattern hook); add clean-streak /
+  callback-shame flourish per GDD §5. Keep it deterministic and tested.
+- **Done when:** result screen looks share-worthy at 380px, share text still
+  round-trips, motd tests green.
+
+### Session 13 — Machine sprites (GDD §7's stated art priority)
+- **Model:** Sonnet for the integration/state-variant wiring (the logic is
+  trivial); the hard part is art production, not code.
+- **Start with:** **a short prompt from Tom — this session is blocked on one
+  decision:** where the machine art comes from. Options: (a) Tom draws/sources
+  pixel art himself and drops files in /assets, (b) CC0/asset-pack sprites, (c) an
+  AI-pixel-art workflow. Tell the next session which, and (if a/b) have at least
+  one machine's sprite set committed first. Until that's answered, don't start.
+- **Scope:** Add a sprite slot to the job screen, one sprite per machine type with
+  working / fault / open-panel state variants (GDD §7), driven from machines.json.
+  Graceful text fallback when a sprite is missing so the game never breaks on
+  un-arted machines. Add sprite paths to the sw.js app-shell list.
+- **Done when:** at least the tier-1/2 star machines show state-appropriate
+  sprites, missing-art fallback verified, PWA still caches offline.
+
+### Session 14 — Character portraits for tickets / Burgertown managers
+- **Model:** Sonnet (wiring/CSS + flavour).
+- **Start with:** shares session 13's art-source decision — once that's settled,
+  "proceed with session 14 from notes.md" works; otherwise supply it inline.
+- **Scope:** Simple portraits in the ticket/job dialog (GDD §4/§7 — recurring
+  Burgertown manager personalities, big personality-per-byte return). Portrait
+  data lives in clients.json; text-only fallback. Lean into the comedy/flavour.
+- **Done when:** clients show portraits + a line of character on the job screen,
+  fallback verified.
+
+### Session 15 — The light repair interaction (GDD §2.3)
+- **Model:** Opus (strongest) — it touches the active-job → invoice flow and may
+  add a transient repair step to state; anything near the commit/settle path and
+  a possible migration is strongest-model work (CLAUDE.md rule 1 + engine).
+- **Start with:** "proceed with session 15 from notes.md" — specified, but read
+  GDD §2.3 carefully; if it needs a state-shape change, ship a migration + test.
+- **Scope:** After a correct diagnosis, a quick satisfying repair beat
+  (hold-to-tighten / sequence-tap) before the invoice — "light, not a second
+  minigame" (GDD §2.3). Must not alter $/min balance or the active>idle invariant;
+  keep it skippable/instant-safe so it never punishes a mobile interruption.
+- **Done when:** repair beat plays between commit and invoice, economy invariants
+  untouched, tests green.
+
+### Not-yet-scheduled (deliberately after the visual track)
+- **Audio** (GDD §7): satisfying clicks, perfect-job jingle, one chiptune loop;
+  CC0/generated; GDD says polish-phase, not a launch blocker. Sonnet.
+- **A balance/fun playtest pass** (GDD §10: "fun with all numbers set to 1"). No
+  evidence this has happened. Not a UI task, but don't let it slip indefinitely —
+  the visual work above also makes a playtest read more clearly. Strongest model
+  if it turns into economy retuning.
+- **v1.x systems** (Tiers 3–4, prestige, workshop, tech specialisation — GDD §9):
+  strongest model; out of scope for the current visual track.
+
+---
+
 ## Archived session 9–10 starting context
 
-Sessions 1–10 are done and committed (not pushed). Everything from session 8,
-plus session 9 additions:
+Sessions 1–10 are done, committed, and pushed to origin/main. Everything from
+session 8, plus session 9 additions:
 
 - Simulated job clock + speed bonus (GDD §2.1). config/balance.js DIAGNOSIS:
   testMinutes (error-log 2, temp-probe 5, inspect-beater 15, continuity-test 8),
@@ -91,9 +186,11 @@ delete; left in the tree for Tom to skim first.
 
 ## Queued session prompts (decisions confirmed by Tom, recorded in GDD)
 
-None. Every queued pre-launch design decision is implemented (session 10 closed
-the last one — callback choice + rescue split). The next session's direction is
-Tom's call; see the session-11 note at the top.
+Every queued pre-launch *design* decision is implemented (session 10 closed the
+last one). The next arc is the UI/graphics polish track — see "Roadmap (sessions
+11–15)" above for the per-session plan, model recommendations, and which sessions
+need a decision from Tom before starting (sprites/portraits art source) vs. which
+you can just "proceed with".
 
 ## v1.0 scope — all items shipped
 
