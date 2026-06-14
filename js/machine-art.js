@@ -37,6 +37,21 @@ const GENERATED_MACHINES = {
     open: 'assets/generated/soft-serve-commercial-open.webp',
     working: 'assets/generated/soft-serve-commercial-working.webp',
   },
+  'froyo-multihead': {
+    fault: 'assets/generated/froyo-multihead-fault.webp',
+    open: 'assets/generated/froyo-multihead-open.webp',
+    working: 'assets/generated/froyo-multihead-working.webp',
+  },
+  'granita-slushie': {
+    fault: 'assets/generated/granita-slushie-fault.webp',
+    open: 'assets/generated/granita-slushie-open.webp',
+    working: 'assets/generated/granita-slushie-working.webp',
+  },
+  'commercial-ice-dispenser': {
+    fault: 'assets/generated/commercial-ice-dispenser-fault.webp',
+    open: 'assets/generated/commercial-ice-dispenser-open.webp',
+    working: 'assets/generated/commercial-ice-dispenser-working.webp',
+  },
 };
 
 /**

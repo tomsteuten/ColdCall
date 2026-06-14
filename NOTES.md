@@ -33,6 +33,33 @@ Next session: read `walkthrough.md`, verify Antigravity's Tier 3 / prestige / wo
 features against `GDD.md`, and write a proper handover entry for them — they are in the
 code and tests but not yet in this file. Don't push without Tom's approval.
 
+### Graphics: raster art for all 5 machines (Codex, post-Session-20)
+
+- **All five machines now have generated raster renders** (`assets/generated/
+  <machineId>-{fault,open,working}.webp`, 640×640). Tier 1/2 were made earlier; the
+  Tier 3 trio (`froyo-multihead`, `granita-slushie`, `commercial-ice-dispenser`) was
+  added with **Codex's built-in image tool in VS Code**. Provenance, the exact prompt
+  template, visual-direction block, and the Pillow split/normalise pipeline are
+  documented in **`assets/generated/PROMPTS.md`** — read that before generating any new
+  machine/portrait art so the set stays consistent. The image gen is non-deterministic;
+  only the spec is reproducible.
+- **Wiring:** all three Tier 3 ids added to `GENERATED_MACHINES` in `js/machine-art.js`;
+  `machineImageSrc()` still honours `state.settings.graphicsMode` (raster only when not
+  `'vector'`, SVG otherwise). `sw.js` cache → **v16** with every machine + portrait
+  webp added to `APP_SHELL` (all paths verified present on disk, so SW install won't
+  fail). `tests/machine-art.test.js` has a catalogue test asserting every machine in
+  `data/machines.json` has all three webp states.
+- **Verified this turn:** `node tests/run.js` → **222 passing, 0 failed**. All 9 Tier 3
+  renders load (640×640, no broken images, no slot overflow with the `.machine-art`
+  containment rule). Default graphics mode is still `'vector'` (animated SVG); raster is
+  opt-in via Settings — see `GRAPHICS_REVIEW.md` for the still-open square-render-in-
+  16:7-slot issue and the "make rendered the default" path.
+- **Fixed a pre-existing determinism regression (not Codex's):** `callbacksView` in
+  `js/ui/job.js` read `new Date()` (real wall clock) instead of `new Date(Date.now())`,
+  bypassing the test clock pin and making the two session-19 callback-timing tests
+  date-flaky — they had drifted to failing as the real date advanced. Now injectable
+  again (CLAUDE.md rule 6). This is why the suite was red before this turn.
+
 ### What session 19 added (callback, staff, and offline clarity — GDD §3.1/§3.2)
 
 - **Callbacks screen now shows timing and consequence (`callbacksView`).** It lists

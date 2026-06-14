@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v15';
+const CACHE = 'coldcall-v16';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).
@@ -28,6 +28,23 @@ const APP_SHELL = [
   'js/ui/motd.js',
   'config/balance.js',
   'assets/icon.svg',
+  'assets/generated/slushie-machine-fault.webp',
+  'assets/generated/slushie-machine-open.webp',
+  'assets/generated/slushie-machine-working.webp',
+  'assets/generated/soft-serve-commercial-fault.webp',
+  'assets/generated/soft-serve-commercial-open.webp',
+  'assets/generated/soft-serve-commercial-working.webp',
+  'assets/generated/froyo-multihead-fault.webp',
+  'assets/generated/froyo-multihead-open.webp',
+  'assets/generated/froyo-multihead-working.webp',
+  'assets/generated/granita-slushie-fault.webp',
+  'assets/generated/granita-slushie-open.webp',
+  'assets/generated/granita-slushie-working.webp',
+  'assets/generated/commercial-ice-dispenser-fault.webp',
+  'assets/generated/commercial-ice-dispenser-open.webp',
+  'assets/generated/commercial-ice-dispenser-working.webp',
+  'assets/generated/nina-patel.webp',
+  'assets/generated/cheryl-voss.webp',
   'data/machines.json',
   'data/clients.json',
   'data/faults/index.json',

@@ -1,9 +1,13 @@
 /** @file Pure rendering checks for the inline SVG machine illustrations. */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { machineSvg } from '../js/machine-art.js';
 
 const MACHINES = ['slushie-machine', 'soft-serve-commercial', 'froyo-multihead', 'granita-slushie', 'commercial-ice-dispenser'];
 const STATES = ['fault', 'open', 'working'];
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('every launch machine renders valid inline SVG in every art state', () => {
   for (const machineId of MACHINES) {
@@ -19,6 +23,16 @@ test('every launch machine renders valid inline SVG in every art state', () => {
 
 test('unknown machines return null for the text fallback path', () => {
   assertEqual(machineSvg('future-machine', 'fault'), null);
+});
+
+test('every catalogued machine has a generated raster asset for every art state', () => {
+  const catalogue = JSON.parse(readFileSync(join(rootDir, 'data/machines.json'), 'utf8')).machines;
+  for (const machine of catalogue) {
+    for (const state of STATES) {
+      const path = join(rootDir, 'assets', 'generated', `${machine.id}-${state}.webp`);
+      assert(existsSync(path), `${machine.id}/${state} should have generated raster art`);
+    }
+  }
 });
 
 test('fault and open states produce different machine markup', () => {

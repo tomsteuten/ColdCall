@@ -362,7 +362,10 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 /** The Callbacks list — every queued callback, due or returning soon (GDD §3.1). */
 export function callbacksView({ state, faults, clients }) {
-  const today = new Date().toISOString().slice(0, 10);
+  // Read the clock via Date.now() (not `new Date()`) so it stays injectable for
+  // deterministic tests (CLAUDE.md rule 6). A recovery rewrite had used `new Date()`,
+  // which bypassed the test clock pin and made the callback-timing tests date-flaky.
+  const today = new Date(Date.now()).toISOString().slice(0, 10);
   // Render from the full queue so each row's data-index matches what
   // claimCallback() splices; only due entries get a Take button, and not-yet-due
   // ones are shown with their return day so an offline-queued callback is visibly
