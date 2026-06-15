@@ -114,9 +114,26 @@ export const OFFLINE = {
   answeringServiceCapHours: 24, // "Answering Service" upgrade
 };
 
-/** Prestige ("Sell the Business", v1.x — threshold tracked from launch). */
+/** Prestige ("Sell the Business", GDD §3.4). */
 export const PRESTIGE = {
   lifetimeEarningsThreshold: 250000,
+  // Founder Bonus gained per point of reputation held at sell time, added to the
+  // permanent multiplier. 0.01 = +1% per rep (100 rep → +1.0, i.e. a doubling).
+  bonusPerReputation: 0.01,
+};
+
+/**
+ * Refurbishing workshop (GDD §3.3). Buy a damaged machine, diagnose+repair it
+ * via the normal minigame, then sell the refurb. `tierRequired` gates which
+ * machines you can buy to your unlocked client tier. Profit is the buy→sell
+ * spread; the sell price is multiplied by the Founder Bonus like active work.
+ * NOTE (balance debt): tier-2 spread (250) edges past a fresh tier-2 ticket's
+ * best net — see the next playtest pass before treating these as final.
+ */
+export const WORKSHOP = {
+  'slushie-machine': { buyPrice: 100, sellPrice: 200, tierRequired: 1 },
+  'soft-serve-commercial': { buyPrice: 250, sellPrice: 500, tierRequired: 2 },
+  'froyo-multihead': { buyPrice: 500, sellPrice: 1000, tierRequired: 3 },
 };
 
 // Van restocking is free at launch — parts are billed per job via fault.partsCost,

@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -288,26 +288,73 @@ export function buyTool(state, toolId) {
   return { ok: true, reason: null };
 }
 
+/**
+ * Workshop refurb catalogue (GDD §3.3). Display names are shop copy (like
+ * TOOL_CATALOGUE blurbs); every price/tier number comes from config/balance.js
+ * (rule 3), spread in here so the UI can read `info.buyPrice` etc. directly.
+ * @type {Object<string, {name: string, buyPrice: number, sellPrice: number, tierRequired: number}>}
+ */
 export const WORKSHOP_MACHINES = {
-  'slushie-machine': {
-    name: 'Polar Twister Twin-Bowl Slushie',
-    buyPrice: 100,
-    sellPrice: 200,
-    tierRequired: 1,
-  },
-  'soft-serve-commercial': {
-    name: 'FrostKing 4500 Soft Serve',
-    buyPrice: 250,
-    sellPrice: 500,
-    tierRequired: 2,
-  },
-  'froyo-multihead': {
-    name: 'YogurtMaster 3000 Multihead Froyo',
-    buyPrice: 500,
-    sellPrice: 1000,
-    tierRequired: 3,
-  },
+  'slushie-machine': { name: 'Polar Twister Twin-Bowl Slushie', ...WORKSHOP['slushie-machine'] },
+  'soft-serve-commercial': { name: 'FrostKing 4500 Soft Serve', ...WORKSHOP['soft-serve-commercial'] },
+  'froyo-multihead': { name: 'YogurtMaster 3000 Multihead Froyo', ...WORKSHOP['froyo-multihead'] },
 };
+
+/**
+ * Buy a damaged machine into the refurbishing workshop (GDD §3.3). Deducts the
+ * buy price and assigns a random fault of that machine type to diagnose later.
+ * Refuses (without mutating) when the machine's tier isn't unlocked or it's
+ * unaffordable — those are player situations, not bugs, so they return a reason.
+ * @param {object} state game state (mutated on success)
+ * @param {string} machineType key in WORKSHOP_MACHINES
+ * @param {Object<string, object>} faults fault library keyed by id
+ * @param {function(): number} [rand] 0..1 source, injectable for tests
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function buyWorkshopMachine(state, machineType, faults, rand = Math.random) {
+  const info = WORKSHOP_MACHINES[machineType];
+  if (!info) return { ok: false, reason: 'Unknown machine' };
+  if (state.player.tierUnlocked < info.tierRequired) {
+    return { ok: false, reason: `Unlock Tier ${info.tierRequired} first` };
+  }
+  if (state.player.cash < info.buyPrice) return { ok: false, reason: 'Not enough cash' };
+  const matching = Object.values(faults).filter((f) => f.machineType === machineType);
+  const pool = matching.length > 0 ? matching : Object.values(faults);
+  if (pool.length === 0) return { ok: false, reason: 'No faults available' };
+  const fault = pool[Math.floor(rand() * pool.length)];
+
+  state.player.cash -= info.buyPrice;
+  state.workshop.machines.push({
+    id: `wm-${state.workshop.machines.length}-${Math.floor(rand() * 1e6).toString(36)}`,
+    machineType,
+    faultId: fault.id,
+    status: 'broken',
+  });
+  return { ok: true, reason: null };
+}
+
+/**
+ * Sell a refurbished workshop machine (GDD §3.3). Pays sellPrice × Founder Bonus,
+ * banked to cash and lifetime earnings, and removes it from the workshop. Refuses
+ * (without mutating) a machine that isn't repaired yet.
+ * @param {object} state game state (mutated on success)
+ * @param {string} machineId
+ * @returns {{ok: boolean, reason: string|null, earned: number}}
+ */
+export function sellWorkshopMachine(state, machineId) {
+  const index = state.workshop.machines.findIndex((m) => m.id === machineId);
+  if (index === -1) return { ok: false, reason: 'No such machine', earned: 0 };
+  const machine = state.workshop.machines[index];
+  if (machine.status !== 'repaired') return { ok: false, reason: 'Not yet repaired', earned: 0 };
+  const info = WORKSHOP_MACHINES[machine.machineType];
+  if (!info) return { ok: false, reason: 'Unknown machine', earned: 0 };
+
+  const earned = Math.round(info.sellPrice * (state.player.founderBonus || 1.0));
+  state.player.cash += earned;
+  state.player.lifetimeEarnings += earned;
+  state.workshop.machines.splice(index, 1);
+  return { ok: true, reason: null, earned };
+}
 
 /**
  * Perform prestige ("Sell the Business").
@@ -323,7 +370,7 @@ export function prestige(state) {
   }
 
   const reputation = Math.max(0, state.player.reputation);
-  const bonusIncrease = reputation * 0.01;
+  const bonusIncrease = reputation * PRESTIGE.bonusPerReputation;
   state.player.founderBonus = Number(((state.player.founderBonus || 1.0) + bonusIncrease).toFixed(4));
   state.player.prestigeCount = (state.player.prestigeCount || 0) + 1;
 

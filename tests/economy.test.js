@@ -1,7 +1,7 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, WORKSHOP } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
@@ -14,7 +14,16 @@ import {
   expireCallbacks,
   prestige,
   WORKSHOP_MACHINES,
+  buyWorkshopMachine,
+  sellWorkshopMachine,
 } from '../js/economy.js';
+
+/** Minimal fault library for workshop tests — one fault per buyable machine type. */
+const WORKSHOP_FAULTS = {
+  'slush-1': { id: 'slush-1', machineType: 'slushie-machine', payout: 100, partsCost: 10 },
+  'soft-1': { id: 'soft-1', machineType: 'soft-serve-commercial', payout: 150, partsCost: 20 },
+  'froyo-1': { id: 'froyo-1', machineType: 'froyo-multihead', payout: 250, partsCost: 40 },
+};
 
 function makeFault() {
   return {
@@ -450,7 +459,16 @@ test('below the threshold nothing unlocks; an unlocked tier is not re-announced'
   state.player.reputation = REPUTATION.tierThresholds[2] + 5;
   state.player.tierUnlocked = 2;
   assertEqual(settleJob(state, makeFault(), true, 'client-1').unlockedTier, null);
-  assertEqual(state.player.tierUnlocked, 2, 'no tier 3 threshold exists yet');
+  assertEqual(state.player.tierUnlocked, 2, 'still below the tier-3 threshold, so no unlock');
+});
+
+test('reputation at the tier-3 threshold unlocks Tier 3 (now part of the launch ladder)', () => {
+  const state = defaultState();
+  state.player.tierUnlocked = 2;
+  state.player.reputation = REPUTATION.tierThresholds[3] - REPUTATION.correctFix;
+  const { unlockedTier } = settleJob(state, makeFault(), true, 'client-1');
+  assertEqual(unlockedTier, 3);
+  assertEqual(state.player.tierUnlocked, 3);
 });
 
 // --- tools shop ---
@@ -564,7 +582,11 @@ test('prestige resets progress but keeps founder bonus and prestigeCount', () =>
   prestige(state);
 
   assertEqual(state.player.prestigeCount, 1);
-  assertEqual(state.player.founderBonus, 2.0, '1.0 + 100 * 0.01 = 2.0');
+  assertEqual(
+    state.player.founderBonus,
+    Number((1.0 + 100 * PRESTIGE.bonusPerReputation).toFixed(4)),
+    'founder bonus grows by reputation × the balance.js knob'
+  );
   assertEqual(state.player.cash, STARTING.cash);
   assertEqual(state.player.reputation, 0);
   assertEqual(state.player.lifetimeEarnings, 0);
@@ -601,9 +623,65 @@ test('founder bonus multiplies correct fix cash and reputation gains', () => {
   assertEqual(state.player.reputation, Math.round(REPUTATION.correctFix * 2.0));
 });
 
-test('WORKSHOP_MACHINES exists and has expected buy/sell prices', () => {
-  assert(WORKSHOP_MACHINES['slushie-machine'].buyPrice === 100);
-  assert(WORKSHOP_MACHINES['slushie-machine'].sellPrice === 200);
+test('WORKSHOP_MACHINES sources its prices/tiers from config/balance.js (rule 3)', () => {
+  for (const [id, cfg] of Object.entries(WORKSHOP)) {
+    assertEqual(WORKSHOP_MACHINES[id].buyPrice, cfg.buyPrice);
+    assertEqual(WORKSHOP_MACHINES[id].sellPrice, cfg.sellPrice);
+    assertEqual(WORKSHOP_MACHINES[id].tierRequired, cfg.tierRequired);
+  }
+});
+
+test('buyWorkshopMachine refuses a machine above the unlocked tier and mutates nothing', () => {
+  const state = defaultState(); // tierUnlocked 1
+  state.player.cash = 100000;
+  const result = buyWorkshopMachine(state, 'froyo-multihead', WORKSHOP_FAULTS, () => 0);
+  assertEqual(result.ok, false);
+  assert(result.reason.includes('Tier 3'), 'refusal names the required tier');
+  assertEqual(state.player.cash, 100000, 'no cash spent');
+  assertEqual(state.workshop.machines.length, 0, 'no machine queued');
+});
+
+test('buyWorkshopMachine deducts the buy price and queues a broken machine with a matching fault', () => {
+  const state = defaultState();
+  state.player.cash = WORKSHOP['slushie-machine'].buyPrice + 5;
+  const result = buyWorkshopMachine(state, 'slushie-machine', WORKSHOP_FAULTS, () => 0);
+  assert(result.ok, 'tier-1 player can buy a tier-1 machine');
+  assertEqual(state.player.cash, 5);
+  assertEqual(state.workshop.machines.length, 1);
+  const m = state.workshop.machines[0];
+  assertEqual(m.status, 'broken');
+  assertEqual(m.machineType, 'slushie-machine');
+  assertEqual(WORKSHOP_FAULTS[m.faultId].machineType, 'slushie-machine');
+});
+
+test('buyWorkshopMachine refuses when unaffordable', () => {
+  const state = defaultState();
+  state.player.cash = WORKSHOP['slushie-machine'].buyPrice - 1;
+  const result = buyWorkshopMachine(state, 'slushie-machine', WORKSHOP_FAULTS, () => 0);
+  assertEqual(result.ok, false);
+  assertEqual(state.workshop.machines.length, 0);
+});
+
+test('sellWorkshopMachine pays sellPrice × founder bonus, banks it, and removes the machine', () => {
+  const state = defaultState();
+  state.player.founderBonus = 1.5;
+  state.workshop.machines.push({ id: 'wm-x', machineType: 'slushie-machine', faultId: 'slush-1', status: 'repaired' });
+  const cashBefore = state.player.cash;
+  const result = sellWorkshopMachine(state, 'wm-x');
+  const expected = Math.round(WORKSHOP['slushie-machine'].sellPrice * 1.5);
+  assert(result.ok, 'a repaired machine can be sold');
+  assertEqual(result.earned, expected);
+  assertEqual(state.player.cash, cashBefore + expected);
+  assertEqual(state.player.lifetimeEarnings, expected);
+  assertEqual(state.workshop.machines.length, 0);
+});
+
+test('sellWorkshopMachine refuses a machine that is still broken', () => {
+  const state = defaultState();
+  state.workshop.machines.push({ id: 'wm-y', machineType: 'slushie-machine', faultId: 'slush-1', status: 'broken' });
+  const result = sellWorkshopMachine(state, 'wm-y');
+  assertEqual(result.ok, false);
+  assertEqual(state.workshop.machines.length, 1, 'machine stays in the workshop');
 });
 
 

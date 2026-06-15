@@ -29,9 +29,69 @@ After the Session 20 turn, the workspace was reconstructed by an external agent
   make the tree internally consistent (matching Antigravity's stated intent in the
   walkthrough). `node tests/run.js` → 221 passing.
 
-Next session: read `walkthrough.md`, verify Antigravity's Tier 3 / prestige / workshop
-features against `GDD.md`, and write a proper handover entry for them — they are in the
-code and tests but not yet in this file. Don't push without Tom's approval.
+~~Next session: read `walkthrough.md`, verify Antigravity's Tier 3 / prestige / workshop
+features against `GDD.md`, and write a proper handover entry for them.~~ **DONE in
+Session 21 (below) — verified, reconciled with the GDD, and the safe code-quality
+issues fixed.** Don't push without Tom's approval.
+
+---
+
+## Session 21 — verify & reconcile the v1.x systems (prestige, workshop, Tier 3)
+
+Closed the un-handover'd-work gap flagged above. Read all the design docs + the
+prestige/workshop/Tier 3 code, verified each against `GDD.md`, and (with Tom's two
+calls this session) folded Tier 3 into v1.0 and fixed the safe code issues.
+
+**Tom's two decisions this session:**
+1. **Tier 3 → folded into v1.0.** It was wired into the main progression already
+   (`REPUTATION.tierThresholds[3] = 25`, `pickTicket` gated to the unlocked tier),
+   contradicting GDD §9's "Tiers 1–2" scope. Promoted to v1.0: GDD §9 now lists
+   Tiers 1–3 + a dated scope note, and CLAUDE.md's Definition of Done matches.
+2. **Fix the safe issues now** (not just log them).
+
+**Verification result — all three systems work; rule 5 (active>idle) is intact.**
+- `founderBonus` multiplies active earnings + reputation gain but **not** idle tech
+  income (`idle.js` adds `TECHS.earningsPerJob` flat), so post-prestige runs get
+  stronger active play without ever lifting idle income above it. Documented as a
+  decision of record in GDD §3.4.
+- The workshop is an **active** converter, not idle (you play the diagnosis minigame
+  to repair, profit is the buy→sell spread, $0 + no rep on the repair job). Now a
+  decision of record in GDD §3.3.
+
+**Code fixes (all numbers now obey CLAUDE rule 3; one real bug closed):**
+- `config/balance.js`: added `PRESTIGE.bonusPerReputation` (0.01) and a `WORKSHOP`
+  block (buy/sell/tierRequired per machine). The duplicated `0.01` and `250000`
+  literals in `economy.js` and `js/ui/job.js` now read from the knobs.
+- **Bug fixed:** `tierRequired` was defined but never enforced — a Tier 1 player
+  could buy the Tier 3 froyo machine. Workshop buy/sell money math moved out of
+  `main.js` into `economy.js` as exported, testable `buyWorkshopMachine(state,
+  machineType, faults, rand?)` / `sellWorkshopMachine(state, machineId)` (the right
+  home — "all earning/spending math in economy.js"). Buy now enforces the tier gate
+  and affordability; `main.js` actions just delegate.
+- `WORKSHOP_MACHINES` in `economy.js` keeps display names (shop copy) but spreads
+  its prices/tiers from `balance.WORKSHOP`.
+
+**Tests.** `node tests/run.js` → **228 passing, 0 failed** (+6): tier-3 unlock at
+threshold, tierRequired refusal (no mutation), buy deducts + queues a matching-fault
+broken machine, buy refused when unaffordable, sell pays `sellPrice × founderBonus`
+and removes the machine, sell refused while still broken, plus the prestige bonus and
+WORKSHOP_MACHINES tests rewired to the balance knobs. Fixed the stale
+`economy.test.js` comment ("no tier 3 threshold exists yet").
+
+**sw.js** cache bumped **v16 → v17** (economy.js / job.js / main.js / balance.js
+changed).
+
+**Flagged for the playtest pass (NOT changed — needs Tom / a real tuning session):**
+- Workshop tier-2 spread (buy 250 / sell 500 → +250) edges past a fresh tier-2
+  ticket's best net (~235). Noted in `balance.js` and GDD §3.3. It never touches idle
+  income so the §3.1 rule holds, but it's a candidate for the GDD §10 "fun with all
+  numbers set to 1" balance pass that still hasn't happened.
+- Graphics default (vector vs rendered) — see `GRAPHICS_REVIEW.md`; coverage gap is
+  now closed (all 5 machines have renders) but the slot reshape + default flip remain.
+
+Not done: did not read `walkthrough.md` (untracked, in Downloads, not on this
+machine). Verification was done against the committed code + tests, which is the
+source of truth anyway.
 
 ### Graphics: raster art for all 5 machines (Codex, post-Session-20)
 

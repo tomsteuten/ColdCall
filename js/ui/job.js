@@ -6,7 +6,7 @@
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks, speedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
-import { DIAGNOSIS, JOBS, REPUTATION } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
@@ -188,7 +188,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 
 
-  const prestigeBonusGained = Math.max(0, state.player.reputation) * 0.01;
+  const prestigeBonusGained = Math.max(0, state.player.reputation) * PRESTIGE.bonusPerReputation;
 
   const currentFounderBonus = state.player.founderBonus || 1.0;
 
@@ -196,7 +196,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 
 
-  const prestigeSection = state.player.lifetimeEarnings >= 250000
+  const prestigeSection = state.player.lifetimeEarnings >= PRESTIGE.lifetimeEarningsThreshold
 
     ? `<div class="panel">
 
