@@ -403,6 +403,34 @@ test('load() with a string schemaVersion preserves the blob untouched', () => {
   assert(storage.getItem(SAVE_KEY) === blob, 'blob must remain untouched');
 });
 
+test('migrate() with a deleted schemaVersion on a modern save throws, not v0-rebuild', () => {
+  // A modern-shape save that somehow lost its schemaVersion field entirely is
+  // damaged, not pre-release. Treating it as v0 would rebuild from defaults
+  // and keep only cash/reputation — a silent progress wipe.
+  const s = defaultState();
+  s.player.cash = 5432;
+  s.stats.jobsCompleted = 99;
+  delete s.schemaVersion;
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'versionless modern-shape save must be rejected, not rebuilt as v0');
+});
+
+test('load() with a deleted schemaVersion on a modern save preserves the blob', () => {
+  const storage = memoryStorage();
+  const s = defaultState();
+  s.player.cash = 5432;
+  delete s.schemaVersion;
+  const blob = JSON.stringify(s);
+  storage.setItem(SAVE_KEY, blob);
+
+  const { fresh, error } = load(storage);
+
+  assert(fresh === true, 'damaged save should fall back without accepting');
+  assert(typeof error === 'string' && error.length > 0, 'should report an error');
+  assert(storage.getItem(SAVE_KEY) === blob, 'blob must remain untouched');
+});
+
 test('v6 save migrates to v7: offlineJobCarry field added at 0', () => {
   const v6Fixture = defaultState();
   v6Fixture.schemaVersion = 6;

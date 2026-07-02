@@ -246,6 +246,20 @@ export function migrate(parsed) {
   // the blob untouched is the only safe action (saves are sacred, CLAUDE.md rule 1).
   let v;
   if (s.schemaVersion === undefined) {
+    // A missing version is only v0 if the blob actually looks like the
+    // historical pre-release flat shape (cash at top level, no nested
+    // containers). A modern save that somehow lost its schemaVersion is
+    // damaged, not ancient — running it through MIGRATIONS[0] would rebuild
+    // it from defaults and wipe real progress.
+    const hasModernShape =
+      (typeof s.player === 'object' && s.player !== null) ||
+      (typeof s.jobs === 'object' && s.jobs !== null) ||
+      (typeof s.motd === 'object' && s.motd !== null);
+    if (hasModernShape) {
+      throw new Error(
+        'Save has no schemaVersion but is not a pre-release save — the blob has not been changed'
+      );
+    }
     v = 0;
   } else if (
     typeof s.schemaVersion !== 'number' ||
