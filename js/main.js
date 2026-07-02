@@ -8,6 +8,7 @@ import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk } from './audio.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
@@ -88,6 +89,8 @@ function commitSelectedFix(fixId) {
     // Only a correct repair gets the satisfying "it works again" payoff.
     if (result.correct) repairBeat = { machineType: result.fault.machineType };
   }
+  if (result.correct) sfxJingle(state.settings.audio);
+  else sfxThunk(state.settings.audio);
   save(state);
   render();
 }
@@ -392,6 +395,13 @@ function render() {
     settingsScreen.wire(modalEl, actions);
   }
 }
+
+// One delegated listener gives every button a soft blip, gated on the audio
+// setting at press time. The first enabled press also unlocks the
+// AudioContext (it happens inside the user gesture).
+app.addEventListener('click', (e) => {
+  if (e.target.closest('button')) sfxClick(state.settings.audio);
+});
 
 // A save can hold an active job whose fault was since renamed/removed from the
 // library. Don't strand the player: drop the job (no money moved), keep the save.

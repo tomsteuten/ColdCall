@@ -21,6 +21,7 @@ const APP_SHELL = [
   'js/tickets.js',
   'js/motd.js',
   'js/utils.js',
+  'js/audio.js',
   'js/machine-art.js',
   'js/character-art.js',
   'js/ui/job.js',
