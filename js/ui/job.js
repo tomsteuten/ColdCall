@@ -9,6 +9,7 @@ import { dueCallbacks, speedBonus, WORKSHOP_MACHINES } from '../economy.js';
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
+import { mulberry32 } from '../rng.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
 import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
 
@@ -41,6 +42,27 @@ function relativeDayPhrase(today, target) {
   if (d <= 0) return 'today';
   if (d === 1) return 'tomorrow';
   return `in ${d} days`;
+}
+
+/**
+ * Pick the contact's flavour line for this job. Machine-specific pools only
+ * enter the draw on that machine's tickets (so "the ice dispenser is down"
+ * can't caption a froyo call), merged with the client's default pool. Seeded
+ * on the job's fault+client so the same ticket always shows the same line
+ * (rule 6) while different tickets rotate through the pool. Falls back to the
+ * legacy single `flavour` string when no pools are defined.
+ * @param {object|null} contact client.contact from clients.json
+ * @param {{faultId: string, clientId: string, machineType: string}} job
+ * @returns {string} the line, or '' when the contact has none
+ */
+export function contactFlavourLine(contact, job) {
+  const lines = contact?.flavourLines;
+  const pool = [
+    ...(Array.isArray(lines?.[job.machineType]) ? lines[job.machineType] : []),
+    ...(Array.isArray(lines?.default) ? lines.default : []),
+  ];
+  if (pool.length === 0) return typeof contact?.flavour === 'string' ? contact.flavour : '';
+  return pool[Math.floor(mulberry32(`${job.faultId}:${job.clientId}`)() * pool.length)];
 }
 
 /** First-ticket guidance is derived from existing progress, so saves need no new flag. */
@@ -477,7 +499,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const contact = !job.motd && client?.contact ? client.contact : null;
   const contactName = contact?.name ? escapeHtml(contact.name) : 'Caller details unavailable';
   const contactRole = contact?.role ? escapeHtml(contact.role) : '';
-  const contactFlavour = contact?.flavour ? escapeHtml(contact.flavour) : '';
+  const flavourLine = contactFlavourLine(contact, job);
+  const contactFlavour = flavourLine ? escapeHtml(flavourLine) : '';
   const portraitHtml = !job.motd
     ? `<div class="client-callout${portrait ? '' : ' client-callout--text-only'}">
         ${portrait ? `<div class="client-portrait">${portrait}</div>` : ''}

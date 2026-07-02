@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { clientPortraitSvg } from '../js/character-art.js';
-import { render, sourceLabel } from '../js/ui/job.js';
+import { render, sourceLabel, contactFlavourLine } from '../js/ui/job.js';
+import { escapeHtml } from '../js/utils.js';
 import { defaultState } from '../js/state.js';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -57,7 +58,13 @@ test('real clients have renderable inline SVG portraits and character flavour', 
     const html = renderJob(client);
     assert(html.includes('class="client-portrait"'), `${client.id} portrait should be shown`);
     assert(html.includes(client.contact.name), `${client.id} contact name should be shown`);
-    assert(html.includes(client.contact.flavour), `${client.id} flavour should be shown`);
+    // Lines rotate per job now: the rendered quote must be the deterministic
+    // pick for this job from the client's pool (contactFlavourLine).
+    const expectedLine = contactFlavourLine(client.contact, {
+      faultId: 'fault', clientId: client.id, machineType: 'unknown-machine',
+    });
+    assert(expectedLine.length > 0, `${client.id} should have a flavour line`);
+    assert(html.includes(escapeHtml(expectedLine)), `${client.id} flavour line should be shown`);
   }
 });
 

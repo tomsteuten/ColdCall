@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView } from '../js/ui/job.js';
+import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine } from '../js/ui/job.js';
 import { staffExplainerHTML } from '../js/ui/shop.js';
 import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
@@ -142,6 +142,53 @@ test('workshop panel is hidden from Tier 1 players and shown from Tier 2', () =>
   assert(!homeView({ state }).includes('Refurbishing Workshop'), 'fresh save should not see the workshop');
   state.player.tierUnlocked = 2;
   assert(homeView({ state }).includes('Refurbishing Workshop'), 'Tier 2 unlock should reveal the workshop');
+});
+
+// --- contact flavour line rotation (session 22, data-driven caller variation) ---
+
+test('contactFlavourLine: machine-specific lines only appear on that machine', () => {
+  const contact = {
+    flavour: 'legacy line',
+    flavourLines: {
+      default: ['generic one', 'generic two'],
+      'commercial-ice-dispenser': ['the ice dispenser is down'],
+    },
+  };
+  // On a froyo ticket, no seed may ever produce the ice-dispenser line.
+  for (let i = 0; i < 25; i++) {
+    const line = contactFlavourLine(contact, {
+      faultId: `fault-${i}`, clientId: 'c1', machineType: 'froyo-multihead',
+    });
+    assert(line !== 'the ice dispenser is down', 'machine line leaked onto the wrong machine');
+    assert(line.startsWith('generic'), `expected a default line, got: ${line}`);
+  }
+  // On the matching machine, the contextual line is reachable.
+  let seen = false;
+  for (let i = 0; i < 50 && !seen; i++) {
+    seen = contactFlavourLine(contact, {
+      faultId: `fault-${i}`, clientId: 'c1', machineType: 'commercial-ice-dispenser',
+    }) === 'the ice dispenser is down';
+  }
+  assert(seen, 'the contextual line should appear on its own machine');
+});
+
+test('contactFlavourLine is deterministic per job and varies across jobs', () => {
+  const contact = { flavourLines: { default: ['a', 'b', 'c', 'd'] } };
+  const job = { faultId: 'f1', clientId: 'c1', machineType: 'm' };
+  assertEqual(contactFlavourLine(contact, job), contactFlavourLine(contact, job),
+    'same job must always pick the same line');
+  const picks = new Set();
+  for (let i = 0; i < 30; i++) {
+    picks.add(contactFlavourLine(contact, { faultId: `f${i}`, clientId: 'c1', machineType: 'm' }));
+  }
+  assert(picks.size > 1, 'different jobs should rotate through the pool');
+});
+
+test('contactFlavourLine falls back to the legacy flavour string, then empty', () => {
+  const job = { faultId: 'f1', clientId: 'c1', machineType: 'm' };
+  assertEqual(contactFlavourLine({ flavour: 'old single line' }, job), 'old single line');
+  assertEqual(contactFlavourLine(null, job), '');
+  assertEqual(contactFlavourLine({}, job), '');
 });
 
 // --- failure-as-learning receipt (GDD §2.1) ---

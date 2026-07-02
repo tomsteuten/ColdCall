@@ -1,5 +1,5 @@
 {
-  "_comment": "Client definitions. Burgertown is the narrative spine (GDD section 4).",
+  "_comment": "Client definitions. Burgertown is the narrative spine (GDD section 4). contact.flavourLines: 'default' pool plus optional machineType-keyed pools so a line about a specific machine only appears on that machine's tickets; one line is picked deterministically per job. contact.flavour is the legacy single-line fallback.",
   "clients": [
     {
       "id": "kwik-stop-corner",
@@ -8,7 +8,14 @@
       "contact": {
         "name": "Nina Patel",
         "role": "Owner, cashier, and apparently refrigeration department",
-        "flavour": "If the slushie stops turning, the school run gets personal."
+        "flavour": "If the slushie stops turning, the school run gets personal.",
+        "flavourLines": {
+          "default": [
+            "If the slushie stops turning, the school run gets personal.",
+            "It's making the noise again. The one from last time, but worse.",
+            "The kids keep pointing at it. I keep pointing at you. No pressure."
+          ]
+        }
       },
       "portrait": {
         "skin": "#9a6548",
@@ -25,7 +32,14 @@
       "contact": {
         "name": "Cheryl Voss",
         "role": "Shift manager, frozen-dessert crisis coordinator",
-        "flavour": "Head office says the machine is fine. The queue says otherwise."
+        "flavour": "Head office says the machine is fine. The queue says otherwise.",
+        "flavourLines": {
+          "default": [
+            "Head office says the machine is fine. The queue says otherwise.",
+            "Corporate wants a report on why we can't sell frozen desserts. You're the report.",
+            "I've got a drive-thru full of regret and a machine full of nothing."
+          ]
+        }
       },
       "portrait": {
         "skin": "#d6a074",
@@ -42,7 +56,19 @@
       "contact": {
         "name": "Sanjay Kapoor",
         "role": "Station Supervisor & Midnight Shift Survivor",
-        "flavour": "If the ice dispenser is down, taxi drivers will riot."
+        "flavour": "Third machine this month. I'm starting to take it personally.",
+        "flavourLines": {
+          "default": [
+            "Third machine this month. I'm starting to take it personally.",
+            "Whatever it's doing, it started at 2 AM. Everything here starts at 2 AM."
+          ],
+          "commercial-ice-dispenser": [
+            "If the ice dispenser is down, taxi drivers will riot."
+          ],
+          "granita-slushie": [
+            "The granita's gone rogue. Night shift is calling it 'the incident'."
+          ]
+        }
       },
       "portrait": {
         "skin": "#a67c52",
@@ -59,7 +85,16 @@
       "contact": {
         "name": "Chloe Vance",
         "role": "Lead Froyo Consultant & Part-time Student",
-        "flavour": "Like, the self-serve levers are totally jammed or whatever."
+        "flavour": "Like, the self-serve levers are totally jammed or whatever.",
+        "flavourLines": {
+          "default": [
+            "The regulars are switching to smoothies. It's becoming a whole thing.",
+            "I put up a 'be right back' sign. That was three days ago."
+          ],
+          "froyo-multihead": [
+            "Like, the self-serve levers are totally jammed or whatever."
+          ]
+        }
       },
       "portrait": {
         "skin": "#fbe3b5",
