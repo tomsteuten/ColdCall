@@ -127,7 +127,8 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 - Parts model: `partsCost` is the price of the fitted part, charged once at settlement. Van stock is availability only — restocking at launch is free (a supplier run between jobs); the §2.3 express markup / time cost is a v1.x lever. Stock must never be a second bill for the same part.
 - First tech hire: $2,000 one-off; earns ~$50/job at 75% success. **No running wage at launch (v1.0):** the idle layer is deliberately generous and active play is always the better $/min (§3.1), so techs cost only their hire price — a recurring wage adds debt / insufficient-cash edge cases not worth it pre-launch. `balance.js` keeps a `dailyWage` knob (unused at runtime) reserved for a v1.x cost sink.
 - Tool Tier 2 (proper multimeter): $1,500. Thermal camera: $8,000.
-- Prestige available around lifetime earnings of $250k.
+- Prestige available around lifetime earnings of **$30k** (session 22: playtest measured active pace at ~$7–10k/hour, so the original $250k guess meant 25+ hours; $30k lands the first sale at §3.4's 2–4 hour target).
+- Workshop flips (v1.x feature, shipped early): margins sit below the same tier's average fresh-ticket net ($60/$90/$150 for T1/T2/T3), sales are *not* founderBonus-scaled, and the panel is hidden until Tier 2 — a money converter, never the best $/min (§3.1 rule).
 - Tuning rule: a focused player should hit Tier 2 (Burgertown unlock) inside the **first 15 minutes** — the meme is the hook, don't gate it deep.
 
 All numbers are first guesses; balance via config, never hard-coded.
