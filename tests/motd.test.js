@@ -2,6 +2,7 @@
 
 import { defaultState } from '../js/state.js';
 import { pickMotdFault, canPlayToday, settleMotd, buildShareCard, getTodayDateStr } from '../js/motd.js';
+import { startJob, commitFix } from '../js/diagnosis.js';
 import { MOTD } from '../config/balance.js';
 
 // A minimal fault library for testing (two faults, different ids).
@@ -294,6 +295,22 @@ test('streak still increments correctly when settled across midnight (puzzle dat
   const result = settleMotd(state, fault, true, [], 0, Date.UTC(2026, 5, 14, 0, 5, 0), '2026-06-13');
   assertEqual(result.streak, 2, 'streak should increment because puzzleDateStr is June 13 (day after June 12)');
   assertEqual(state.motd.lastPlayedDate, '2026-06-13');
+});
+
+test('full MotD pipeline pins the start day: startJob before midnight, commitFix after', () => {
+  // End-to-end through the real game path (not settleMotd directly): the date
+  // pinned at start rides on the active job and wins over the settlement clock.
+  const state = defaultState();
+  const faults = makeFaults();
+  const fault = faults['fault-alpha'];
+  startJob(state, fault, 'motd', () => 0.5, null, true, '2026-06-12');
+  const result = commitFix(state, fault.correctFix, faults); // real clock ≠ 2026-06-12
+  assert(result.motd === true, 'commitFix should settle as a MotD run');
+  assertEqual(state.motd.lastPlayedDate, '2026-06-12', 'played-date must be the pinned start day');
+  assertEqual(state.motd.lastResult.puzzleDateStr, '2026-06-12', 'result must pin the start day');
+  // The new day's puzzle stays available — the cross-midnight run only consumed June 12.
+  const afterMidnight = Date.UTC(2026, 5, 13, 0, 10, 0);
+  assert(canPlayToday(state, afterMidnight) === true, 'June 13 puzzle must still be playable');
 });
 
 // --- share card stats ---
