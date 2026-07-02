@@ -89,12 +89,14 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 1. **Tools** — unlock new test types (better multimeter, thermal camera, laptop with service software). Tools deepen diagnosis, not just numbers.
 2. **Van** — stock slots, travel speed (more jobs/day), eventually a second van.
 3. **Workshop** — refurbish ruined machines bought cheap, sell refurbed (idle money sink/converter).
+   - **Decision of record (v1.0, as implemented; margins playtested session 22):** the workshop is an *active* converter, not an idle one. You buy a damaged machine (`config/balance.js` `WORKSHOP`, gated by `tierRequired` to your unlocked client tier), diagnose+repair it through the **normal diagnosis minigame**, then sell the refurb for the flat `sellPrice` — deliberately **not** multiplied by founderBonus, so fresh tickets (which are) pull further ahead with every prestige. The repair job itself pays $0 and no reputation — the profit is the buy→sell spread, tuned below each tier's average fresh-ticket net ($60/$90/$150; the session-15 "flagged" spreads had the tier-2/3 flips beating fresh tickets and were cut). No rep, no callback risk: a sink/converter that never competes with tickets or reputation progression (§3.1 rule, pinned by an economy test). The panel is hidden until Tier 2.
 4. **Techs** — hire, train (raises success rate), specialise (soft serve / coffee / ovens).
 5. **Reputation** — earned per clean job, lost on callbacks. Gates client tiers and contract offers.
 
 ### 3.4 Prestige: "Sell the Business"
 - Sell the company, keep a **Founder Bonus** (permanent multiplier from lifetime reputation), restart in a new region with a new client mix and remixed fault frequencies.
 - Unlocks at first ~2–4 hours of play. Classic incremental hook: each run is faster and pushes one tier deeper.
+- **Decision of record (v1.0, as implemented; threshold playtested session 22):** prestige unlocks at `PRESTIGE.lifetimeEarningsThreshold` (**$30k** — measured active pace is ~$7–10k/hour, landing the first sale at the 2–4h target above; the original $250k guess was 25+ hours). Selling adds `reputation × PRESTIGE.bonusPerRep` (0.01 = +1% per rep held at sell time) to the permanent `founderBonus`, which accumulates across prestiges and resets everything else (cash, rep, tier, tools, van, techs, routes, jobs, workshop, offline carry). The Founder Bonus multiplies **active** earnings *and* reputation gain — so each post-prestige run reaches the next tier faster — but is applied neither to idle tech income (`idle.js`) nor to workshop sales, so the active>idle rule (§3.1) is preserved. (The bonus derives from *current* reputation at sell time, not a separate lifetime-reputation total; because it accumulates each prestige the effect matches the "from lifetime reputation" intent.)
 
 ---
 
@@ -156,13 +158,20 @@ All numbers are first guesses; balance via config, never hard-coded.
 ## 9. Scope: Launch (v1.0) vs Later
 
 **v1.0 (the smallest game that's actually fun):**
-- Active loop with diagnosis minigame, Tiers 1–2, 40+ faults
+- Active loop with diagnosis minigame, Tiers 1–3, 40+ faults
 - Van stock + parts, tools track to Tier 2
 - 2 hireable techs, one contract route, offline progress
 - Machine of the Day with shareable result
+- Prestige ("Sell the Business", §3.4) and the refurbishing workshop (§3.3)
 - PWA install + save migration scaffolding
 
-**v1.x:** Tiers 3–4, prestige, workshop refurbs, tech specialisation
+> **Scope note (2026-06-15):** Tier 3, prestige, and the workshop were originally
+> listed under v1.x but shipped into the main build during the post-session-20
+> recovery and have been promoted into v1.0 (Tom's call). Tier 3 now unlocks in
+> normal play at `REPUTATION.tierThresholds[3]` (25 rep). The remaining v1.x items
+> are below.
+
+**v1.x:** Tier 4, tech specialisation, tech wages (deferred in session 13)
 **v2 dreams:** Tier 5 + Cursed Combi storyline, regional prestige maps, community-contributed fault packs (it's open source — the fault library as JSON makes player-authored content trivially possible)
 
 **Cut list (explicitly not doing):** multiplayer, real-money anything, energy systems, ad SDKs, account systems. Saves are local; an export-save-as-text button covers device transfer.

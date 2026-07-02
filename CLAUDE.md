@@ -64,4 +64,4 @@ A free, open-source (MIT) browser game: repair-tycoon × incremental hybrid abou
 - **Model guidance (for Tom):** architecture, state/save design, offline-progress maths, diagnosis engine, economy changes → strongest model. Screen building, wiring, CSS, flavour text, fault JSON authoring → mid/cheap model is fine.
 
 ## Definition of done (v1.0 — see GDD §9)
-Active loop + diagnosis with 40+ faults across Tiers 1–2, parts/van stock, tools to Tier 2, 2 techs + 1 route + offline progress, Machine of the Day with shareable result, installable PWA, save migrations in place.
+Active loop + diagnosis with 40+ faults across Tiers 1–3, parts/van stock, tools to Tier 2, 2 techs + 1 route + offline progress, prestige + refurbishing workshop, Machine of the Day with shareable result, installable PWA, save migrations in place. (Tier 3, prestige, and the workshop were promoted from v1.x into v1.0 on 2026-06-15 — see GDD §9 scope note.)
