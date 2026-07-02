@@ -29,6 +29,8 @@ const APP_SHELL = [
   'js/ui/settings.js',
   'config/balance.js',
   'assets/icon.svg',
+  'assets/fonts/outfit-latin.woff2',
+  'assets/fonts/outfit-latin-ext.woff2',
   'assets/generated/slushie-machine-fault.webp',
   'assets/generated/slushie-machine-open.webp',
   'assets/generated/slushie-machine-working.webp',
