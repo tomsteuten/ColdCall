@@ -7,31 +7,16 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 20 done; external Antigravity work also landed)
+## Status (Session 21 done — Antigravity features verified and documented)
 
-**Session 20 — interruption-safe Machine of the Day scoring — is complete.** The MotD
-is scored/shared by tests used first, simulated diagnostic minutes second; wall-clock
-solve time is gone (see "What session 20 added" below). Decision taken: the roadmap
-default (tests first, then simulated minutes, never elapsed wall time).
+**Session 21 — verification and documentation of Antigravity's Tier 3 / prestige /
+workshop / settings work — is complete.** The tree is internally consistent; `node
+tests/run.js` → **222 passing, 0 failed**. See "What session 21 verified" below for
+the full feature audit against `GDD.md`.
 
-**Heads-up for the next session — the tree contains a lot of un-handover'd work.**
-After the Session 20 turn, the workspace was reconstructed by an external agent
-(Google Antigravity; see `walkthrough.md` in Downloads, untracked). That recovery:
-- added substantial NEW features not yet documented here: Tier 3 cold-side machine
-  SVGs (`froyo-multihead`, `granita-slushie`, `commercial-ice-dispenser`), prestige
-  (`player.prestigeCount`/`founderBonus`), a workshop (`workshop.machines`, schema
-  10→11→12), a settings screen (`js/ui/settings.js`), the `Outfit` web font, and
-  CSS keyframe animations (LED pulse, fluid slosh, agitator spin, repair rattle);
-- but left Session 20 half-reverted: `state.js`+`diagnosis.js` used `simMinutes`
-  while `js/motd.js`, `js/ui/motd.js`, and `tests/motd.test.js` had snapped back to
-  the old wall-clock `timeMs`, which would have shown a ~54-year solve time in game.
-  This commit re-applies the Session 20 `simMinutes` versions of those three files to
-  make the tree internally consistent (matching Antigravity's stated intent in the
-  walkthrough). `node tests/run.js` → 221 passing.
-
-Next session: read `walkthrough.md`, verify Antigravity's Tier 3 / prestige / workshop
-features against `GDD.md`, and write a proper handover entry for them — they are in the
-code and tests but not yet in this file. Don't push without Tom's approval.
+Next session: pick any item from "Not-yet-scheduled" below, or address the two
+balance notes flagged in the session 21 entry (prestige threshold vs. 2–4 hour
+target; workshop sell prices). Don't push without Tom's approval.
 
 ### Graphics: raster art for all 5 machines (Codex, post-Session-20)
 
@@ -59,6 +44,105 @@ code and tests but not yet in this file. Don't push without Tom's approval.
   bypassing the test clock pin and making the two session-19 callback-timing tests
   date-flaky — they had drifted to failing as the real date advanced. Now injectable
   again (CLAUDE.md rule 6). This is why the suite was red before this turn.
+
+### What session 21 verified (Antigravity Tier 3 / prestige / workshop / settings audit)
+
+Session 21 was documentation-only: no new code, no test changes. It read
+`walkthrough.md` (in Downloads), audited every feature Antigravity added, and
+compared each against `GDD.md`. The tree is healthy; 222 tests pass.
+
+**Tier 3 SVG illustrations (GDD §4, §7 — ✓ aligned)**
+- Three new inline SVG machines added to `js/machine-art.js`: `froyo-multihead`
+  (YogurtMaster 3000 Multihead Froyo — 3 nozzles, star tips, individual handles,
+  digital status screen), `granita-slushie` (GlacierGlide Triple-Bowl Granita —
+  3 bowls, spiral helix augers, 3 dispense taps), `commercial-ice-dispenser`
+  (IceO-Matic 9000 — cube cabinet, ventilation grille, push-lever chute).
+- All three have `fault` / `open` / `working` states with the same LED + screen
+  state-language as Tiers 1–2; granita's working state animates augers (CSS spin).
+- All three IDs are in `GENERATED_MACHINES` in `machine-art.js`; raster renders
+  are in `assets/generated/<id>-{fault,open,working}.webp`; `sw.js` cache is
+  **v16** with every webp in APP_SHELL; `machine-art.test.js` catalogue test
+  asserts all five machines have all three webp variants.
+- GDD §4 puts froyo chains / pubs / servos at Tier 3; the fictional names stay
+  parody, no real branding anywhere. ✓
+
+**Prestige — "Sell the Business" (GDD §3.4 — ✓ aligned, one balance note)**
+- New state fields: `player.prestigeCount` (int) and `player.founderBonus`
+  (float, starts at 1.0). Schema v10→v11 migration (also adds workshop).
+- `prestige(state)` in `economy.js`: gate = `player.lifetimeEarnings ≥ $250,000`;
+  founderBonus increases by `reputation × 0.01` at the moment of sell; resets
+  cash, tier, tools, van, techs, routes, active job, callbacks, workshop, and
+  offlineJobCarry; keeps `prestigeCount`, `founderBonus`, and all stats.
+- `founderBonus` is applied as a cash multiplier in `settleJob()` — it scales
+  every correct-fix payout going forward, which matches GDD "permanent multiplier
+  from lifetime reputation." ✓
+- UI: home screen shows a prestige card once the threshold is reached (in
+  `homeView` inside `js/ui/job.js`), displaying the bonus that would be gained and
+  a "Sell the Business" button wired to `actions.sellBusiness`.
+- **Balance note:** GDD §3.4 says "unlocks at first ~2–4 hours of play." $250k
+  lifetime earnings has not been play-tested against that target. Flag for the
+  next balance pass.
+
+**Workshop — refurb machines (GDD §3.3 — ✓ aligned)**
+- New state field: `workshop: { machines: [] }` added in schema v10→v11.
+  Each entry: `{ id, machineType, faultId, status }` where status is `'broken'`,
+  `'in-repair'`, or `'repaired'`.
+- `WORKSHOP_MACHINES` constant in `economy.js` lists buyable types with
+  `buyPrice` / `sellPrice` / `tierRequired`: slushie-machine ($100/$200, T1),
+  soft-serve-commercial ($250/$500, T2), froyo-multihead ($500/$1000, T3).
+- Flow: **Buy** (random fault assigned, status=broken) → **Repair** (starts a
+  normal diagnosis job via `startJob`; clientId is `'workshop-' + machine.id` so
+  `commitFix` in `diagnosis.js` intercepts it, marks the machine repaired, updates
+  status) → **Sell** (removes from list, credits `sellPrice × founderBonus`).
+- UI in `homeView` (`js/ui/job.js`): shows available machines to buy and a list of
+  owned machines with Repair / Sell buttons. Workshop jobs run through the normal
+  diagnosis flow — active play, not idle — consistent with GDD "idle money sink/
+  converter" intent and CLAUDE.md rule 5 (active > idle).
+- **Balance note:** 2× margin (buy/sell) with founderBonus applied on top. Should
+  verify this can't make workshop a better $/min than fresh diagnosis tickets after
+  a high-rep prestige (CLAUDE.md rule 5 invariant).
+
+**Settings modal (GDD §9 "not-yet-scheduled" item — ✓ implements it)**
+- New `js/ui/settings.js`: modal overlay rendered above any screen via
+  `settingsOpen` flag in `main.js`. Contains: audio toggle, graphics mode toggle
+  (vector animated / rendered static), save export + copy, save import, reset
+  progress.
+- Save transfer has moved out of the shop screen (where it was awkwardly placed)
+  into this modal — this directly addresses the "Settings/save information
+  architecture" item that was listed as not-yet-scheduled. Mark that item done.
+- New state field: `settings.graphicsMode` ('vector' | 'rendered'). Schema
+  v11→v12 migration (adds the field, defaults to 'vector').
+- `machineImageSrc()` in `machine-art.js` returns an SVG string in vector mode
+  and a webp path in rendered mode. The default is 'vector' (animated SVGs);
+  raster is opt-in. Node test environment gets SVG regardless (no file-system
+  webp paths in test assertions).
+- Tests: v11→v12 migration test (settings.graphicsMode added at 'vector') present.
+
+**CSS animations and Outfit font**
+- `index.html` loads the Outfit web font from Google Fonts (note: this is a
+  runtime network request — it won't load offline; the fallback stack is fine but
+  this is the one runtime external call in an otherwise fully offline PWA. Acceptable
+  as a polish item; could be self-hosted if offline font fidelity matters).
+- `css/main.css` gained keyframe animations: `led-pulse-working` (green LED glow),
+  `led-blink-fault` (amber LED blink), `fluid-slosh-left/right` (liquid in slushie
+  bowls), `agitator-spin` (bowl augers), `rattle` (repair-beat bolt), and
+  `success-pulse` (repair beat completion). These are applied directly in the SVG
+  markup via CSS class names — no new JS.
+
+**Tests and schema summary**
+- `node tests/run.js` → **222 passing, 0 failed**.
+- Coverage confirmed for: prestige gating and founderBonus calculation, prestige
+  reset (keeps persistents, clears progress), workshop machine commitFix path
+  (status update + part consumption), v11→v12 migration.
+- Schema version is now **12** (v10→v11: prestige + workshop; v11→v12: settings
+  settings.graphicsMode).
+- `sw.js` cache: **v16**.
+
+**Not-yet-scheduled item now done**
+- "Settings/save information architecture" (listed as not-yet-scheduled before this
+  work) is now implemented: settings modal with audio, graphics, and save transfer.
+
+---
 
 ### What session 19 added (callback, staff, and offline clarity — GDD §3.1/§3.2)
 
@@ -665,19 +749,21 @@ update this file at the end.
 - **Desktop layout:** use the available width intentionally above mobile sizes,
   likely with a two-column diagnosis layout while preserving the focused 380px
   experience. The current app remains a 480px column on large screens.
-- **Settings/save information architecture:** move save transfer out of "Tools
-  shop", replace implementation errors such as "URI malformed" with player-facing
-  copy, and expose audio/settings in a coherent location.
+- **Settings/save information architecture:** ✓ DONE (Antigravity) — modal overlay
+  with audio, graphics mode, save export/import, and reset. Outstanding: replace
+  any remaining "URI malformed" implementation errors with player-facing copy.
 - **Character variation:** rotate or contextually select caller lines so recurring
   personalities stay charming instead of repeating one quote every ticket.
 - **Audio** (GDD §7): satisfying clicks, perfect-job jingle, one chiptune loop;
   CC0/generated; GDD says polish-phase, not a launch blocker. Sonnet.
 - **A balance/fun playtest pass** (GDD §10: "fun with all numbers set to 1"). No
-  evidence this has happened. Not a UI task, but don't let it slip indefinitely —
-  the visual work above also makes a playtest read more clearly. Strongest model
-  if it turns into economy retuning.
+  evidence this has happened. Two specific items flagged in session 21: (1) verify
+  $250k prestige threshold matches GDD's "2–4 hours" target; (2) verify workshop
+  sell price (founderBonus × 2×) can't beat fresh diagnosis $/min (CLAUDE.md rule 5).
 - **v1.x systems** (Tiers 3–4, prestige, workshop, tech specialisation, tech wages
-  if deferred in session 13 — GDD §9): strongest model; out of scope for now.
+  if deferred in session 13 — GDD §9): Tier 3 SVGs, prestige, and workshop are
+  now in the codebase (Antigravity, documented session 21); Tiers 4+, tech
+  specialisation, and wages remain out of scope.
 
 ---
 

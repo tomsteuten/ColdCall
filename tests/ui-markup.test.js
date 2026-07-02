@@ -95,6 +95,22 @@ test('returning players do not receive first-job guidance or confirmation fricti
   assert(html.includes('data-fix="right-fix"'), 'normal fix buttons should remain available');
 });
 
+test('machine art exposes stable machine and state hooks for CSS motion', () => {
+  const state = onboardingState();
+  state.settings.graphicsMode = 'rendered';
+  const faultHtml = jobView({ state, faults, machines, clients });
+  assert(faultHtml.includes('machine-stage--slushie-machine'), 'machine identity should reach CSS');
+  assert(faultHtml.includes('machine-stage--fault'), 'untested machine should use fault motion');
+  assert(jobUi.includes("imageSrc ? ' machine-stage--raster' : ''"), 'rendered art should use the larger raster stage');
+
+  state.jobs.active.testsRun.push('error-log');
+  const openHtml = jobView({ state, faults, machines, clients });
+  assert(openHtml.includes('machine-stage--open'), 'inspected machine should use open motion');
+
+  const repairHtml = repairView({ state, repairBeat: { machineType: 'slushie-machine' } });
+  assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
+});
+
 // --- failure-as-learning receipt (GDD §2.1) ---
 
 const lessonFault = {

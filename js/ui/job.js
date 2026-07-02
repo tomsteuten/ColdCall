@@ -491,7 +491,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const artState = job.testsRun.length > 0 ? 'open' : 'fault';
   const imageSrc = machineImageSrc(job.machineType, artState, state.settings.graphicsMode);
   const svg = imageSrc ? null : machineSvg(job.machineType, artState);
-  const artSlotClass = imageSrc || svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const machineClass = String(job.machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const artSlotClass = imageSrc || svg
+    ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--${artState}`
+    : 'art-slot';
   const artSlotContent = imageSrc
     ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
     : (svg ?? `[ ${safeMachineName} ]`);
@@ -613,7 +616,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 export function repairView({ state, repairBeat }) {
   const imageSrc = machineImageSrc(repairBeat.machineType, 'working', state.settings.graphicsMode);
   const svg = imageSrc ? null : machineSvg(repairBeat.machineType, 'working');
-  const artSlotClass = imageSrc || svg ? 'art-slot art-slot--has-image' : 'art-slot';
+  const machineClass = String(repairBeat.machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const artSlotClass = imageSrc || svg
+    ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--working`
+    : 'art-slot';
   const artSlotContent = imageSrc
     ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
     : (svg ?? '[ repaired ]');
