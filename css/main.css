@@ -179,7 +179,9 @@ body {
 }
 
 .machine-stage--raster {
-  max-height: none;
+  /* Square renders get real space, but capped so the symptoms panel stays
+     within reach on a 380px phone — 300px still dwarfs the 110px SVG slot. */
+  max-height: 300px;
   aspect-ratio: 1;
   background: #07111f;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);

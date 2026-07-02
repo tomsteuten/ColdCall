@@ -66,7 +66,11 @@ export function defaultState() {
 
     settings: {
       audio: true,
-      graphicsMode: 'vector',
+      // 'rendered' (static raster) is the default for new games — all 5 machines
+      // have full-state renders and they read far stronger than the SVGs
+      // (session 22 visual pass). Existing saves keep whatever they have; the
+      // v11→v12 migration still writes 'vector' and is never re-run on them.
+      graphicsMode: 'rendered',
     },
 
     // Fractional offline-job carry: sub-job remainder from the last offline

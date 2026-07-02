@@ -648,3 +648,14 @@ test('v11 save migrates to v12: settings.graphicsMode added at "vector"', () => 
   assertEqual(migrated.settings.graphicsMode, 'vector');
 });
 
+test('fresh saves default to rendered graphics; migrated saves are never flipped', () => {
+  // Session 22 call: new games get the raster renders (all 5 machines covered),
+  // but a save that already has a graphicsMode keeps it — the migration writes
+  // 'vector' once and an explicit player choice is never overridden.
+  assertEqual(defaultState().settings.graphicsMode, 'rendered');
+  const chosen = defaultState();
+  chosen.settings.graphicsMode = 'vector';
+  const migrated = migrate(JSON.parse(JSON.stringify(chosen)));
+  assertEqual(migrated.settings.graphicsMode, 'vector', 'player choice must survive');
+});
+
