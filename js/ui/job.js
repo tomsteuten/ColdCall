@@ -6,7 +6,7 @@
 import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
 import { dueCallbacks, speedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
-import { DIAGNOSIS, JOBS, REPUTATION } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
@@ -188,7 +188,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 
 
-  const prestigeBonusGained = Math.max(0, state.player.reputation) * 0.01;
+  const prestigeBonusGained = Math.max(0, state.player.reputation) * PRESTIGE.bonusPerRep;
 
   const currentFounderBonus = state.player.founderBonus || 1.0;
 
@@ -196,13 +196,13 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 
 
-  const prestigeSection = state.player.lifetimeEarnings >= 250000
+  const prestigeSection = state.player.lifetimeEarnings >= PRESTIGE.lifetimeEarningsThreshold
 
     ? `<div class="panel">
 
          <h3 class="panel-label">Sell the Business</h3>
 
-         <p class="home-offline-detail" style="margin-top: 0;">Congratulations! Your lifetime earnings reached <strong>$${state.player.lifetimeEarnings}</strong> (threshold $250k).</p>
+         <p class="home-offline-detail" style="margin-top: 0;">Congratulations! Your lifetime earnings reached <strong>$${state.player.lifetimeEarnings.toLocaleString('en-US')}</strong> (threshold $${PRESTIGE.lifetimeEarningsThreshold.toLocaleString('en-US')}).</p>
 
          <p class="home-offline-detail">Sell the business to start fresh in a new region with a permanent <strong>Founder Bonus</strong>.</p>
 
@@ -216,7 +216,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
          </ul>
 
-         <button class="btn btn-primary" style="border-color: var(--amber); color: var(--amber);" data-action="sell-business">Sell the Business</button>
+         <button class="btn" style="border-color: var(--amber); color: var(--amber);" data-action="sell-business">Sell the Business</button>
 
        </div>`
 
@@ -274,11 +274,10 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
       } else {
 
-        const multiplier = state.player.founderBonus || 1.0;
-
+        // Sales are not founderBonus-scaled (rule 5 — see balance.js WORKSHOP).
         // info can be missing when an imported save holds an unknown machineType;
         // render a $0 sale rather than crashing the whole home screen.
-        const sellVal = info ? Math.round(info.sellPrice * multiplier) : 0;
+        const sellVal = info ? info.sellPrice : 0;
 
         return `
 

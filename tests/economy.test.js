@@ -1,7 +1,7 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
@@ -14,6 +14,8 @@ import {
   expireCallbacks,
   prestige,
   WORKSHOP_MACHINES,
+  buyWorkshopMachine,
+  sellWorkshopMachine,
 } from '../js/economy.js';
 
 function makeFault() {
@@ -550,7 +552,7 @@ test('restockVan: refuses when van already full', () => {
 
 test('prestige resets progress but keeps founder bonus and prestigeCount', () => {
   const state = defaultState();
-  state.player.lifetimeEarnings = 250000;
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
   state.player.reputation = 100;
   state.player.cash = 50000;
   state.player.tierUnlocked = 3;
@@ -579,14 +581,14 @@ test('prestige resets progress but keeps founder bonus and prestigeCount', () =>
 
 test('prestige throws error if below threshold', () => {
   const state = defaultState();
-  state.player.lifetimeEarnings = 249999;
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold - 1;
   let threw = false;
   try {
     prestige(state);
   } catch {
     threw = true;
   }
-  assert(threw, 'should throw error when lifetime earnings < 250,000');
+  assert(threw, 'should throw error when lifetime earnings are below the threshold');
 });
 
 test('founder bonus multiplies correct fix cash and reputation gains', () => {
@@ -601,9 +603,71 @@ test('founder bonus multiplies correct fix cash and reputation gains', () => {
   assertEqual(state.player.reputation, Math.round(REPUTATION.correctFix * 2.0));
 });
 
-test('WORKSHOP_MACHINES exists and has expected buy/sell prices', () => {
-  assert(WORKSHOP_MACHINES['slushie-machine'].buyPrice === 100);
-  assert(WORKSHOP_MACHINES['slushie-machine'].sellPrice === 200);
+test('WORKSHOP_MACHINES entries are well-formed and profitable to flip', () => {
+  for (const [id, m] of Object.entries(WORKSHOP_MACHINES)) {
+    assert(typeof m.buyPrice === 'number' && m.buyPrice > 0, `${id} needs a buyPrice`);
+    assert(m.sellPrice > m.buyPrice, `${id} must sell above buy or the workshop is a pure loss`);
+    assert(typeof m.tierRequired === 'number', `${id} needs a tierRequired`);
+  }
+});
+
+test('rule 5: workshop flip margin never beats the same tier\'s average fresh-ticket net', () => {
+  // A workshop repair costs the same active diagnosis time as a fresh ticket
+  // but pays no reputation and no speed bonus, so its cash margin must sit
+  // below the tier's average fresh net (payout − parts midpoints). Sales are
+  // not founderBonus-scaled while fresh nets are, so holding at bonus 1.0 here
+  // proves the invariant for every bonus level.
+  const tierNets = {
+    1: (JOBS.tier1.payoutMin + JOBS.tier1.payoutMax) / 2 - (JOBS.tier1.partsCostMin + JOBS.tier1.partsCostMax) / 2,
+    2: (JOBS.tier2.payoutMin + JOBS.tier2.payoutMax) / 2 - (JOBS.tier2.partsCostMin + JOBS.tier2.partsCostMax) / 2,
+    3: (JOBS.tier3.payoutMin + JOBS.tier3.payoutMax) / 2 - (JOBS.tier3.partsCostMin + JOBS.tier3.partsCostMax) / 2,
+  };
+  for (const [id, m] of Object.entries(WORKSHOP_MACHINES)) {
+    const margin = m.sellPrice - m.buyPrice;
+    const freshNet = tierNets[m.tierRequired];
+    assert(
+      margin < freshNet,
+      `${id}: flip margin $${margin} must stay below tier ${m.tierRequired} avg fresh net $${freshNet}`
+    );
+  }
+});
+
+test('sellWorkshopMachine pays the flat sellPrice, never scaled by founderBonus', () => {
+  const state = defaultState();
+  state.player.founderBonus = 3.0; // a heavily-prestiged save
+  state.workshop.machines.push({ id: 'm1', machineType: 'slushie-machine', faultId: 'f', status: 'repaired' });
+  const cashBefore = state.player.cash;
+  const { ok, earned } = sellWorkshopMachine(state, 'm1');
+  assert(ok, 'repaired machine should sell');
+  assertEqual(earned, WORKSHOP_MACHINES['slushie-machine'].sellPrice, 'sale must ignore founderBonus');
+  assertEqual(state.player.cash, cashBefore + earned);
+  assertEqual(state.workshop.machines.length, 0, 'sold machine leaves the workshop');
+});
+
+test('sellWorkshopMachine refuses broken machines and unknown ids without mutating', () => {
+  const state = defaultState();
+  state.workshop.machines.push({ id: 'm1', machineType: 'slushie-machine', faultId: 'f', status: 'broken' });
+  const cashBefore = state.player.cash;
+  assert(!sellWorkshopMachine(state, 'm1').ok, 'broken machine must not sell');
+  assert(!sellWorkshopMachine(state, 'nope').ok, 'unknown id must not sell');
+  assertEqual(state.player.cash, cashBefore, 'refusals must not move cash');
+  assertEqual(state.workshop.machines.length, 1, 'refusals must not remove machines');
+});
+
+test('buyWorkshopMachine deducts cash, respects tier locks and affordability', () => {
+  const state = defaultState(); // tier 1, $500
+  const t1 = buyWorkshopMachine(state, 'slushie-machine', 'some-fault', 'm1');
+  assert(t1.ok, 'tier 1 machine should be buyable at tier 1');
+  assertEqual(state.player.cash, STARTING.cash - WORKSHOP_MACHINES['slushie-machine'].buyPrice);
+  assertEqual(state.workshop.machines[0].status, 'broken');
+
+  const locked = buyWorkshopMachine(state, 'soft-serve-commercial', 'f', 'm2');
+  assert(!locked.ok, 'tier 2 machine must be locked at tier 1');
+
+  state.player.cash = 0;
+  const broke = buyWorkshopMachine(state, 'slushie-machine', 'f', 'm3');
+  assert(!broke.ok, 'must refuse when unaffordable');
+  assertEqual(state.workshop.machines.length, 1, 'refusals must not add machines');
 });
 
 

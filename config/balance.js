@@ -114,9 +114,44 @@ export const OFFLINE = {
   answeringServiceCapHours: 24, // "Answering Service" upgrade
 };
 
-/** Prestige ("Sell the Business", v1.x — threshold tracked from launch). */
+/** Prestige ("Sell the Business", GDD §3.4: unlocks after the first ~2–4 hours). */
 export const PRESTIGE = {
-  lifetimeEarningsThreshold: 250000,
+  // Session-22 playtest: focused active play earns ~$105–120/job Tier 1 and
+  // ~$140–160/job Tier 2 at ~45–75s a job → roughly $7–10k/hour. $30k lands the
+  // first sale at ~3–4 focused hours; the old $250k would have taken 25+ hours.
+  lifetimeEarningsThreshold: 30000,
+  // Founder Bonus gained per reputation point held at the moment of sale.
+  bonusPerRep: 0.01,
+};
+
+/**
+ * Workshop refurb flips (GDD §3.3: an active-play money converter, never the
+ * best earner). Rule-5 invariant: each margin (sell − buy) sits below the same
+ * tier's average fresh-ticket net (T1 ≈ $110, T2 ≈ $135, T3 ≈ $210 measured),
+ * and sales are deliberately NOT scaled by founderBonus — fresh tickets are,
+ * so active ticket play pulls further ahead with every prestige.
+ */
+export const WORKSHOP = {
+  machines: {
+    'slushie-machine': {
+      name: 'Polar Twister Twin-Bowl Slushie',
+      buyPrice: 100,
+      sellPrice: 160,
+      tierRequired: 1,
+    },
+    'soft-serve-commercial': {
+      name: 'FrostKing 4500 Soft Serve',
+      buyPrice: 250,
+      sellPrice: 340,
+      tierRequired: 2,
+    },
+    'froyo-multihead': {
+      name: 'YogurtMaster 3000 Multihead Froyo',
+      buyPrice: 500,
+      sellPrice: 650,
+      tierRequired: 3,
+    },
+  },
 };
 
 // Van restocking is free at launch — parts are billed per job via fault.partsCost,

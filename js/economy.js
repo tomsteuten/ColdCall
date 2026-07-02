@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -288,26 +288,55 @@ export function buyTool(state, toolId) {
   return { ok: true, reason: null };
 }
 
-export const WORKSHOP_MACHINES = {
-  'slushie-machine': {
-    name: 'Polar Twister Twin-Bowl Slushie',
-    buyPrice: 100,
-    sellPrice: 200,
-    tierRequired: 1,
-  },
-  'soft-serve-commercial': {
-    name: 'FrostKing 4500 Soft Serve',
-    buyPrice: 250,
-    sellPrice: 500,
-    tierRequired: 2,
-  },
-  'froyo-multihead': {
-    name: 'YogurtMaster 3000 Multihead Froyo',
-    buyPrice: 500,
-    sellPrice: 1000,
-    tierRequired: 3,
-  },
-};
+// Buyable refurb machines. Prices and the rule-5 margin rationale live in
+// config/balance.js (rule 3); this alias keeps existing import sites working.
+export const WORKSHOP_MACHINES = WORKSHOP.machines;
+
+/**
+ * Buy a damaged machine for the workshop. Refuses (without mutating) when the
+ * type is unknown, tier-locked, or unaffordable.
+ * @param {object} state game state (mutated on success)
+ * @param {string} machineType key in WORKSHOP_MACHINES
+ * @param {string} faultId the fault the machine arrives with
+ * @param {string} id unique id for the workshop entry
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function buyWorkshopMachine(state, machineType, faultId, id) {
+  const info = WORKSHOP_MACHINES[machineType];
+  if (!info) return { ok: false, reason: 'Unknown machine type' };
+  if (state.player.tierUnlocked < info.tierRequired) {
+    return { ok: false, reason: `Unlock Tier ${info.tierRequired} first` };
+  }
+  if (state.player.cash < info.buyPrice) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= info.buyPrice;
+  state.workshop.machines.push({ id, machineType, faultId, status: 'broken' });
+  return { ok: true, reason: null };
+}
+
+/**
+ * Sell a repaired workshop machine. The sale price is deliberately NOT scaled
+ * by founderBonus: fresh-ticket payouts are, so flipping machines can never
+ * out-earn taking tickets however many times the business has been sold
+ * (CLAUDE.md rule 5 — see the WORKSHOP note in config/balance.js).
+ * @param {object} state game state (mutated on success)
+ * @param {string} machineId id of the workshop entry
+ * @returns {{ok: boolean, reason: string|null, earned: number}}
+ */
+export function sellWorkshopMachine(state, machineId) {
+  const index = state.workshop.machines.findIndex((m) => m.id === machineId);
+  if (index === -1) return { ok: false, reason: 'No such machine', earned: 0 };
+  const machine = state.workshop.machines[index];
+  if (machine.status !== 'repaired') {
+    return { ok: false, reason: 'Machine not repaired yet', earned: 0 };
+  }
+  const info = WORKSHOP_MACHINES[machine.machineType];
+  if (!info) return { ok: false, reason: 'Unknown machine type', earned: 0 };
+  const earned = info.sellPrice;
+  state.player.cash += earned;
+  state.player.lifetimeEarnings += earned;
+  state.workshop.machines.splice(index, 1);
+  return { ok: true, reason: null, earned };
+}
 
 /**
  * Perform prestige ("Sell the Business").
@@ -323,7 +352,7 @@ export function prestige(state) {
   }
 
   const reputation = Math.max(0, state.player.reputation);
-  const bonusIncrease = reputation * 0.01;
+  const bonusIncrease = reputation * PRESTIGE.bonusPerRep;
   state.player.founderBonus = Number(((state.player.founderBonus || 1.0) + bonusIncrease).toFixed(4));
   state.player.prestigeCount = (state.player.prestigeCount || 0) + 1;
 

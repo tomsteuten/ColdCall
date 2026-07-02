@@ -3,7 +3,7 @@
 import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech, prestige, WORKSHOP_MACHINES } from './economy.js';
+import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
@@ -200,25 +200,16 @@ const actions = {
     render();
   },
   buyWorkshopMachine(machineType) {
-    const info = WORKSHOP_MACHINES[machineType];
-    if (!info) return;
-    if (state.player.cash < info.buyPrice) return;
-    state.player.cash -= info.buyPrice;
-
     // Pick a random fault for this machineType
     const matchingFaults = Object.values(faults).filter(f => f.machineType === machineType);
     const fault = matchingFaults.length > 0
       ? matchingFaults[Math.floor(Math.random() * matchingFaults.length)]
       : Object.values(faults)[0];
-
     const machineId = Math.random().toString(36).substring(2, 9);
-    state.workshop.machines.push({
-      id: machineId,
-      machineType,
-      faultId: fault.id,
-      status: 'broken',
-    });
-    save(state);
+
+    const { ok, reason } = buyWorkshopMachine(state, machineType, fault.id, machineId);
+    if (ok) save(state);
+    else console.warn(`Cold Call: machine not bought: ${reason}`);
     render();
   },
   repairWorkshopMachine(machineId) {
@@ -233,20 +224,9 @@ const actions = {
     render();
   },
   sellWorkshopMachine(machineId) {
-    const index = state.workshop.machines.findIndex(m => m.id === machineId);
-    if (index === -1) return;
-    const machine = state.workshop.machines[index];
-    if (machine.status !== 'repaired') return;
-
-    const info = WORKSHOP_MACHINES[machine.machineType];
-    if (info) {
-      const multiplier = state.player.founderBonus || 1.0;
-      const earned = Math.round(info.sellPrice * multiplier);
-      state.player.cash += earned;
-      state.player.lifetimeEarnings += earned;
-      state.workshop.machines.splice(index, 1);
-    }
-    save(state);
+    const { ok, reason } = sellWorkshopMachine(state, machineId);
+    if (ok) save(state);
+    else console.warn(`Cold Call: machine not sold: ${reason}`);
     render();
   },
   dismissOfflineReport() {
