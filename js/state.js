@@ -315,6 +315,35 @@ export function validateState(s) {
       type === 'array' ? Array.isArray(value) : typeof value === type && value !== null;
     if (!ok) throw new Error(`Save is missing or has a bad "${path}" (expected ${type})`);
   }
+
+  // Fields the UI interpolates into innerHTML assuming they are numbers. A
+  // hostile imported blob could smuggle HTML through them if the type isn't
+  // enforced here — every genuine save has always had numbers in these slots,
+  // so this can never brick a real save.
+  if (typeof s.motd.streak !== 'number') {
+    throw new Error('Save has a bad "motd.streak" (expected number)');
+  }
+  if (s.motd.lastResult !== null && s.motd.lastResult !== undefined) {
+    if (typeof s.motd.lastResult.testsUsed !== 'number') {
+      throw new Error('Save has a bad "motd.lastResult.testsUsed" (expected number)');
+    }
+    if (typeof s.motd.lastResult.solved !== 'boolean') {
+      throw new Error('Save has a bad "motd.lastResult.solved" (expected boolean)');
+    }
+  }
+  for (const [partId, count] of Object.entries(s.van.stock)) {
+    if (typeof count !== 'number') {
+      throw new Error(`Save has a bad van stock count for "${partId}" (expected number)`);
+    }
+  }
+  for (const tech of s.techs) {
+    if (typeof tech.name !== 'string') {
+      throw new Error('Save has a tech with a bad "name" (expected string)');
+    }
+    if (typeof tech.skill !== 'number') {
+      throw new Error('Save has a tech with a bad "skill" (expected number)');
+    }
+  }
 }
 
 /**

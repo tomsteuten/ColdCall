@@ -22,7 +22,10 @@ export function render(root, ctx) {
 }
 
 function resultView(state, result) {
-  const { testsUsed, simMinutes, solved, streak, fault } = result;
+  const { simMinutes, solved, streak, fault } = result;
+  // Clamp before String.repeat: a weird-but-numeric imported value (negative,
+  // huge) would otherwise throw a RangeError or build a megabyte emoji string.
+  const testsUsed = Math.max(0, Math.min(50, Math.trunc(result.testsUsed) || 0));
 
   // Use stored puzzle date so the card is stable across UTC-midnight refreshes.
   const dateStr =

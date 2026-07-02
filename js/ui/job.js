@@ -268,7 +268,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
             <span style="color: var(--warn);">⚠️ ${escapeHtml(name)} (Broken)</span>
 
-            <button class="btn btn-sm btn-primary" data-repair-workshop-machine="${m.id}">Repair</button>
+            <button class="btn btn-sm btn-primary" data-repair-workshop-machine="${escapeHtml(m.id)}">Repair</button>
 
           </div>`;
 
@@ -276,7 +276,9 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
         const multiplier = state.player.founderBonus || 1.0;
 
-        const sellVal = Math.round(info.sellPrice * multiplier);
+        // info can be missing when an imported save holds an unknown machineType;
+        // render a $0 sale rather than crashing the whole home screen.
+        const sellVal = info ? Math.round(info.sellPrice * multiplier) : 0;
 
         return `
 
@@ -284,7 +286,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
             <span style="color: var(--success);">✅ ${escapeHtml(name)} (Refurbished)</span>
 
-            <button class="btn btn-sm" style="border-color: var(--success); color: var(--success);" data-sell-workshop-machine="${m.id}">Sell ($${sellVal})</button>
+            <button class="btn btn-sm" style="border-color: var(--success); color: var(--success);" data-sell-workshop-machine="${escapeHtml(m.id)}">Sell ($${sellVal})</button>
 
           </div>`;
 

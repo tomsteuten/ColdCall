@@ -139,7 +139,10 @@ export function buildShareCard(result, dateStr, { cleanStreak = 0, callbackCount
     typeof result.simMinutes === 'number' && Number.isFinite(result.simMinutes)
       ? ` · ${result.simMinutes} min`
       : '';
-  const grid = '🔬'.repeat(result.testsUsed) + (result.solved ? '✅' : '❌') + minutesSuffix;
+  // Clamp: a weird-but-numeric testsUsed from an imported save must not throw
+  // (negative) or build a megabyte string (huge) inside String.repeat.
+  const gridTests = Math.max(0, Math.min(50, Math.trunc(result.testsUsed) || 0));
+  const grid = '🔬'.repeat(gridTests) + (result.solved ? '✅' : '❌') + minutesSuffix;
 
   // Stats flourish: clean streak wins over callback shame if both are somehow true.
   let statsLine = '';

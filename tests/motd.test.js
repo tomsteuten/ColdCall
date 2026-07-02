@@ -313,6 +313,15 @@ test('full MotD pipeline pins the start day: startJob before midnight, commitFix
   assert(canPlayToday(state, afterMidnight) === true, 'June 13 puzzle must still be playable');
 });
 
+test('share card clamps a hostile testsUsed instead of throwing or exploding', () => {
+  // Negative would make String.repeat throw a RangeError; a huge count would
+  // build a megabyte emoji string. Both can arrive via an imported save.
+  const negative = buildShareCard({ testsUsed: -5, solved: true, streak: 1 }, '2026-06-12');
+  assert(negative.includes('✅'), 'negative testsUsed should render with zero scopes');
+  const huge = buildShareCard({ testsUsed: 1e9, solved: false, streak: 0 }, '2026-06-12');
+  assert(huge.length < 1000, `huge testsUsed must be clamped (got ${huge.length} chars)`);
+});
+
 // --- share card stats ---
 
 test('share card: clean streak flourish appears when cleanStreak >= 1', () => {

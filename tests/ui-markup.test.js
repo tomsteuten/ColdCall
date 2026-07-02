@@ -111,6 +111,30 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
   assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
 });
 
+test('workshop machine ids from a save are escaped inside HTML attributes', () => {
+  const state = defaultState();
+  state.workshop.machines.push({
+    id: 'x" onmouseover="alert(1)',
+    machineType: 'slushie-machine',
+    faultId: 'onboarding-fault',
+    status: 'broken',
+  });
+  const html = homeView({ state });
+  assert(!html.includes('id: \'x" onmouseover'), 'raw quote must not survive');
+  assert(!html.includes('onmouseover="alert'), 'hostile attribute must not be injectable');
+  assert(html.includes('x&quot; onmouseover'), 'id should be entity-escaped in the attribute');
+});
+
+test('workshop machine with an unknown machineType renders instead of crashing', () => {
+  const state = defaultState();
+  state.workshop.machines.push({
+    id: 'm1', machineType: 'no-such-machine', faultId: 'f', status: 'repaired',
+  });
+  const html = homeView({ state });
+  assert(html.includes('no-such-machine'), 'unknown type should fall back to its raw name');
+  assert(html.includes('Sell ($0)'), 'unknown type should offer a $0 sale, not throw');
+});
+
 // --- failure-as-learning receipt (GDD §2.1) ---
 
 const lessonFault = {

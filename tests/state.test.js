@@ -431,6 +431,60 @@ test('load() with a deleted schemaVersion on a modern save preserves the blob', 
   assert(storage.getItem(SAVE_KEY) === blob, 'blob must remain untouched');
 });
 
+// --- hostile imported values in fields the UI renders as numbers ---
+
+test('import rejects a save with HTML smuggled into motd.streak', () => {
+  const s = defaultState();
+  s.motd.streak = '<img src=x onerror=alert(1)>';
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch (e) {
+    threw = true;
+    assert(String(e.message).includes('motd.streak'), 'error should name the bad field');
+  }
+  assert(threw, 'non-numeric motd.streak must be rejected');
+});
+
+test('import rejects a save with HTML smuggled into a van stock count', () => {
+  const s = defaultState();
+  s.van.stock['generic-parts'] = '"><script>alert(1)</script>';
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'non-numeric van stock count must be rejected');
+});
+
+test('import rejects a save with HTML smuggled into a tech skill', () => {
+  const s = defaultState();
+  s.techs.push({ id: 't1', name: 'Dave', skill: '<b onmouseover=x>', routeId: null, hiredAt: 0 });
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'non-numeric tech skill must be rejected');
+});
+
+test('import rejects a save with a non-string tech name', () => {
+  const s = defaultState();
+  s.techs.push({ id: 't1', name: { toString: 'nope' }, skill: 1, routeId: null, hiredAt: 0 });
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'non-string tech name must be rejected');
+});
+
+test('import rejects a save with a non-numeric motd.lastResult.testsUsed', () => {
+  const s = defaultState();
+  s.motd.lastResult = { testsUsed: '<i>9</i>', simMinutes: 4, solved: true, faultId: 'x', puzzleDateStr: '2026-06-12' };
+  let threw = false;
+  try { migrate(JSON.parse(JSON.stringify(s))); } catch { threw = true; }
+  assert(threw, 'non-numeric testsUsed must be rejected');
+});
+
+test('a genuine save with techs and a played MotD still validates', () => {
+  const s = defaultState();
+  s.techs.push({ id: 't1', name: 'Dave', skill: 1, routeId: null, hiredAt: 0 });
+  s.motd.lastResult = { testsUsed: 3, simMinutes: 8, solved: true, faultId: 'x', puzzleDateStr: '2026-06-12' };
+  s.motd.streak = 4;
+  const migrated = migrate(JSON.parse(JSON.stringify(s)));
+  assertEqual(migrated.motd.streak, 4, 'valid save must pass unchanged');
+});
+
 test('v6 save migrates to v7: offlineJobCarry field added at 0', () => {
   const v6Fixture = defaultState();
   v6Fixture.schemaVersion = 6;
