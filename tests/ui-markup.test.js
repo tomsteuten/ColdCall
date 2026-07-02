@@ -113,6 +113,7 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
 
 test('workshop machine ids from a save are escaped inside HTML attributes', () => {
   const state = defaultState();
+  state.player.tierUnlocked = 2; // workshop panel is hidden until Tier 2
   state.workshop.machines.push({
     id: 'x" onmouseover="alert(1)',
     machineType: 'slushie-machine',
@@ -127,12 +128,20 @@ test('workshop machine ids from a save are escaped inside HTML attributes', () =
 
 test('workshop machine with an unknown machineType renders instead of crashing', () => {
   const state = defaultState();
+  state.player.tierUnlocked = 2; // workshop panel is hidden until Tier 2
   state.workshop.machines.push({
     id: 'm1', machineType: 'no-such-machine', faultId: 'f', status: 'repaired',
   });
   const html = homeView({ state });
   assert(html.includes('no-such-machine'), 'unknown type should fall back to its raw name');
   assert(html.includes('Sell ($0)'), 'unknown type should offer a $0 sale, not throw');
+});
+
+test('workshop panel is hidden from Tier 1 players and shown from Tier 2', () => {
+  const state = defaultState(); // tier 1
+  assert(!homeView({ state }).includes('Refurbishing Workshop'), 'fresh save should not see the workshop');
+  state.player.tierUnlocked = 2;
+  assert(homeView({ state }).includes('Refurbishing Workshop'), 'Tier 2 unlock should reveal the workshop');
 });
 
 // --- failure-as-learning receipt (GDD §2.1) ---

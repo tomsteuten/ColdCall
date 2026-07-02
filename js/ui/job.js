@@ -104,7 +104,7 @@ export function statusBar(state) {
   const vanDim = parts === 0 ? ' stat-warn' : ' stat-dim';
   return `
     <header class="status-bar">
-      <span class="stat">$${state.player.cash}</span>
+      <span class="stat">$${state.player.cash.toLocaleString('en-US')}</span>
       <span class="stat stat-dim">Rep ${state.player.reputation}</span>
       <span class="stat${vanDim}">Van ${parts}/${slots}</span>
     </header>`;
@@ -301,7 +301,9 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
 
 
 
-  const workshopSection = `
+  // Hidden until Tier 2: a brand-new player's home screen should be about the
+  // core ticket loop, not a side hustle they can't yet judge the value of.
+  const workshopSection = state.player.tierUnlocked < 2 ? '' : `
 
     <div class="panel" style="margin-top: var(--space-sm);">
 
