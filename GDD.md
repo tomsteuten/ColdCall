@@ -137,9 +137,10 @@ All numbers are first guesses; balance via config, never hard-coded.
 
 ## 7. Art & Audio Direction
 
-- **Blocky inline SVG illustrations with a limited palette.** This intentionally replaces the original raster pixel-art plan: SVG stays crisp at every mobile/desktop size, supports working / fault / open-panel state variants without extra asset files, and remains editable inside the dependency-free DOM codebase. Machines are the art priority. Characters use simple illustrated portraits in ticket dialogs — cheap to produce, big personality return.
+- **Rendered raster machines by default, animated SVG as the alternate mode.** (Session 22 decision, superseding the SVG-first plan below.) All five machines have generated 640×640 webp renders for every state (fault/open/working — pipeline documented in `assets/generated/PROMPTS.md`); new games start on `'rendered'`, and the Settings toggle switches to the blocky animated SVGs. Both modes share the CSS machine-state motion (jolt on fault, glow on working).
+- **Blocky inline SVG illustrations with a limited palette** remain the fully-supported vector mode: crisp at every size, state variants without asset files, editable in the dependency-free codebase. Characters use simple illustrated portraits in ticket dialogs — cheap to produce, big personality return.
 - UI is clean DOM/CSS, not pixel-rendered — readable on mobile, fast to build.
-- Audio: light. Satisfying clicks, a soft-serve swirl jingle on perfect jobs, one chiptune loop. Use generated/CC0 assets; audio is a polish-phase task, not a launch blocker.
+- Audio: light, shipped in session 22 as generated WebAudio (button blip, correct-fix jingle, wrong-fix thunk — no assets, gated on the Settings toggle). A chiptune loop remains a someday item.
 
 ---
 

@@ -40,6 +40,38 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-03 — Claude Code — Session 22: the finishing session (v1.0 ship pass)
+
+- **Files touched:** `js/state.js`, `js/economy.js`, `js/main.js`, `js/audio.js`
+  (new), `js/motd.js`, `js/ui/job.js`, `js/ui/motd.js`, `config/balance.js`,
+  `css/main.css`, `index.html`, `sw.js`, `data/clients.json`,
+  `assets/fonts/*.woff2` (new), `GDD.md`, `NOTES.md`, `GRAPHICS_REVIEW.md`,
+  tests. Deleted: `REVIEW_FINDINGS.md`, preview-* scratch, placeholder PNGs,
+  `tools/recover_workspace.py`, `tools/generate-raster-assets.py`.
+- **Contract:** `WORKSHOP_MACHINES` prices now live in `config/balance.js`
+  (`WORKSHOP.machines`); workshop buy/sell go through
+  `buyWorkshopMachine`/`sellWorkshopMachine` in economy.js (sales NOT
+  founderBonus-scaled — rule-5 invariant with a test). `contact.flavourLines`
+  in clients.json is `{default: [...], "<machineType>": [...]}` consumed by
+  `contactFlavourLine()` in js/ui/job.js. `validateState` type-checks
+  motd.streak, motd.lastResult.testsUsed/solved, van stock counts, tech
+  name/skill — any new save field the UI renders should be added there.
+  Outfit is self-hosted from `assets/fonts/` — do not reintroduce the Google
+  Fonts link. SFX go through js/audio.js, always gated on
+  `state.settings.audio`.
+- **Graphics mode:** both — default for NEW games is now `'rendered'`; existing
+  saves keep their stored mode. Raster slot is `.machine-stage--raster`, capped
+  300px.
+- **sw.js cache bumped?** yes v17→v18 (app-shell JS/CSS/HTML changed; also added
+  the missing `js/ui/settings.js`, `js/audio.js`, and the two font files to
+  APP_SHELL).
+- **prefers-reduced-motion honored?** yes (unchanged Codex rules; no new motion).
+- **Schema change?** none — still v12. defaultState().settings.graphicsMode
+  changed to 'rendered' but no migration touches existing saves.
+- **Tests:** `node tests/run.js` → 247 passing, 0 failed.
+- **Open / unverified:** none blocking. Post-launch candidates are listed in the
+  NOTES.md cold-start prompt.
+
 ### 2026-06-14 - Codex - CSS machine-state motion wired into job and repair views
 
 - **Files touched:** `css/main.css`, `js/ui/job.js`, `sw.js`,

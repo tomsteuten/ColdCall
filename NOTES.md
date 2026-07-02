@@ -7,16 +7,101 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 21 done — Antigravity features verified and documented)
+## Status (Session 22 done — the finishing session; pushed to main)
 
-**Session 21 — verification and documentation of Antigravity's Tier 3 / prestige /
-workshop / settings work — is complete.** The tree is internally consistent; `node
-tests/run.js` → **222 passing, 0 failed**. See "What session 21 verified" below for
-the full feature audit against `GDD.md`.
+**Session 22 worked the full ship list: correctness/save-safety, the first real
+balance-and-fun pass, presentation, and release housekeeping.** `node tests/run.js`
+→ **247 passing, 0 failed**. sw.js cache is **v18**. Schema version is still **12**
+(no state-shape changes were needed).
 
-Next session: pick any item from "Not-yet-scheduled" below, or address the two
-balance notes flagged in the session 21 entry (prestige threshold vs. 2–4 hour
-target; workshop sell prices). Don't push without Tom's approval.
+### What session 22 shipped
+
+**A — correctness and save safety**
+- `migrate()` now refuses a *versionless modern-shape* save (has `player`/`jobs`/
+  `motd` containers but no `schemaVersion`) instead of rebuilding it from defaults
+  as v0. Invalid versions (string/null/fractional/negative) were already rejected
+  since session 13. Fractional offline carry (A2) and MotD tool-ungating (A5) were
+  verified already done — no code needed.
+- MotD midnight pinning was already implemented end-to-end; added the missing
+  end-to-end test (startJob before UTC midnight → commitFix after → pinned date
+  wins, next day's puzzle stays playable).
+- Import hardening: `validateState` now type-checks every save field the UI
+  interpolates as a number (`motd.streak`, `motd.lastResult.testsUsed/solved`, van
+  stock counts, tech `name`/`skill`); workshop machine ids are escaped in
+  attributes; `testsUsed` is clamped before `String.repeat`; unknown workshop
+  machineType renders a $0 sale instead of crashing homeView.
+- Save-import decode failures now show "That doesn't look like a Cold Call save…"
+  instead of "URI malformed". migrate/validate errors pass through (already
+  player-worded).
+
+**B — balance and fun pass (GDD §10, first ever; measured by playing)**
+- Measured focused active pace: T1 ~$105–120/job, T2 ~$140–160/job → ~$7–10k/hour.
+  Tier 2 in 10 clean jobs ≈ 10–14 focused minutes — inside the 15-min target, no
+  tuning needed.
+- **Prestige gate $250k → $30k** (GDD §3.4 wants the first sale at 2–4h; $250k was
+  25+ hours at measured pace).
+- **Workshop margins cut to $60/$90/$150** (T1/T2/T3) — below each tier's average
+  fresh-ticket net — and **sales are no longer founderBonus-scaled** (fresh payouts
+  are, so tickets pull further ahead with every prestige). Previously a T3 flip
+  paid $500/repair vs ~$210 for a fresh T3 ticket — a rule-5 violation. New
+  economy test pins the margin invariant.
+- Workshop prices + prestige knobs moved into `config/balance.js` (rule 3 — they
+  were hardcoded in economy.js/job.js); workshop buy/sell mutations moved from
+  main.js into economy.js with tests.
+- Home screen: workshop panel hidden until Tier 2 (fresh-save noise / $100 trap at
+  $500 start); status-bar cash gets thousands separators; prestige card reads its
+  numbers from config and the Sell button no longer renders amber-on-cyan.
+
+**C — presentation**
+- **Graphics default is now `'rendered'`** for new games (all 5 machines have all
+  3 webp states). Existing saves keep their stored mode — the v11→v12 migration
+  is never re-run and a player's choice is never overridden. The square raster
+  stage is capped at 300px so symptoms stay above the fold at 380px. The
+  GRAPHICS_REVIEW open items are all resolved.
+- Removed a 226-line byte-identical duplicated CSS block (columns/modal/desktop
+  sections appeared twice after the Antigravity recovery). Desktop two-column
+  diagnosis verified working at 1280px; 380px unchanged.
+- **Caller lines rotate**: `contact.flavourLines` in clients.json — a `default`
+  pool plus optional machineType-keyed pools, picked deterministically per job
+  (seeded fault+client). Machine-specific quips (Sanjay's ice-dispenser line) can
+  no longer caption the wrong machine.
+- **Outfit is self-hosted** (2 variable woff2s, 47KB, OFL 1.1) — the game now
+  makes zero runtime external requests. Files in APP_SHELL.
+- **Audio exists**: js/audio.js generates a button blip, correct-fix jingle, and
+  wrong-fix thunk via WebAudio (no assets). Gated on the existing Settings
+  toggle; context created lazily inside a user gesture; node-safe no-op.
+
+**D — housekeeping**
+- Deleted the untracked preview-*.html/svg scratch files, the unused placeholder
+  PNGs (`assets/machine-{broken,working}.png`, `tech-avatar.png`), the one-off
+  `tools/recover_workspace.py`, and the obsolete `tools/generate-raster-assets.py`
+  (the real art pipeline is documented in `assets/generated/PROMPTS.md`).
+- REVIEW_FINDINGS.md folded into the ledger below and deleted.
+
+### REVIEW_FINDINGS.md resolution ledger (post-session-10 review, now retired)
+
+1. Malformed schemaVersion resets progress — **fixed** (session 13 + session 22
+   flat-shape check).
+2. Fractional offline work discarded — **fixed** (session 13/14, `offlineJobCarry`).
+3. Tech daily wage not charged — **resolved as design decision**: GDD §6 says no
+   running wage at v1.0; `dailyWage` stays a reserved v1.x knob.
+4. Imported saves can inject markup — **fixed** (session 13 escapeHtml + session 22
+   validateState type checks and attribute escaping).
+5. MotD across UTC midnight — **fixed** (pinned `puzzleDateStr`, end-to-end test).
+6. Repair interaction absent — **fixed** (session 18 repair beat).
+7. MotD scoring depends on tool tier — **fixed** (tests ungated on MotD runs).
+8. Callbacks all attributed to Dave — **fixed** (session 15 techId/techName).
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Cold Call v1.0 shipped in session 22:
+> the loop, MotD, PWA, prestige, workshop, rendered graphics, audio, and offline
+> font are all live and pushed to main. `node tests/run.js` should be 247 green.
+> There is no scheduled work. Candidate next items: a second contract route /
+> tech specialisation (GDD v1.x), the Answering Service offline-cap upgrade
+> (OFFLINE.answeringServiceCapHours exists, unused), per-client portraits for the
+> two placeholder-shared tier-3 clients, or community fault-pack tooling. Pick
+> with Tom. Don't push without his say-so.
 
 ### Graphics: raster art for all 5 machines (Codex, post-Session-20)
 

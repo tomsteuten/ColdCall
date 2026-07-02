@@ -179,8 +179,8 @@ body {
 }
 /* Generated raster renders are square (640×640); the inline SVGs are 16:7 and fill
    the slot natively. Contain the raster <img> so it never overflows the slot in
-   'rendered' graphics mode. See GRAPHICS_REVIEW.md — a raster-specific slot shape is
-   still needed to give the square renders more room. */
+   'rendered' graphics mode; .machine-stage--raster below gives squares their own
+   slot shape (GRAPHICS_REVIEW.md, resolved session 22). */
 .machine-art {
   display: block;
   width: 100%;

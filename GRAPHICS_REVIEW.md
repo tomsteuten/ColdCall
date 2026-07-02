@@ -1,5 +1,12 @@
 # Graphics review — vector SVG vs rendered raster (2026-06-14)
 
+> **RESOLVED (session 22, 2026-07-03).** Option A shipped: all 5 machines have
+> full-state renders (Codex, post-session-20), the webps are in APP_SHELL, the
+> square renders get a dedicated `.machine-stage--raster` slot capped at 300px,
+> and `defaultState()` now starts new games on `'rendered'`. Existing saves keep
+> their stored mode. This document is kept as the decision record only —
+> nothing below is open.
+
 Review of why the "decent" generated graphics are not showing by default, and a
 recommended path forward. Conducted by Claude (Opus 4.8). No visual QA was possible
 this session — the managed preview panel can't bind because the local python server
