@@ -290,6 +290,31 @@ test('importSave throws on garbage without side effects', () => {
   assert(threw, 'garbage input should throw');
 });
 
+test('importSave garbage errors are player-facing, never raw browser errors', () => {
+  // The settings modal shows e.message verbatim — a paste-gone-wrong must read
+  // like game copy, not "URI malformed" or "Unexpected token".
+  const garbageInputs = [
+    'definitely not a save blob !!!',
+    'aGVsbG8=', // valid base64, not JSON ("hello")
+    btoa('"just a string"'), // valid base64 JSON, not an object
+    '%%%%',
+  ];
+  for (const input of garbageInputs) {
+    let message = null;
+    try {
+      importSave(input);
+    } catch (e) {
+      message = String(e.message);
+    }
+    assert(message !== null, `"${input}" should throw`);
+    assert(
+      message.includes('Cold Call save'),
+      `error for "${input}" should be player copy, got: ${message}`
+    );
+    assert(!/URI|token|atob|JSON/i.test(message), `no browser jargon in: ${message}`);
+  }
+});
+
 test('importSave rejects a blob from a newer game version', () => {
   const future = defaultState();
   future.schemaVersion = SCHEMA_VERSION + 1;

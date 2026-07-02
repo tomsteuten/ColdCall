@@ -415,10 +415,23 @@ export function exportSave(state) {
  * @returns {object} migrated state
  */
 export function importSave(blob) {
-  const json = decodeURIComponent(escape(atob(blob.trim())));
-  const parsed = JSON.parse(json);
+  // Decode/parse failures produce browser errors ("URI malformed", "Unexpected
+  // token") that mean nothing to a player — translate them here. Errors from
+  // migrate()/validateState pass through: those messages are already written
+  // for the player and say what's actually wrong with the save.
+  let parsed;
+  try {
+    const json = decodeURIComponent(escape(atob(blob.trim())));
+    parsed = JSON.parse(json);
+  } catch {
+    throw new Error(
+      "That doesn't look like a Cold Call save. Paste the whole export text, unedited."
+    );
+  }
   if (typeof parsed !== 'object' || parsed === null) {
-    throw new Error('Save blob did not contain a save object');
+    throw new Error(
+      "That doesn't look like a Cold Call save. Paste the whole export text, unedited."
+    );
   }
   return migrate(parsed);
 }
