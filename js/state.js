@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -57,6 +57,18 @@ export function defaultState() {
       streak: 0,
       lastResult: null, // { testsUsed, timeMs, solved, faultId } — faultId pins the puzzle so library updates can't rewrite history
     },
+
+    // The Fault Codex (GDD §5, 2026-07-04): long-horizon collection. Only the
+    // fix counts are persisted — names, machines and lesson text are derived
+    // from the fault library at render time. Survives prestige on purpose.
+    codex: {
+      fixes: {}, // faultId -> times fixed correctly (presence = mastered)
+      milestonesPaid: [], // completion percents already paid (25/50/75/100)
+    },
+
+    // Today's contract (GDD §5, 2026-07-04): one seeded-by-date bonus objective.
+    // null until first generated; { date, machineType, count, reward, progress, paid }.
+    contract: null,
 
     stats: {
       jobsCompleted: 0,
@@ -248,6 +260,18 @@ export const MIGRATIONS = {
     old.schemaVersion = 13;
     return old;
   },
+  // v13 -> v14: the Fault Codex and Today's Contract added (GDD §5). Old saves
+  // start with an empty codex — past fixes were never recorded per fault, and
+  // inventing history would be a guess. contract starts null (generated on the
+  // next home render).
+  13: (old) => {
+    if (typeof old.codex !== 'object' || old.codex === null) {
+      old.codex = { fixes: {}, milestonesPaid: [] };
+    }
+    if (old.contract === undefined) old.contract = null;
+    old.schemaVersion = 14;
+    return old;
+  },
 };
 
 /**
@@ -322,6 +346,7 @@ export function validateState(s) {
     ['techs', 'array'], ['routes', 'array'],
     ['jobs', 'object'], ['jobs.callbacks', 'array'],
     ['workshop', 'object'], ['workshop.machines', 'array'],
+    ['codex', 'object'], ['codex.fixes', 'object'], ['codex.milestonesPaid', 'array'],
     ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],
     ['stats.jobsCompleted', 'number'], ['stats.cleanStreak', 'number'],
     ['offlineJobCarry', 'number'], ['settings.graphicsMode', 'string'],
@@ -352,6 +377,11 @@ export function validateState(s) {
   for (const [partId, count] of Object.entries(s.van.stock)) {
     if (typeof count !== 'number') {
       throw new Error(`Save has a bad van stock count for "${partId}" (expected number)`);
+    }
+  }
+  for (const [faultId, count] of Object.entries(s.codex.fixes)) {
+    if (typeof count !== 'number') {
+      throw new Error(`Save has a bad codex fix count for "${faultId}" (expected number)`);
     }
   }
   for (const tech of s.techs) {

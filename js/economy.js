@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP, VAN, ROUTES } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP, VAN, ROUTES, CODEX } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -142,6 +142,41 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   state.player.cash += earned;
   state.player.lifetimeEarnings += earned;
   return { earned, repDelta, unlockedTier: checkTierUnlock(state) };
+}
+
+/**
+ * Record a correct diagnosis in the Fault Codex (GDD §5) and pay any newly
+ * crossed completion milestones (one-time each, CODEX.milestones). Mastery
+ * percent counts only faults still in the library, so a retired fault can
+ * neither inflate progress nor claw back a bonus already paid.
+ * Every correct diagnosis counts — fresh tickets, callbacks, workshop repairs
+ * and MotD solves are all the same deduction.
+ * @param {object} state game state (mutated: codex, cash on a milestone)
+ * @param {string} faultId the fault just diagnosed correctly
+ * @param {Object<string, object>} faults fault library keyed by id
+ * @returns {{isNew: boolean, mastered: number, total: number, milestonesPaid: Array<{pct: number, bonus: number}>}}
+ */
+export function recordCodexFix(state, faultId, faults) {
+  const fixes = state.codex.fixes;
+  const isNew = !(faultId in fixes);
+  fixes[faultId] = (fixes[faultId] ?? 0) + 1;
+
+  const total = Object.keys(faults).length;
+  const mastered = Object.keys(fixes).filter((id) => id in faults).length;
+  const milestonesPaid = [];
+  if (total > 0) {
+    const pct = (mastered / total) * 100;
+    for (const [pctKey, bonus] of Object.entries(CODEX.milestones)) {
+      const threshold = Number(pctKey);
+      if (pct >= threshold && !state.codex.milestonesPaid.includes(threshold)) {
+        state.codex.milestonesPaid.push(threshold);
+        state.player.cash += bonus;
+        state.player.lifetimeEarnings += bonus;
+        milestonesPaid.push({ pct: threshold, bonus });
+      }
+    }
+  }
+  return { isNew, mastered, total, milestonesPaid };
 }
 
 /**

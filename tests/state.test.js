@@ -10,6 +10,7 @@ import {
   importSave,
   SCHEMA_VERSION,
   SAVE_KEY,
+  validateState,
 } from '../js/state.js';
 import { STARTING } from '../config/balance.js';
 
@@ -694,4 +695,33 @@ test('v12 save migrates to v13: callbacks and active job gain variant 0 (base pr
   assertEqual(migrated.jobs.callbacks[0].variant, 0, 'old callbacks presented the base symptoms');
   assertEqual(migrated.jobs.active.variant, 0, 'old in-flight jobs presented the base symptoms');
   assertEqual(migrated.jobs.callbacks[0].evidence, ['temp-probe'], 'evidence untouched');
+});
+
+test('v13 save migrates to v14: empty codex and null contract added', () => {
+  const v13Fixture = defaultState();
+  v13Fixture.schemaVersion = 13;
+  delete v13Fixture.codex;
+  delete v13Fixture.contract;
+  v13Fixture.player.cash = 7777; // progress that must survive untouched
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v13Fixture)));
+
+  assertEqual(migrated.schemaVersion, SCHEMA_VERSION);
+  assertEqual(migrated.codex, { fixes: {}, milestonesPaid: [] },
+    'old saves start with an empty codex — history is never invented');
+  assertEqual(migrated.contract, null, 'contract generates on the next home render');
+  assertEqual(migrated.player.cash, 7777);
+});
+
+test('validateState rejects a save with a non-numeric codex fix count', () => {
+  const s = defaultState();
+  s.codex.fixes['some-fault'] = '<img onerror=x>';
+  let threw = false;
+  try {
+    validateState(s);
+  } catch (e) {
+    threw = true;
+    assert(String(e.message).includes('codex'), e.message);
+  }
+  assert(threw, 'hostile codex count must be rejected');
 });

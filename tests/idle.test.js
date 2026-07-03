@@ -270,23 +270,28 @@ test('two-tech carry: short absences equal one combined absence', () => {
 
 test('a skill-2 tech succeeds at the trained rate and out-earns skill 1 (deterministically)', () => {
   const faults = makeFaults();
+  // Pin the clock so both runs draw the SAME seeded sequence — the only
+  // difference is the success threshold (0.75 vs 0.9). On an identical draw a
+  // trained tech can never do worse; this seed has draws in [0.75, 0.9), so
+  // skill 2 earns strictly more and botches strictly fewer.
+  const now = Date.UTC(2026, 6, 4, 12, 0, 0);
   const run = (skill) => {
-    const { state, now } = stateWithTech(8 * HOUR_MS);
-    state.techs[0].skill = skill;
+    const state = defaultState();
+    state.lastSeen = now - 8 * HOUR_MS;
+    state.player.tierUnlocked = 2;
+    state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+    state.techs.push({ id: 'tech-1', name: 'Dave', skill, routeId: 'burgertown-south', hiredAt: 0 });
     return { report: simulateOfflineProgress(state, faults, now), state };
   };
   const s1 = run(1);
   const s2 = run(2);
-  // Same seed (same tech id + lastSeen offset applied to the same now delta):
-  // the trained tech can never do worse, and over 16 jobs at 75% vs 90% should
-  // strictly earn more.
   assert(
     s2.report.totalEarned > s1.report.totalEarned,
     `skill 2 (${s2.report.totalEarned}) must out-earn skill 1 (${s1.report.totalEarned}) over 8h`
   );
   assert(
-    s2.report.callbacksAdded <= s1.report.callbacksAdded,
-    'a trained tech botches no more jobs than an untrained one on the same draw'
+    s2.report.callbacksAdded < s1.report.callbacksAdded,
+    `a trained tech botches fewer jobs on the same draw (${s2.report.callbacksAdded} vs ${s1.report.callbacksAdded})`
   );
 });
 

@@ -1,7 +1,7 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, VAN, ROUTES } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, VAN, ROUTES, CODEX } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
@@ -23,6 +23,7 @@ import {
   hireTech,
   purchaseLadder,
   buyLadderItem,
+  recordCodexFix,
 } from '../js/economy.js';
 
 function makeFault() {
@@ -856,4 +857,87 @@ test('rule 5: even both techs at skill 2 on the best routes stay below active $/
   assert(TECHS.successRateBySkill[2] > TECHS.successRateBySkill[1], 'skill 2 must beat skill 1');
   assert(TECHS.successRateBySkill[2] < 1, 'no perfect techs — rescues must keep existing');
   assertEqual(TECHS.successRateBySkill[1], TECHS.baseSuccessRate, 'skill 1 is the launch base rate');
+});
+
+// --- Phase 3: the Fault Codex (2026-07-04, GDD §5) ---
+
+function libraryOfFour() {
+  const lib = {};
+  for (const id of ['f-a', 'f-b', 'f-c', 'f-d']) {
+    lib[id] = { ...makeFault(), id };
+  }
+  return lib;
+}
+
+test('recordCodexFix logs the first correct diagnosis and counts repeats', () => {
+  const state = defaultState();
+  const lib = libraryOfFour();
+  const first = recordCodexFix(state, 'f-a', lib);
+  assert(first.isNew, 'first diagnosis is a new entry');
+  assertEqual(first.mastered, 1);
+  assertEqual(first.total, 4);
+  assertEqual(state.codex.fixes['f-a'], 1);
+  const again = recordCodexFix(state, 'f-a', lib);
+  assert(!again.isNew, 'repeat is not a new entry');
+  assertEqual(state.codex.fixes['f-a'], 2, 'times fixed counts up');
+  assertEqual(again.mastered, 1, 'mastered count unchanged by repeats');
+});
+
+test('codex milestones pay one-time cash from balance.js at 25/50/75/100%', () => {
+  const state = defaultState();
+  const lib = libraryOfFour(); // 4 faults -> each mastery is exactly 25%
+  const cash0 = state.player.cash;
+  const r1 = recordCodexFix(state, 'f-a', lib); // 25%
+  assertEqual(r1.milestonesPaid, [{ pct: 25, bonus: CODEX.milestones[25] }]);
+  assertEqual(state.player.cash, cash0 + CODEX.milestones[25]);
+  const r2 = recordCodexFix(state, 'f-b', lib); // 50%
+  assertEqual(r2.milestonesPaid, [{ pct: 50, bonus: CODEX.milestones[50] }]);
+  const r3 = recordCodexFix(state, 'f-c', lib); // 75%
+  const r4 = recordCodexFix(state, 'f-d', lib); // 100%
+  assertEqual(r3.milestonesPaid.map((m) => m.pct), [75]);
+  assertEqual(r4.milestonesPaid.map((m) => m.pct), [100]);
+  assertEqual(
+    state.player.cash,
+    cash0 + CODEX.milestones[25] + CODEX.milestones[50] + CODEX.milestones[75] + CODEX.milestones[100]
+  );
+  assertEqual(state.player.lifetimeEarnings,
+    CODEX.milestones[25] + CODEX.milestones[50] + CODEX.milestones[75] + CODEX.milestones[100],
+    'milestones count toward lifetime earnings');
+  // Refixing everything pays nothing again.
+  const rep = recordCodexFix(state, 'f-a', lib);
+  assertEqual(rep.milestonesPaid, [], 'milestones are strictly one-time');
+});
+
+test('growing the fault library never claws back paid milestones or re-pays them', () => {
+  const state = defaultState();
+  const lib = { 'f-a': { ...makeFault(), id: 'f-a' }, 'f-b': { ...makeFault(), id: 'f-b' } };
+  recordCodexFix(state, 'f-a', lib); // 50% -> pays 25 and 50
+  recordCodexFix(state, 'f-b', lib); // 100% -> pays 75 and 100
+  assertEqual(state.codex.milestonesPaid.slice().sort((a, b) => a - b), [25, 50, 75, 100]);
+  const cash = state.player.cash;
+  // The library doubles: mastery drops to 50%. Nothing is clawed back, and
+  // re-crossing 75% later must not re-pay it.
+  const grown = { ...lib, 'f-c': { ...makeFault(), id: 'f-c' }, 'f-d': { ...makeFault(), id: 'f-d' } };
+  const r = recordCodexFix(state, 'f-c', grown); // back to 75%
+  assertEqual(r.milestonesPaid, [], '75% was already paid before the library grew');
+  assertEqual(state.player.cash, cash, 'no cash moved');
+});
+
+test('codex mastery counts only faults still in the library (retired ids ignored)', () => {
+  const state = defaultState();
+  state.codex.fixes['retired-fault'] = 3;
+  const lib = libraryOfFour();
+  const r = recordCodexFix(state, 'f-a', lib);
+  assertEqual(r.mastered, 1, 'the retired fault does not count toward mastery');
+  assertEqual(r.total, 4);
+});
+
+test('codex survives prestige — the collection is meta-progress', () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
+  state.codex.fixes['f-a'] = 5;
+  state.codex.milestonesPaid = [25];
+  prestige(state);
+  assertEqual(state.codex.fixes['f-a'], 5, 'codex entries survive the sale');
+  assertEqual(state.codex.milestonesPaid, [25], 'paid milestones stay paid');
 });

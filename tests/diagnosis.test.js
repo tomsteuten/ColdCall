@@ -35,6 +35,10 @@ const FAULTS = { 'test-fault': makeFault() };
 
 function freshJobState() {
   const state = defaultState();
+  // These tests use one-fault libraries, where a single correct fix masters
+  // 100% of the codex and would pay every milestone into the cash assertions.
+  // Pre-mark the milestones paid; recordCodexFix has its own dedicated tests.
+  state.codex.milestonesPaid = [25, 50, 75, 100];
   startJob(state, FAULTS['test-fault'], 'burgertown-high-st', mulberry32(42));
   return state;
 }

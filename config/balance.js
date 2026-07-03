@@ -210,3 +210,12 @@ export const WORKSHOP = {
 export const MOTD = {
   epochDate: '2026-06-12', // Day 1 — change only on a fresh deploy, never mid-run
 };
+
+/**
+ * The Fault Codex (GDD §5, 2026-07-04): long-horizon collection goal. One-time
+ * cash bonuses at completion percentages of the loaded fault library. One-time
+ * by definition, so they can never compete with active $/min (rule 5).
+ */
+export const CODEX = {
+  milestones: { 25: 250, 50: 750, 75: 1500, 100: 3000 },
+};

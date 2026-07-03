@@ -2,7 +2,7 @@
  * Pure functions over state.jobs.active — no DOM here. Settlement maths lives in economy.js.
  */
 
-import { settleJob } from './economy.js';
+import { settleJob, recordCodexFix } from './economy.js';
 import { settleMotd } from './motd.js';
 import { mulberry32 } from './rng.js';
 import { DIAGNOSIS } from '../config/balance.js';
@@ -197,6 +197,11 @@ export function commitFix(state, fixId, faults) {
   const fault = faults[job.faultId];
   const correct = fixId === fault.correctFix;
 
+  // Every correct diagnosis fills the Codex — fresh, callback, workshop and
+  // MotD alike (GDD §5): the deduction is the same whoever pays for it. Always
+  // recorded AFTER settlement, which can refuse (out of parts) by throwing.
+  const codexAfterSettle = () => (correct ? recordCodexFix(state, fault.id, faults) : null);
+
   if (job.motd) {
     // Score by simulated diagnostic minutes, not wall-clock time: only the player's
     // own test choices advance the clock, so interruptions can't worsen a shared
@@ -204,8 +209,9 @@ export function commitFix(state, fixId, faults) {
     const now = Date.now();
     const simMinutes = job.minutesSpent ?? 0;
     const result = settleMotd(state, fault, correct, job.testsRun, simMinutes, now, job.puzzleDateStr ?? null);
+    const codex = codexAfterSettle();
     state.jobs.active = null;
-    return { motd: true, ...result };
+    return { motd: true, codex, ...result };
   }
 
   // Intercept workshop jobs
@@ -226,6 +232,7 @@ export function commitFix(state, fixId, faults) {
     }
     const minutesSpent = job.minutesSpent ?? 0;
     const testsUsed = job.testsRun.length;
+    const codex = codexAfterSettle();
     state.jobs.active = null;
     return {
       correct,
@@ -239,6 +246,7 @@ export function commitFix(state, fixId, faults) {
       minutesSpent,
       testsUsed,
       cleanStreak: state.stats.cleanStreak,
+      codex,
       isWorkshop: true,
       wMachineId: machineId,
     };
@@ -254,6 +262,7 @@ export function commitFix(state, fixId, faults) {
     testsRun: job.testsRun,
     variant: job.variant ?? 0,
   });
+  const codex = codexAfterSettle();
   state.jobs.active = null;
   return {
     correct,
@@ -267,6 +276,7 @@ export function commitFix(state, fixId, faults) {
     minutesSpent,
     testsUsed,
     cleanStreak: state.stats.cleanStreak,
+    codex,
   };
 }
 

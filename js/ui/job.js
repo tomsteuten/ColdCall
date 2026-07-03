@@ -135,7 +135,7 @@ export function statusBar(state) {
     </header>`;
 }
 
-export function homeView({ state, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob }) {
+export function homeView({ state, faults, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
@@ -379,7 +379,13 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
       ${motdSection}
       ${workshopSection}
 
-      <button class="btn" data-action="open-shop">Tools shop</button>
+      ${(() => {
+        // Codex progress on the button itself — the collection goal stays visible.
+        const total = Object.keys(faults ?? {}).length;
+        const mastered = Object.keys(state.codex?.fixes ?? {}).filter((id) => faults && id in faults).length;
+        return `<button class="btn" data-action="open-codex">Codex — ${mastered}/${total} mastered</button>`;
+      })()}
+      <button class="btn" data-action="open-shop">Upgrades shop</button>
       <button class="btn" data-action="open-settings">Settings</button>
 
       ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
@@ -798,6 +804,20 @@ export function invoiceView({ state, invoice }) {
        </div>`
     : '';
 
+  // Codex feedback (GDD §5): a first-time diagnosis and any milestone bonuses
+  // are receipt-worthy moments — the collection goal pays off inside the loop.
+  const codexInfo = invoice.codex;
+  const codexLines = codexInfo
+    ? [
+        codexInfo.isNew
+          ? `<p class="receipt-codex">★ New Codex entry — ${codexInfo.mastered}/${codexInfo.total} mastered</p>`
+          : '',
+        ...codexInfo.milestonesPaid.map(
+          (m) => `<p class="receipt-codex">Codex ${m.pct}% milestone: +$${m.bonus.toLocaleString('en-US')}</p>`
+        ),
+      ].join('')
+    : '';
+
   return `
     ${statusBar(state)}
     <section class="screen screen-invoice">
@@ -806,6 +826,7 @@ export function invoiceView({ state, invoice }) {
         <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
         ${lineItems}
         ${receiptNote}
+        ${codexLines}
         ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
         ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>
@@ -826,6 +847,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="open-shop"]').forEach((el) =>
     el.addEventListener('click', actions.openShop)
+  );
+  root.querySelectorAll('[data-action="open-codex"]').forEach((el) =>
+    el.addEventListener('click', actions.openCodex)
   );
   root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
     el.addEventListener('click', actions.openSettings)

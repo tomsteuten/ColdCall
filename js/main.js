@@ -13,6 +13,7 @@ import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
 import * as settingsScreen from './ui/settings.js';
+import * as codexScreen from './ui/codex.js';
 
 
 const { state, error } = load();
@@ -162,6 +163,15 @@ const actions = {
   },
   dismissInvoice() {
     invoice = null;
+    render();
+  },
+  openCodex() {
+    justUnlockedTier = null;
+    screen = 'codex';
+    render();
+  },
+  closeCodex() {
+    screen = 'home';
     render();
   },
   openShop() {
@@ -360,6 +370,8 @@ function render() {
     motdScreen.render(app, { state, motdResult, actions });
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
     shopScreen.render(app, { state, actions, exportMessage, importError });
+  } else if (screen === 'codex' && !state.jobs.active && !invoice) {
+    codexScreen.render(app, { state, faults, machines, actions });
   } else {
     jobScreen.render(app, {
       state,

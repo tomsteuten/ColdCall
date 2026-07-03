@@ -137,6 +137,18 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 - **Machine of the Day:** one daily seeded diagnosis puzzle, same for all players, scored on tests used first, then simulated diagnostic minutes (never wall-clock time — interruptions must not worsen a shared result; see session 20). Shareable emoji-grid result (Wordle pattern). This is the single cheapest growth mechanic available — prioritise it for launch.
 - **Callback shame / clean-streak stats** on the share card.
 - **Pun-heavy job flavour text** — screenshot bait.
+- **The Fault Codex** (decision of record 2026-07-04): the long-horizon goal the
+  game lacked. A home-screen collection listing every fault in the library;
+  an entry fills in the first time the player diagnoses that fault correctly
+  (fresh ticket, callback, workshop or MotD — the deduction counts wherever it
+  happens) and shows the fault name, machine, the lesson text, and times fixed.
+  Header reads "23/47 faults mastered". One-time cash bonuses at 25/50/75/100%
+  completion (`CODEX.milestones` in balance.js — one-time by definition, so
+  rule 5 is untouched). Only per-fault fix counts are persisted
+  (`state.codex.fixes`, schema v14); names/lessons are derived from the library
+  at render, retired fault ids neither count toward mastery nor claw back paid
+  milestones, and the codex **survives prestige** — it's the player's knowledge,
+  not the business's assets.
 
 ---
 
