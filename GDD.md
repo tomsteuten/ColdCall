@@ -164,6 +164,16 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
   milestones, and the codex **survives prestige** — it's the player's knowledge,
   not the business's assets.
 
+> **Not yet shipped (cut at the 2026-07-04 session's usage limit, in scope-cut
+> order per the session brief):** the daily comeback hooks — MotD played-state
+> countdown to the next puzzle, an at-risk-streak cue on the unplayed MotD
+> button, and "Today's contract" (a seeded-by-date bonus objective on home,
+> e.g. "Fix 2 froyo machines · +$150"). These were the last item on the
+> session's phase list and nothing was scaffolded for them — no half-built
+> code, no schema fields reserved. Next session can design the contract shape
+> fresh; schema v14's `contract: null` slot from the Codex migration remains
+> unused and available, or a new bump can supersede it if the shape doesn't fit.
+
 ---
 
 ## 6. Economy (starting numbers — all live in `config/balance.js`)

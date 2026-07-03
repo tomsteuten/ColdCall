@@ -40,6 +40,57 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-04 — Claude Code — Session 23: retention pass (Phases 1–4 of 5)
+
+- **Files touched:** `js/state.js` (schema v12→v14, two migrations),
+  `js/diagnosis.js`, `js/economy.js`, `js/faults.js`, `js/idle.js`,
+  `js/main.js`, `js/ui/job.js`, `js/ui/shop.js`, `js/ui/motd.js`,
+  `js/ui/codex.js` (new), `config/balance.js`, `css/main.css`, `index.html`,
+  `sw.js` (v18→v19), `data/faults/SCHEMA.md`, 15 fault JSON files (added
+  `symptomVariants`), `GDD.md`, `NOTES.md`, tests across the board.
+- **Contract:** `earnedSpeedBonus(minutesSpent, testsCount)` in economy.js is
+  now the single source of truth for the speed bonus — it gates on
+  `DIAGNOSIS.minTestsForBonus`; the old `speedBonus()` (pure decay curve, no
+  gate) still exists and is used internally. `commitFix()`/`settleJob()`
+  results gained `repDelta`, `testsUsed`, `cleanStreak`, and `codex` fields —
+  any UI rendering a settlement result should read from these, not recompute.
+  `state.jobs.active`/callback entries gained a `variant` field (0 = base
+  presentation, 1..n index into `fault.symptomVariants`); read symptoms via
+  `jobSymptoms(job, faults)` and test results via `testResult(job, testId,
+  faults)`, never `fault.symptoms`/`fault.tests` directly, or variants won't
+  render. `js/economy.js` exports `purchaseLadder(state)` and
+  `buyLadderItem(state, id)` — the shop UI is now driven entirely from the
+  ladder, not a hand-rolled tool/staff list; `TOOL_CATALOGUE`/`hireTech`
+  still exist underneath but the UI should go through the ladder. Codex:
+  `recordCodexFix(state, faultId, faults)` must be called after settlement
+  (it's already wired inside `commitFix`) — never call it standalone from UI
+  code. `state.codex.fixes` and `state.contract` (currently unused, `null`)
+  are new top-level fields; `validateState` checks `codex.fixes` values are
+  numbers.
+- **Graphics mode:** n/a — no art changes this session.
+- **sw.js cache bumped?** yes v18→v19 (added `js/ui/codex.js`, the only new
+  app-shell file; all touched fault JSON already listed).
+- **prefers-reduced-motion honored?** yes (unchanged; no new motion/animation
+  added — the repair-hold beat and machine-state CSS are untouched).
+- **Schema change?** yes, twice: v12→v13 adds `variant: 0` to jobs/callbacks
+  (symptom-variant index); v13→v14 adds `codex: {fixes: {}, milestonesPaid:
+  []}` and `contract: null`. Both have fixture migration tests in
+  `tests/state.test.js`.
+- **Tests:** `node tests/run.js` → 290 passing, 0 failed. Every phase was also
+  played headless in Chromium (Playwright driving the system Chrome install,
+  no bundled browser on this machine) at 380px and 1280px, fresh-player and
+  seeded-mid-game-save, zero console errors — screenshots are in the session's
+  scratchpad, not committed to the repo.
+- **Open / unverified:** Phase 5 (daily comeback hooks: MotD countdown/streak
+  cues, "Today's contract") was cut at the session's usage limit before any
+  code was written — nothing to reconcile, just pick it up fresh. See
+  GDD.md §5's cut-scope note and NOTES.md's cold-start prompt. One design
+  judgment call not covered by the original brief: Multimeter Tier 3's
+  eliminated-fix draw is seeded on `job.faultId:clientId:startedAt` rather
+  than the job's variant, so the SAME wrong fix is ruled out across
+  identical re-rolls of a fault — reasonable, but worth a second look if it
+  ever feels too predictable across repeat encounters with the same client.
+
 ### 2026-07-03 — Claude Code — Session 22: the finishing session (v1.0 ship pass)
 
 - **Files touched:** `js/state.js`, `js/economy.js`, `js/main.js`, `js/audio.js`

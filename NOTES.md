@@ -7,6 +7,78 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 23 done — retention pass, Phases 1–4 of 5; pushed to main)
+
+**Session 23 worked a 5-phase retention brief in strict order and shipped four
+of five phases before hitting its usage limit; Phase 5 was cut clean per the
+brief's own scope-cut rule (cut from the end of the list, never from
+verification).** `node tests/run.js` → **290 passing, 0 failed**. sw.js cache
+is **v19**. Schema version is now **14** (v12→v13 added symptom variants,
+v13→v14 added the Fault Codex + an inert `contract` slot).
+
+### What session 23 shipped
+
+**Phase 1 — killed the memorization cliff.** Faults can carry 2–3
+`symptomVariants` (alternative symptom sets + optional per-test result
+overrides), drawn per-job from the seeded PRNG so MotD stays identical for
+every player and callbacks replay their original presentation. The 15
+most-common Tier 1–2 faults ship 2 variants each. The speed bonus now
+requires running at least one test (`DIAGNOSIS.minTestsForBonus`) — a
+zero-test blind commit no longer earns it, closing the "memorise the
+fix, commit blind" exploit. Economy invariant tests updated to prove
+informed diagnosis still beats both blind guessing and exhaustive testing.
+
+**Phase 2 — extended the wanting engine.** The shop is now a single
+`purchaseLadder()` showing every buyable cheapest-first, locked rungs
+included with their unlock conditions: Multimeter T2 → tech hires → van
+6-slot → tech training (skill 2, 90% idle success) → a new Tier-3 **Froyo
+Strip** contract route ($6k, promoted from v1.x) → van 8-slot → Multimeter
+T3 (deterministically rules out one wrong fix per job, disabled on MotD for
+tool fairness). Rule 5 (active > idle) re-proved with both techs trained on
+the best route.
+
+**Phase 3 — the Fault Codex.** A new home-screen "Codex" entry lists every
+fault; an entry fills in on the first correct diagnosis (fresh, callback,
+workshop, or MotD) showing name, machine, lesson text, and times fixed,
+under a "N/M faults mastered" header. One-time cash bonuses at 25/50/75/100%
+completion. Minimal persisted state (`codex.fixes` counts + `milestonesPaid`);
+survives prestige on purpose.
+
+**Phase 4 — tightened the loop and home screen.** Invoice's primary button
+is now "Next ticket" (chains straight into the next job), status bar shows
+rep progress to the next tier, receipt shows the rep delta and clean streak.
+Home reordered loop-first with the prestige/workshop panels collapsed to
+one-line `<details>` summaries, brand block shrinks after the first job,
+offline report per-tech lines now arithmetically reconcile with the total,
+not-yet-due callbacks collapse to one line, desktop non-job screens hold a
+centered 480px column, and emoji were removed from UI chrome (badges/dots
+instead) — emoji remain only in flavour text and the MotD share card.
+
+**Cut: Phase 5 — daily comeback hooks.** Not started; no scaffolding, no
+half-built code. Candidate next items (unchanged from the original brief):
+MotD played-state countdown to the next puzzle, an at-risk-streak cue on the
+unplayed MotD button, and "Today's contract" (a seeded-by-date bonus
+objective, e.g. "Fix 2 froyo machines · +$150"). Schema v14 left an unused,
+harmless `contract: null` slot from the Codex migration that Phase 5 can
+either fill or supersede with its own bump — see GDD.md §5's "Not yet
+shipped" note for detail.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Session 23 shipped Phases 1–4 of a
+> 5-phase retention brief: symptom variants (kill the memorization cliff), the
+> purchase ladder (extend the wanting engine to ~$30k), the Fault Codex
+> (long-horizon goal), and loop/home-screen tightening. `node tests/run.js`
+> should be 290 green, schema v14, sw.js cache v19. **Phase 5 (daily comeback
+> hooks) is the natural next session**: MotD countdown/at-risk-streak cues and
+> "Today's contract" — see GDD.md §5's cut-scope note and CLAUDE.md's working
+> agreements. Also worth playtesting fresh: does the symptom-variant rotation
+> actually feel less memorisable after a couple hours of real play (only
+> measurable by playing, not by the tests)? Don't push without Tom's say-so
+> beyond what's already landed on main.
+
+---
+
 ## Status (Session 22 done — the finishing session; pushed to main)
 
 **Session 22 worked the full ship list: correctness/save-safety, the first real
