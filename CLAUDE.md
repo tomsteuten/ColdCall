@@ -52,6 +52,7 @@ A free, open-source (MIT) browser game: repair-tycoon × incremental hybrid abou
 - Render-from-state: UI modules take state and re-render; avoid scattering state mutations through DOM handlers. Mutations go through functions in state.js/economy.js.
 - Prefer boring code. Tom maintains this solo — if a junior dev couldn't follow it, simplify.
 - Comments explain *why*, not *what*. Real-world equipment authenticity notes in fault data are welcome (they're part of the game's charm).
+- **UI work: read DESIGN.md first.** It documents the visual system (tokens, colour semantics, component patterns, motion, anti-patterns) in `css/main.css`. Reuse tokens/components; don't hardcode hex/px or inline styles. Keep it in sync when the CSS system changes.
 
 ## Testing
 - Lightweight: a /tests folder of plain JS assertion files runnable with `node tests/run.js`. Priority coverage: save migrations, offline-progress maths, diagnosis fault-tree resolution, economy invariants (rule 5).
