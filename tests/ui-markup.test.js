@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine } from '../js/ui/job.js';
+import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar } from '../js/ui/job.js';
 import { staffExplainerHTML } from '../js/ui/shop.js';
 import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
@@ -20,14 +20,22 @@ test('UI templates do not use smart quotes as HTML attribute delimiters', () => 
   );
 });
 
-test('invoice Done button exposes the dismiss action with ASCII quotes', () => {
+test('invoice actions: Next ticket is primary, Home secondary, both wired (2026-07-04)', () => {
   assert(
-    jobUi.includes('<button class="btn btn-primary" data-action="dismiss-invoice">Done</button>'),
-    'invoice Done button must match the selector wired by job.js'
+    jobUi.includes('<button class="btn btn-primary" data-action="invoice-next-ticket">Next ticket</button>'),
+    'invoice primary button must chain into the next ticket'
+  );
+  assert(
+    jobUi.includes('<button class="btn" data-action="dismiss-invoice">Home</button>'),
+    'invoice secondary button must go home'
   );
   assert(
     jobUi.includes("root.querySelectorAll('[data-action=\"dismiss-invoice\"]')"),
     'invoice dismiss selector must remain wired'
+  );
+  assert(
+    jobUi.includes("root.querySelectorAll('[data-action=\"invoice-next-ticket\"]')"),
+    'invoice next-ticket selector must be wired'
   );
 });
 
@@ -139,11 +147,16 @@ test('workshop machine with an unknown machineType renders instead of crashing',
   assert(html.includes('Sell ($0)'), 'unknown type should offer a $0 sale, not throw');
 });
 
-test('workshop panel is hidden from Tier 1 players and shown from Tier 2', () => {
+test('workshop panel is hidden from Tier 1 players and shown collapsed from Tier 2', () => {
   const state = defaultState(); // tier 1
-  assert(!homeView({ state }).includes('Refurbishing Workshop'), 'fresh save should not see the workshop');
+  assert(!homeView({ state }).includes('data-home-panel="workshop"'), 'fresh save should not see the workshop');
   state.player.tierUnlocked = 2;
-  assert(homeView({ state }).includes('Refurbishing Workshop'), 'Tier 2 unlock should reveal the workshop');
+  const html = homeView({ state });
+  assert(html.includes('data-home-panel="workshop"'), 'Tier 2 unlock should reveal the workshop');
+  assert(html.includes('Workshop — buy &amp; flip damaged machines') || html.includes('Workshop — buy & flip damaged machines'),
+    'empty workshop collapses to a one-line summary');
+  assert(!html.includes('<details class="home-details" data-home-panel="workshop" open'),
+    'workshop starts collapsed');
 });
 
 // --- contact flavour line rotation (session 22, data-driven caller variation) ---
@@ -334,9 +347,9 @@ test('a not-yet-due tech rescue is shown returning soon, untakeable and penalty-
     });
     const html = callbacksView({ state, faults: cbFaults, clients: cbClients });
     assert(!html.includes('data-take='), 'a not-yet-due callback must not be takeable');
-    assert(html.includes('Returns tomorrow'), 'pending callback should show when it returns');
-    assert(html.includes('expires with no penalty'), 'a tech rescue should be flagged penalty-free');
-    assert(html.includes('Mike&#39;s miss'), 'rescue should attribute the responsible tech (escaped)');
+    assert(html.includes('returns tomorrow'), 'pending callback should show when it returns');
+    assert(html.includes('callback-line'), 'a pending callback collapses to a one-line entry (2026-07-04)');
+    assert(!html.includes('callback-card'), 'no full card for a not-yet-due callback');
   } finally {
     Date.now = realNow;
   }
@@ -368,8 +381,11 @@ test('the offline report attributes jobs and misses per technician', () => {
     ],
   };
   const html = homeView({ state, offlineReport });
-  assert(html.includes('Dave: 3 jobs · $150'), 'Dave should be attributed his jobs and earnings');
-  assert(html.includes('Mike: 3 jobs · $100 · 1 miss'), 'Mike should be attributed his miss');
+  // 2026-07-04: per-tech lines reconcile arithmetically with the total —
+  // fixed = jobs − missed, and the total line sums the fixed counts and $.
+  assert(html.includes('Dave: 3 fixed · 0 missed · $150'), 'Dave should be attributed his jobs and earnings');
+  assert(html.includes('Mike: 2 fixed · 1 missed · $100'), 'Mike should be attributed his miss');
+  assert(html.includes('5 fixed · $250 earned in total'), 'the total must reconcile with the per-tech lines');
   assert(html.includes('back on the board tomorrow'), 'offline callbacks should be explained, not left to seem vanished');
 });
 
@@ -380,4 +396,101 @@ test('the staff explainer states jobs/hour, success, offline cap, wage, and call
   assert(html.includes(`${OFFLINE.baseCapHours}h`), 'should state the offline cap');
   assert(html.includes('No wage'), 'should clarify launch techs have no wage');
   assert(html.includes('rescue callback'), 'should explain the callback risk');
+});
+
+// --- Phase 4 (2026-07-04): loop and home-screen tightening ---
+
+test('status bar shows reputation progress to the next tier', () => {
+  const state = defaultState();
+  state.player.reputation = 18;
+  state.player.tierUnlocked = 2; // next threshold: tier 3 at REPUTATION.tierThresholds[3]
+  const html = statusBar(state);
+  const toGo = REPUTATION.tierThresholds[3] - 18;
+  assert(html.includes(`Rep 18 · ${toGo} to Tier 3`), `expected tier progress, got: ${html}`);
+  // At the top tier there is nothing to count down to.
+  state.player.tierUnlocked = 3;
+  assert(statusBar(state).includes('Rep 18'), 'top tier still shows rep');
+  assert(!statusBar(state).includes('to Tier'), 'no phantom next tier at the top');
+});
+
+test('receipt shows the reputation change and a grown clean streak', () => {
+  const state = onboardingState();
+  state.stats.jobsCompleted = 5; // returning player, no onboarding guard
+  state.stats.cleanStreak = 2;
+  const invoice = {
+    correct: true,
+    fault,
+    earned: 90,
+    repDelta: 1,
+    chosenFix: 'right-fix',
+    callback: false,
+    callbackSource: null,
+    unlockedTier: null,
+    minutesSpent: 2,
+    testsUsed: 1,
+    cleanStreak: 3,
+    codex: { isNew: false, mastered: 1, total: 10, milestonesPaid: [] },
+  };
+  const html = invoiceView({ state, invoice });
+  assert(html.includes('+1 rep'), 'receipt must show the reputation gained');
+  assert(html.includes('3 in a row'), 'receipt must show the grown clean streak');
+
+  const miss = { ...invoice, correct: false, repDelta: -2, earned: 40, cleanStreak: 0, codex: null };
+  const missHtml = invoiceView({ state, invoice: miss });
+  assert(missHtml.includes('−2 rep'), 'receipt must show the reputation lost');
+  assert(!missHtml.includes('in a row'), 'no streak line after a miss');
+});
+
+test('home screen order: ticket loop first, then daily, then business panels, then codex', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 3;
+  state.player.tierUnlocked = 2;
+  state.player.lifetimeEarnings = 1e9; // prestige banner visible
+  const html = homeView({ state, faults: {} });
+  const order = [
+    'data-action="next-ticket"',
+    'data-action="start-motd"',
+    'data-home-panel="prestige"',
+    'data-home-panel="workshop"',
+    'data-action="open-codex"',
+    'data-action="open-shop"',
+    'data-action="open-settings"',
+  ];
+  let last = -1;
+  for (const marker of order) {
+    const at = html.indexOf(marker);
+    assert(at !== -1, `home should contain ${marker}`);
+    assert(at > last, `${marker} out of order`);
+    last = at;
+  }
+});
+
+test('brand block shrinks once any job has been completed', () => {
+  const fresh = defaultState();
+  const freshHtml = homeView({ state: fresh, faults: {} });
+  assert(freshHtml.includes('game-tagline'), 'a brand-new player sees the full brand');
+  assert(!freshHtml.includes('game-brand--compact'), 'full brand is not compact');
+  const veteran = defaultState();
+  veteran.stats.jobsCompleted = 1;
+  const vetHtml = homeView({ state: veteran, faults: {} });
+  assert(vetHtml.includes('game-brand--compact'), 'returning player gets the compact brand');
+  assert(!vetHtml.includes('game-tagline'), 'compact brand drops the tagline');
+});
+
+test('emoji stay out of UI chrome: home, callbacks and MotD button use badges', () => {
+  // 2026-07-04 (h): emoji may remain inside flavour/share text only. The home
+  // screen and MotD button must not use ✅⚠️🔥📋❌ as interface elements.
+  const state = defaultState();
+  state.player.tierUnlocked = 2;
+  state.workshop.machines.push({ id: 'm1', machineType: 'slushie-machine', faultId: 'f', status: 'repaired' });
+  state.motd.lastPlayedDate = new Date(Date.now()).toISOString().slice(0, 10);
+  state.motd.lastResult = { testsUsed: 2, simMinutes: 7, solved: true, faultId: 'f' };
+  state.motd.streak = 3;
+  const html = homeView({ state, faults: {} });
+  for (const emoji of ['✅', '❌', '🔥', '⚠️', '📋']) {
+    assert(!html.includes(emoji), `home chrome must not contain ${emoji}`);
+  }
+  assert(html.includes('badge--success'), 'MotD played state uses a badge');
+  assert(html.includes('Streak 3'), 'streak is words, not fire');
+  assert(html.includes('dot--ok'), 'workshop status uses dots');
 });

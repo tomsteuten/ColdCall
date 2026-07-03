@@ -25,6 +25,20 @@ Ticket arrives → Accept job → DIAGNOSE → Repair → Invoice → Spend
      └──────────── reputation unlocks bigger clients ─────────┘
 ```
 
+> **Decision of record (2026-07-04) — loop and home tightening.** The loop was
+> leaking taps: the invoice now chains straight into the **Next ticket**
+> (primary button; Home is secondary), the status bar shows rep progress to
+> the next tier ("Rep 18 · 7 to Tier 3"), and the receipt lists the rep change
+> and the clean streak when it grew. The home screen is ordered
+> status → notices/offline report → Next ticket → Callbacks/MotD → one-line
+> prestige banner (expands on tap) → one-line workshop summary (expands) →
+> Codex → shop/settings, with the brand block shrunk once `jobsCompleted > 0`.
+> The offline report's per-tech lines reconcile arithmetically with its total
+> ("Dave: 8 fixed · 4 missed · $400"). Not-yet-due callbacks collapse to one
+> line each. On desktop, non-job screens hold a centered ~480px column. Emoji
+> were removed from UI chrome in favour of design-system badges/dots — emoji
+> live on only in flavour text and the share card.
+
 ### 2.1 The Diagnosis Minigame (the make-or-break mechanic)
 
 A deduction puzzle. Each machine has a hidden fault drawn from its fault tree. The player sees **symptoms**, runs **tests**, and commits to a **fix**.

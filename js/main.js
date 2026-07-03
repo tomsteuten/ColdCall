@@ -72,6 +72,11 @@ let justUnlockedTier = null;
 // transient: progress stats decide who needs it, so saves stay unchanged.
 let pendingFirstFixId = null;
 
+// Expand/collapse state of the home <details> panels (prestige, workshop).
+// Transient UI state, not game state: remembered across re-renders in this
+// session so tapping a button inside a panel doesn't slam it shut.
+const homePanels = { prestige: false, workshop: false };
+
 // A correct fix earns a brief repair beat (GDD §2.3) shown before the invoice.
 // Transient and purely cosmetic: the money is already settled inside commitFix
 // (the settlement boundary), so a refresh mid-beat lands on home with cash
@@ -164,6 +169,15 @@ const actions = {
   dismissInvoice() {
     invoice = null;
     render();
+  },
+  invoiceNextTicket() {
+    // Straight from the receipt into the next job (2026-07-04 loop tightening).
+    invoice = null;
+    actions.nextTicket();
+  },
+  toggleHomePanel(panel, open) {
+    // <details> already changed its own display; just remember it. No render.
+    if (panel in homePanels) homePanels[panel] = !!open;
   },
   openCodex() {
     justUnlockedTier = null;
@@ -385,6 +399,7 @@ function render() {
       expiryReport,
       corruptSaveBlob,
       pendingFirstFixId,
+      homePanels,
       screen,
       actions,
     });

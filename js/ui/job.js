@@ -127,15 +127,24 @@ export function statusBar(state) {
   const parts = state.van.stock['generic-parts'] ?? 0;
   const slots = state.van.slots;
   const vanDim = parts === 0 ? ' stat-warn' : ' stat-dim';
+  // Progress to the next client tier lives in the header (2026-07-04): the rep
+  // number alone never told the player what it was FOR.
+  const rep = state.player.reputation;
+  const nextTier = state.player.tierUnlocked + 1;
+  const threshold = REPUTATION.tierThresholds[nextTier];
+  const repLabel =
+    threshold !== undefined
+      ? `Rep ${rep} · ${Math.max(0, threshold - rep)} to Tier ${nextTier}`
+      : `Rep ${rep}`;
   return `
     <header class="status-bar">
       <span class="stat">$${state.player.cash.toLocaleString('en-US')}</span>
-      <span class="stat stat-dim">Rep ${state.player.reputation}</span>
+      <span class="stat stat-dim">${repLabel}</span>
       <span class="stat${vanDim}">Van ${parts}/${slots}</span>
     </header>`;
 }
 
-export function homeView({ state, faults, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob }) {
+export function homeView({ state, faults, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
@@ -157,34 +166,39 @@ export function homeView({ state, faults, justUnlockedTier, offlineReport, expir
 
   const motdPlayed = !canPlayToday(state);
   const motdResult = state.motd.lastResult;
+  // Emoji are share-card flavour, not UI (2026-07-04): played state uses the
+  // design-system badges instead of ✅/❌/🔥.
   const motdSection = motdPlayed && motdResult
     ? `<button class="btn btn-motd" data-action="open-motd-result">
-         Machine of the Day ${motdResult.solved ? '✅' : '❌'}
-         ${state.motd.streak > 1 ? ` · 🔥${state.motd.streak}` : ''}
+         Machine of the Day
+         <span class="badge ${motdResult.solved ? 'badge--success' : 'badge--warn'}">${motdResult.solved ? 'Solved' : 'Missed'}</span>
+         ${state.motd.streak > 1 ? `<span class="badge">Streak ${state.motd.streak}</span>` : ''}
        </button>`
     : `<button class="btn btn-motd" data-action="start-motd">Machine of the Day</button>`;
 
   const offlineBanner = offlineReport
     ? (() => {
         const r = offlineReport;
-        // Attribute per technician from the simulation's techReports detail so the
-        // player sees who earned and who left a callback, not just an aggregate.
+        // Per-tech lines reconcile arithmetically with the totals (2026-07-04):
+        // fixed + missed = attempts per tech; the totals sum the fixed counts
+        // and dollars, so "Dave: 8 fixed · 4 missed · $400" always adds up.
         const techLines = (r.techReports ?? [])
-          .map(
-            (t) =>
-              `<li class="home-offline-tech">${escapeHtml(t.name)}: ${t.jobs} job${t.jobs !== 1 ? 's' : ''} · $${t.earned}${t.callbacks > 0 ? ` · ${t.callbacks} miss${t.callbacks !== 1 ? 'es' : ''}` : ''}</li>`
-          )
+          .map((t) => {
+            const missed = t.callbacks ?? 0;
+            const fixed = t.jobs - missed;
+            return `<li class="home-offline-tech">${escapeHtml(t.name)}: ${fixed} fixed · ${missed} missed · $${t.earned}</li>`;
+          })
           .join('');
         // Offline callbacks return tomorrow, not now — say so, so the home count's
         // "returning soon" entry doesn't read like it appeared then disappeared.
         const callbackNote =
           r.callbacksAdded > 0
-            ? `<p class="home-offline-callbacks">${r.callbacksAdded} new callback${r.callbacksAdded !== 1 ? 's' : ''} — back on the board tomorrow, claim from Callbacks.</p>`
+            ? `<p class="home-offline-callbacks">${r.callbacksAdded} missed job${r.callbacksAdded !== 1 ? 's' : ''} — back on the board tomorrow, claim from Callbacks.</p>`
             : '';
         return `<div class="home-offline-report">
          <p class="home-offline-title">While you were away</p>
          ${techLines ? `<ul class="home-offline-techs">${techLines}</ul>` : ''}
-         <p class="home-offline-detail">${r.jobsDone} job${r.jobsDone !== 1 ? 's' : ''} done · $${r.totalEarned} earned in total</p>
+         <p class="home-offline-detail">${r.jobsDone} fixed · $${r.totalEarned} earned in total</p>
          ${callbackNote}
          <button class="btn btn-sm" data-action="dismiss-offline-report">Dismiss</button>
        </div>`;
@@ -214,177 +228,123 @@ export function homeView({ state, faults, justUnlockedTier, offlineReport, expir
 
 
   const prestigeBonusGained = Math.max(0, state.player.reputation) * PRESTIGE.bonusPerRep;
-
   const currentFounderBonus = state.player.founderBonus || 1.0;
-
   const nextFounderBonus = currentFounderBonus + prestigeBonusGained;
 
-
-
+  // Compact one-line banner, expanding on tap (2026-07-04 home tightening):
+  // the full sales pitch was crowding the ticket loop off the screen. Open
+  // state is transient UI state, remembered across re-renders via homePanels.
   const prestigeSection = state.player.lifetimeEarnings >= PRESTIGE.lifetimeEarningsThreshold
-
-    ? `<div class="panel">
-
-         <h3 class="panel-label">Sell the Business</h3>
-
-         <p class="home-offline-detail" style="margin-top: 0;">Congratulations! Your lifetime earnings reached <strong>$${state.player.lifetimeEarnings.toLocaleString('en-US')}</strong> (threshold $${PRESTIGE.lifetimeEarningsThreshold.toLocaleString('en-US')}).</p>
-
-         <p class="home-offline-detail">Sell the business to start fresh in a new region with a permanent <strong>Founder Bonus</strong>.</p>
-
-         <ul class="home-offline-techs" style="margin-bottom: var(--space-sm); list-style-type: none; padding-left: 0;">
-
-           <li class="home-offline-tech">Current Founder Bonus: <strong>${(currentFounderBonus * 100).toFixed(0)}%</strong></li>
-
-           <li class="home-offline-tech">Reputation Value: <strong>+${(prestigeBonusGained * 100).toFixed(0)}%</strong></li>
-
-           <li class="home-offline-tech">New Founder Bonus: <strong>${(nextFounderBonus * 100).toFixed(0)}%</strong></li>
-
-         </ul>
-
-         <button class="btn" style="border-color: var(--amber); color: var(--amber);" data-action="sell-business">Sell the Business</button>
-
-       </div>`
-
+    ? `<details class="home-details home-details--prestige" data-home-panel="prestige"${homePanels?.prestige ? ' open' : ''}>
+         <summary class="home-details-summary">Sell the Business — Founder Bonus ${(currentFounderBonus * 100).toFixed(0)}% → ${(nextFounderBonus * 100).toFixed(0)}%</summary>
+         <div class="home-details-body">
+           <p class="home-offline-detail">Lifetime earnings reached <strong>$${state.player.lifetimeEarnings.toLocaleString('en-US')}</strong> (threshold $${PRESTIGE.lifetimeEarningsThreshold.toLocaleString('en-US')}). Sell up to restart in a new region with a permanent <strong>Founder Bonus</strong>.</p>
+           <ul class="home-offline-techs prestige-numbers">
+             <li class="home-offline-tech">Current Founder Bonus: <strong>${(currentFounderBonus * 100).toFixed(0)}%</strong></li>
+             <li class="home-offline-tech">Reputation value: <strong>+${(prestigeBonusGained * 100).toFixed(0)}%</strong></li>
+             <li class="home-offline-tech">New Founder Bonus: <strong>${(nextFounderBonus * 100).toFixed(0)}%</strong></li>
+           </ul>
+           <button class="btn btn-prestige" data-action="sell-business">Sell the Business</button>
+         </div>
+       </details>`
     : '';
 
 
 
   let buyOptions = '';
-
   for (const [id, info] of Object.entries(WORKSHOP_MACHINES)) {
-
     if (state.player.tierUnlocked >= info.tierRequired) {
-
       const canBuy = state.player.cash >= info.buyPrice;
-
       buyOptions += `
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
-
-          <span>${escapeHtml(info.name)} ($${info.buyPrice})</span>
-
+        <div class="workshop-row">
+          <span class="workshop-machine">${escapeHtml(info.name)} ($${info.buyPrice})</span>
           <button class="btn btn-sm btn-buy" data-buy-workshop-machine="${id}" ${canBuy ? '' : 'disabled'}>Buy</button>
-
         </div>`;
-
     }
-
   }
 
 
 
   let ownedMachines = '';
-
   const machinesInWorkshop = state.workshop?.machines ?? [];
-
   if (machinesInWorkshop.length > 0) {
-
     ownedMachines = machinesInWorkshop.map((m) => {
-
       const info = WORKSHOP_MACHINES[m.machineType];
-
       const name = info ? info.name : m.machineType;
-
       if (m.status === 'broken') {
-
         return `
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
-
-            <span style="color: var(--warn);">⚠️ ${escapeHtml(name)} (Broken)</span>
-
+          <div class="workshop-row">
+            <span class="workshop-machine"><span class="dot dot--warn" aria-hidden="true"></span> ${escapeHtml(name)} (Broken)</span>
             <button class="btn btn-sm btn-primary" data-repair-workshop-machine="${escapeHtml(m.id)}">Repair</button>
-
           </div>`;
-
-      } else {
-
-        // Sales are not founderBonus-scaled (rule 5 — see balance.js WORKSHOP).
-        // info can be missing when an imported save holds an unknown machineType;
-        // render a $0 sale rather than crashing the whole home screen.
-        const sellVal = info ? info.sellPrice : 0;
-
-        return `
-
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); font-size: var(--text-sm);">
-
-            <span style="color: var(--success);">✅ ${escapeHtml(name)} (Refurbished)</span>
-
-            <button class="btn btn-sm" style="border-color: var(--success); color: var(--success);" data-sell-workshop-machine="${escapeHtml(m.id)}">Sell ($${sellVal})</button>
-
-          </div>`;
-
       }
-
+      // Sales are not founderBonus-scaled (rule 5 — see balance.js WORKSHOP).
+      // info can be missing when an imported save holds an unknown machineType;
+      // render a $0 sale rather than crashing the whole home screen.
+      const sellVal = info ? info.sellPrice : 0;
+      return `
+          <div class="workshop-row">
+            <span class="workshop-machine"><span class="dot dot--ok" aria-hidden="true"></span> ${escapeHtml(name)} (Refurbished)</span>
+            <button class="btn btn-sm btn-workshop-sell" data-sell-workshop-machine="${escapeHtml(m.id)}">Sell ($${sellVal})</button>
+          </div>`;
     }).join('');
-
   } else {
-
-    ownedMachines = `<p style="font-size: var(--text-sm); color: var(--text-dim); margin: 0;">No machines in the workshop. Buy a damaged machine to refurbish.</p>`;
-
+    ownedMachines = `<p class="workshop-empty">No machines in the workshop. Buy a damaged machine to refurbish.</p>`;
   }
-
-
 
   // Hidden until Tier 2: a brand-new player's home screen should be about the
   // core ticket loop, not a side hustle they can't yet judge the value of.
+  // Collapsed to a one-line summary (2026-07-04 home tightening).
+  const readyCount = machinesInWorkshop.filter((m) => m.status === 'repaired').length;
+  const workshopSummary = machinesInWorkshop.length
+    ? `Workshop — ${machinesInWorkshop.length} machine${machinesInWorkshop.length !== 1 ? 's' : ''}${readyCount > 0 ? ` · ${readyCount} ready to sell` : ''}`
+    : `Workshop — buy & flip damaged machines`;
   const workshopSection = state.player.tierUnlocked < 2 ? '' : `
-
-    <div class="panel" style="margin-top: var(--space-sm);">
-
-      <h3 class="panel-label">Refurbishing Workshop</h3>
-
-      
-
-      <div style="margin-bottom: var(--space-sm);">
-
-        <p style="font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin: 0 0 var(--space-xs);">Buy Damaged Machines</p>
-
+    <details class="home-details" data-home-panel="workshop"${homePanels?.workshop ? ' open' : ''}>
+      <summary class="home-details-summary">${workshopSummary}</summary>
+      <div class="home-details-body">
+        <p class="workshop-heading">Buy damaged machines</p>
         ${buyOptions}
-
-      </div>
-
-      
-
-      <div>
-
-        <p style="font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin: 0 0 var(--space-xs);">Your Workshop Inventory</p>
-
+        <p class="workshop-heading">Your workshop inventory</p>
         ${ownedMachines}
-
       </div>
-
-    </div>`;
-
+    </details>`;
 
 
+
+  // The brand block shrinks once the player has fixed anything (2026-07-04):
+  // returning players need the loop above the fold, not the splash.
+  const compactBrand = state.stats.jobsCompleted > 0;
+  const brand = `
+      <div class="game-brand${compactBrand ? ' game-brand--compact' : ''}">
+        ${compactBrand ? '' : '<div class="game-logo" aria-hidden="true">❄</div>'}
+        <h1 class="game-wordmark"><span class="word-cold">Cold</span> <span class="word-call">Call</span></h1>
+        ${compactBrand ? '' : '<p class="game-tagline">Field tech. Frozen tech. Your problem now.</p>'}
+      </div>`;
+
+  // Codex progress on the button itself — the collection goal stays visible.
+  const codexTotal = Object.keys(faults ?? {}).length;
+  const codexMastered = Object.keys(state.codex?.fixes ?? {}).filter((id) => faults && id in faults).length;
+
+  // Home order (2026-07-04): status → notices/offline report → Next ticket →
+  // Callbacks/MotD → prestige banner → workshop summary → Codex → shop/settings.
   return `
     ${statusBar(state)}
     <section class="screen screen-home">
-      <div class="game-brand">
-        <div class="game-logo" aria-hidden="true">❄</div>
-        <h1 class="game-wordmark"><span class="word-cold">Cold</span> <span class="word-call">Call</span></h1>
-        <p class="game-tagline">Field tech. Frozen tech. Your problem now.</p>
-      </div>
+      ${brand}
       <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row` : ''}${bonusCopy}</p>
 
       ${unlockBanner}
       ${corruptBanner}
-      ${offlineBanner}
       ${expiryBanner}
-      ${prestigeSection}
+      ${offlineBanner}
 
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
       ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
+      ${prestigeSection}
       ${workshopSection}
-
-      ${(() => {
-        // Codex progress on the button itself — the collection goal stays visible.
-        const total = Object.keys(faults ?? {}).length;
-        const mastered = Object.keys(state.codex?.fixes ?? {}).filter((id) => faults && id in faults).length;
-        return `<button class="btn" data-action="open-codex">Codex — ${mastered}/${total} mastered</button>`;
-      })()}
+      <button class="btn" data-action="open-codex">Codex — ${codexMastered}/${codexTotal} mastered</button>
       <button class="btn" data-action="open-shop">Upgrades shop</button>
       <button class="btn" data-action="open-settings">Settings</button>
 
@@ -413,32 +373,35 @@ export function callbacksView({ state, faults, clients }) {
       const machineName = raw.charAt(0).toUpperCase() + raw.slice(1);
       const isDue = cb.dueDay <= today;
       const isTech = cb.source === 'tech';
+      const clientName = client ? client.name : escapeHtml(cb.clientId);
 
-      // Timing: due entries show how long the claim window lasts; pending ones
-      // show when the machine comes back so it doesn't read as disappeared.
-      const timing = isDue
-        ? typeof cb.expiryDay === 'string'
+      // Not-yet-due entries collapse to a single line (2026-07-04): they exist
+      // only so a queued callback doesn't seem to vanish — no decisions to make.
+      if (!isDue) {
+        return `
+        <li class="callback-line">
+          ${clientName} · ${escapeHtml(machineName)} · returns ${relativeDayPhrase(today, cb.dueDay)}
+        </li>`;
+      }
+
+      // Due entries keep the full card: rate, claim window, and consequence of
+      // abandoning it — a player obligation costs reputation; an optional tech
+      // rescue expires for free (GDD §3.1).
+      const timing =
+        typeof cb.expiryDay === 'string'
           ? `Due now · expires ${relativeDayPhrase(today, cb.expiryDay)}`
-          : 'Due now'
-        : `Returns ${relativeDayPhrase(today, cb.dueDay)}`;
-
-      // Consequence of abandoning it: a player obligation costs reputation; an
-      // optional tech rescue expires for free (GDD §3.1).
+          : 'Due now';
       const consequence = isTech
         ? 'Optional rescue — expires with no penalty.'
         : `You owe this client — let it expire and lose ${REPUTATION.expiredCallbackRepPenalty} rep.`;
 
-      const action = isDue
-        ? `<button class="btn btn-callback-take" data-take="${index}">Take callback</button>`
-        : `<p class="callback-pending">Not on site yet.</p>`;
-
       return `
-        <li class="callback-card${isDue ? '' : ' callback-card--pending'}">
-          <p class="callback-client">${client ? client.name : escapeHtml(cb.clientId)}</p>
+        <li class="callback-card">
+          <p class="callback-client">${clientName}</p>
           <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceLabel(cb))} · pays ${callbackRatePct(cb.source)}% of net</p>
           <p class="callback-timing">${timing}</p>
           <p class="callback-consequence">${consequence}</p>
-          ${action}
+          <button class="btn btn-callback-take" data-take="${index}">Take callback</button>
         </li>`;
     })
     .join('');
@@ -804,6 +767,17 @@ export function invoiceView({ state, invoice }) {
        </div>`
     : '';
 
+  // Reputation and clean-streak movement on the receipt (2026-07-04): the two
+  // numbers that gate progression moved invisibly before.
+  const repLine =
+    !isWorkshop && typeof invoice.repDelta === 'number' && invoice.repDelta !== 0
+      ? `<div class="receipt-line receipt-line--rep"><span>Reputation</span><span>${invoice.repDelta > 0 ? '+' : '−'}${Math.abs(invoice.repDelta)} rep</span></div>`
+      : '';
+  const streakLine =
+    !isWorkshop && correct && !callback && (invoice.cleanStreak ?? 0) >= 2
+      ? `<div class="receipt-line receipt-line--rep"><span>Clean streak</span><span>${invoice.cleanStreak} in a row</span></div>`
+      : '';
+
   // Codex feedback (GDD §5): a first-time diagnosis and any milestone bonuses
   // are receipt-worthy moments — the collection goal pays off inside the loop.
   const codexInfo = invoice.codex;
@@ -825,6 +799,8 @@ export function invoiceView({ state, invoice }) {
         <div class="receipt-header">— COLD CALL SERVICES —</div>
         <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
         ${lineItems}
+        ${repLine}
+        ${streakLine}
         ${receiptNote}
         ${codexLines}
         ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
@@ -832,7 +808,10 @@ export function invoiceView({ state, invoice }) {
       </div>
       ${learningBlock}
       <div class="invoice-actions">
-        <button class="btn btn-primary" data-action="dismiss-invoice">Done</button>
+        ${isWorkshop
+          ? `<button class="btn btn-primary" data-action="dismiss-invoice">Home</button>`
+          : `<button class="btn btn-primary" data-action="invoice-next-ticket">Next ticket</button>
+             <button class="btn" data-action="dismiss-invoice">Home</button>`}
       </div>
     </section>`;
 }
@@ -845,6 +824,14 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="dismiss-invoice"]').forEach((el) =>
     el.addEventListener('click', actions.dismissInvoice)
   );
+  root.querySelectorAll('[data-action="invoice-next-ticket"]').forEach((el) =>
+    el.addEventListener('click', actions.invoiceNextTicket)
+  );
+  // Remember expand/collapse of home <details> panels across re-renders —
+  // details manages its own display; we only record the state, no re-render.
+  root.querySelectorAll('details[data-home-panel]').forEach((el) =>
+    el.addEventListener('toggle', () => actions.toggleHomePanel(el.dataset.homePanel, el.open))
+  );
   root.querySelectorAll('[data-action="open-shop"]').forEach((el) =>
     el.addEventListener('click', actions.openShop)
   );
@@ -854,21 +841,6 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
     el.addEventListener('click', actions.openSettings)
   );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-
-    el.addEventListener('click', actions.openSettings)
-
-  );
-
   root.querySelectorAll('[data-action="start-motd"]').forEach((el) =>
     el.addEventListener('click', actions.startMotd)
   );

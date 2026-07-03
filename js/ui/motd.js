@@ -41,12 +41,16 @@ function resultView(state, result) {
   // Score line: tests used, then simulated diagnostic minutes (the interruption-safe
   // measure). Legacy results predate simMinutes — show tests only rather than the
   // wall-clock time those saves stored, which no longer counts (GDD §5).
+  // On screen the score is design-system dots + a verdict badge (2026-07-04:
+  // emoji stay in the SHARE TEXT, which keeps the Wordle-style 🔬🔬✅ grid).
   const minutesClause =
     typeof simMinutes === 'number' && Number.isFinite(simMinutes) ? ` · ${simMinutes} min` : '';
-  const emojiRow = '🔬'.repeat(testsUsed) + (solved ? '✅' : '❌');
+  const scoreRow =
+    '<span class="score-dot" aria-hidden="true"></span>'.repeat(testsUsed) +
+    `<span class="badge ${solved ? 'badge--success' : 'badge--warn'}">${solved ? 'Solved' : 'Missed'}</span>`;
 
   const streakLine = solved && streak > 0
-    ? `<p class="motd-streak">${streak > 1 ? `🔥 ${streak} day streak` : '🔥 Streak started'}</p>`
+    ? `<p class="motd-streak">${streak > 1 ? `${streak} day streak` : 'Streak started'}</p>`
     : '';
 
   // Clean-streak / callback-shame flourish (GDD §5).
@@ -54,9 +58,9 @@ function resultView(state, result) {
   const callbackCount = state.jobs.callbacks.length;
   let statsLine = '';
   if (cleanStreak >= 1) {
-    statsLine = `<p class="motd-clean">🧹 ${cleanStreak} clean in a row</p>`;
+    statsLine = `<p class="motd-clean">${cleanStreak} clean in a row</p>`;
   } else if (callbackCount > 0) {
-    statsLine = `<p class="motd-shame">⚠️ ${callbackCount} callback${callbackCount !== 1 ? 's' : ''} waiting</p>`;
+    statsLine = `<p class="motd-shame">${callbackCount} callback${callbackCount !== 1 ? 's' : ''} waiting</p>`;
   }
 
   const flavourLine = solved
@@ -68,14 +72,14 @@ function resultView(state, result) {
     <section class="screen screen-motd-result ${solved ? 'motd-good' : 'motd-bad'}">
       <div class="motd-card">
         <p class="motd-label">Machine of the Day · Day ${dayNumber}</p>
-        <p class="motd-emoji">${emojiRow}</p>
+        <p class="motd-emoji">${scoreRow}</p>
         <h2 class="motd-verdict">${solved ? 'Fixed it!' : 'Stumped.'}</h2>
         <p class="motd-score">${testsUsed} test${testsUsed !== 1 ? 's' : ''}${minutesClause}</p>
         ${streakLine}
         ${statsLine}
         ${flavourLine}
       </div>
-      <button class="btn btn-primary" data-action="share-motd">📋 Copy result</button>
+      <button class="btn btn-primary" data-action="share-motd">Copy result</button>
       <button class="btn" data-action="dismiss-motd">Back</button>
     </section>`;
 }

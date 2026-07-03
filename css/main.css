@@ -156,6 +156,29 @@ body {
 .badge--warn    { color: var(--warn);    background: color-mix(in srgb, var(--warn)    15%, transparent); }
 .badge--success { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
 
+/* ── Component: status dot (replaces emoji-as-UI, 2026-07-04) ── */
+.dot {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--text-dim);
+  vertical-align: baseline;
+}
+.dot--ok   { background: var(--success); box-shadow: 0 0 4px color-mix(in srgb, var(--success) 60%, transparent); }
+.dot--warn { background: var(--warn);    box-shadow: 0 0 4px color-mix(in srgb, var(--warn) 60%, transparent); }
+
+/* MotD score dots: one per test used, sized up for the result card. */
+.score-dot {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 0.3em;
+  vertical-align: middle;
+}
+
 /* ── Component: art slot (frame for future machine sprites) ──── */
 .art-slot {
   width: 100%;
@@ -509,6 +532,71 @@ body {
   margin: var(--space-xs) 0 0;
 }
 
+/* Returning players get the loop above the fold: the brand shrinks to a
+ * one-line wordmark once anything has been fixed (2026-07-04). */
+.game-brand--compact {
+  padding: var(--space-sm) 0 0;
+}
+.game-brand--compact .game-wordmark {
+  font-size: var(--text-xl);
+}
+
+/* ── Home: collapsible panels (prestige, workshop) ───────────── */
+.home-details {
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.home-details-summary {
+  cursor: pointer;
+  padding: var(--space-sm) var(--space);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  list-style-position: inside;
+}
+.home-details-summary:hover { color: var(--accent); }
+.home-details--prestige .home-details-summary { color: var(--amber); }
+.home-details-body {
+  padding: 0 var(--space) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.btn-prestige {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.prestige-numbers {
+  margin: 0 0 var(--space-xs);
+  list-style: none;
+  padding-left: 0;
+}
+
+/* Workshop rows inside the collapsed panel. */
+.workshop-heading {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: var(--space-xs) 0 0;
+}
+.workshop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+}
+.workshop-machine { display: inline-flex; align-items: center; gap: 0.4em; }
+.workshop-empty {
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  margin: 0;
+}
+.btn-workshop-sell {
+  border-color: var(--success);
+  color: var(--success);
+}
+
 .home-unlock,
 .invoice-unlock {
   margin: 0;
@@ -630,16 +718,15 @@ body {
   color: var(--text-dim);
 }
 
-/* Not-yet-due callbacks are visibly queued but inert — dimmed, no Take button. */
-.callback-card--pending {
-  opacity: 0.7;
-}
-
-.callback-pending {
-  margin: 0;
+/* Not-yet-due callbacks collapse to a single dim line (2026-07-04): they are
+ * queued but inert — nothing to decide until they come due. */
+.callback-line {
+  padding: var(--space-xs) var(--space);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--text-dim);
-  font-style: italic;
+  opacity: 0.8;
 }
 
 .callbacks-empty {
@@ -1553,5 +1640,28 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-lg);
     align-items: center;
+  }
+
+  /* Non-job screens stay a centered ~480px column (2026-07-04): lists of
+   * buttons and cards read badly stretched to 900px. The two-column job and
+   * repair screens keep the full width, including their status bar. */
+  .screen-home,
+  .screen-callbacks,
+  .screen-shop,
+  .screen-codex,
+  .screen-motd-result,
+  .screen-invoice {
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+  .status-bar {
+    max-width: 480px;
+    margin-inline: auto;
+    width: 100%;
+  }
+  #app:has(.screen-job) .status-bar,
+  #app:has(.screen-repair) .status-bar {
+    max-width: none;
   }
 }
