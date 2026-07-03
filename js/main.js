@@ -3,7 +3,7 @@
 import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyTool, claimCallback, expireCallbacks, restockVan, hireTech, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
+import { buyLadderItem, claimCallback, expireCallbacks, restockVan, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
@@ -176,22 +176,16 @@ const actions = {
     screen = 'home';
     render();
   },
-  buyTool(toolId) {
-    const { ok, reason } = buyTool(state, toolId);
+  buyLadderItem(itemId) {
+    const { ok, reason } = buyLadderItem(state, itemId);
     if (ok) save(state);
-    else console.warn(`Cold Call: tool not bought: ${reason}`);
+    else console.warn(`Cold Call: not bought: ${reason}`);
     render();
   },
   restockVan() {
     const { ok, reason } = restockVan(state);
     if (ok) save(state);
     else console.warn(`Cold Call: van not restocked: ${reason}`);
-    render();
-  },
-  hireTech() {
-    const { ok, reason } = hireTech(state);
-    if (ok) save(state);
-    else console.warn(`Cold Call: tech not hired: ${reason}`);
     render();
   },
   sellBusiness() {

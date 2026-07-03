@@ -1,6 +1,6 @@
 /** @file Techs, contract routes, and deterministic offline-progress simulation from lastSeen. */
 
-import { TECHS, OFFLINE, JOBS } from '../config/balance.js';
+import { TECHS, OFFLINE, JOBS, ROUTES } from '../config/balance.js';
 import { mulberry32 } from './rng.js';
 import { utcDateStringAfter } from './economy.js';
 
@@ -54,10 +54,15 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
   const extraJobs = totalJobs % activeTechs.length;
 
   for (const [techIndex, { tech, route }] of activeTechs.entries()) {
-    // Tier-appropriate faults for the route's client tier — pick from tier 2
-    // (the only contract route at launch). Falling back to all faults is safe.
-    const routeFaults = Object.values(faults).filter((f) => f.tier === 2);
+    // Tier-appropriate faults and pay for the route's client tier (ROUTES in
+    // balance.js). Unknown route ids (old saves) fall back to tier 2 — the
+    // launch behaviour. Falling back to all faults is safe.
+    const routeTier = ROUTES[route.id]?.tier ?? 2;
+    const routeFaults = Object.values(faults).filter((f) => f.tier === routeTier);
     const faultPool = routeFaults.length > 0 ? routeFaults : Object.values(faults);
+    const perJob = TECHS.routeEarningsPerJob[routeTier] ?? TECHS.earningsPerJob;
+    // Trained techs botch fewer jobs (2026-07-04 purchase ladder).
+    const successRate = TECHS.successRateBySkill[tech.skill] ?? TECHS.baseSuccessRate;
 
     const jobs = baseJobs + (techIndex < extraJobs ? 1 : 0);
     // Seed on tech id + lastSeen so the same offline period always produces the
@@ -68,8 +73,8 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
     let techCallbacks = 0;
 
     for (let i = 0; i < jobs; i++) {
-      if (prng() < TECHS.baseSuccessRate) {
-        techEarned += TECHS.earningsPerJob;
+      if (prng() < successRate) {
+        techEarned += perJob;
         jobsDone++;
       } else {
         // Failed job: pick a random fault and queue a tech-caused (rescue)

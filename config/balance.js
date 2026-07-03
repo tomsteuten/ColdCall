@@ -102,16 +102,58 @@ export const REPUTATION = {
 export const TECHS = {
   firstHireCost: 2000,
   dailyWage: 300,       // tracked in balance.js for v1.x; not yet deducted at runtime
-  earningsPerJob: 50,
+  earningsPerJob: 50,   // legacy fallback; per-route values in routeEarningsPerJob
   baseSuccessRate: 0.75,
+  // Success rate by tech skill level (2026-07-04 purchase ladder). Skill 2 is
+  // bought via trainingCost below. Even both techs at skill 2 on the best
+  // routes must stay below active $/min — pinned by an economy test.
+  successRateBySkill: { 1: 0.75, 2: 0.9 },
+  trainingCost: 4000,
+  maxSkill: 2,
+  // What a tech earns per successful idle job, by the route's client tier.
+  // Kept well under ~60% of the tier's average fresh-ticket net (GDD §3.1).
+  routeEarningsPerJob: { 2: 50, 3: 70 },
   jobsPerHour: 2,       // idle jobs completed per tech per hour on a route
   maxTechs: 2,          // GDD §9 v1.0 cap
+};
+
+/**
+ * Contract routes (GDD §3.1). Burgertown is included with the first hire;
+ * later routes are purchase-ladder items. `tier` drives both the fault pool a
+ * tech draws from and their per-job earnings (TECHS.routeEarningsPerJob).
+ */
+export const ROUTES = {
+  'burgertown-south': {
+    name: 'Burgertown South Side',
+    clientId: 'burgertown-high-st',
+    tier: 2,
+    cost: 0, // included with the first tech hire
+    tierRequired: 2,
+  },
+  'froyo-strip': {
+    name: 'Froyo Strip — Yo-Go cluster',
+    clientId: 'yo-go-froyo',
+    tier: 3,
+    cost: 6000,
+    tierRequired: 3,
+  },
 };
 
 /** Tool upgrade costs. Tools unlock test types, they don't just inflate numbers. */
 export const TOOLS = {
   multimeterTier2Cost: 1500,
+  // Tier 3 deepens diagnosis (GDD §3.3): the meter definitively rules out one
+  // wrong fix option on every non-MotD job (MotD stays tool-fair, GDD §5).
+  multimeterTier3Cost: 12000,
   thermalCameraCost: 8000,
+};
+
+/** Van slot upgrades (2026-07-04 purchase ladder). Bought in order. */
+export const VAN = {
+  slotUpgrades: [
+    { slots: 6, cost: 2500 },
+    { slots: 8, cost: 9000 },
+  ],
 };
 
 /** Offline progress caps in hours (GDD §3.2). Simulated on load, never ticked. */

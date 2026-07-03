@@ -12,6 +12,7 @@ import {
   shuffled,
   fixLabel,
   jobSymptoms,
+  eliminatedFix,
 } from '../js/diagnosis.js';
 import { mulberry32 } from '../js/rng.js';
 
@@ -427,4 +428,30 @@ test('an out-of-range saved variant falls back to base symptoms, never breaks th
   state.jobs.active.variant = 9; // a save can reference a variant the library dropped
   assertEqual(jobSymptoms(state.jobs.active, VFAULTS), ['Base symptom.']);
   assertEqual(testResult(state.jobs.active, 'temp-probe', VFAULTS), 'Base probe result.');
+});
+
+// --- Multimeter Tier 3: rules out one wrong fix (2026-07-04 purchase ladder) ---
+
+test('eliminatedFix names one of the wrong fixes at meter tier 3, never the correct one', () => {
+  const state = freshJobState();
+  state.tools.multimeterTier = 3;
+  const out = eliminatedFix(state, state.jobs.active, FAULTS);
+  assert(['wrong-a', 'wrong-b'].includes(out), `must rule out a wrong fix, got ${out}`);
+});
+
+test('eliminatedFix is deterministic per job — a refresh never re-rolls it', () => {
+  const state = freshJobState();
+  state.tools.multimeterTier = 3;
+  const first = eliminatedFix(state, state.jobs.active, FAULTS);
+  for (let i = 0; i < 5; i++) {
+    assertEqual(eliminatedFix(state, state.jobs.active, FAULTS), first);
+  }
+});
+
+test('eliminatedFix is null below meter tier 3 and on MotD jobs (tool-fair puzzle)', () => {
+  const state = freshJobState();
+  assertEqual(eliminatedFix(state, state.jobs.active, FAULTS), null, 'tier 1 meter reveals nothing');
+  state.tools.multimeterTier = 3;
+  state.jobs.active.motd = true;
+  assertEqual(eliminatedFix(state, state.jobs.active, FAULTS), null, 'MotD must stay tool-fair');
 });

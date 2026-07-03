@@ -432,6 +432,20 @@ body {
 .btn-buy            { border-color: var(--accent); text-align: center; }
 .btn-callback-take  { border-color: var(--accent); text-align: center; }
 .btn-fix            { border-color: var(--accent); }
+/* A fix option the Tier 3 meter definitively ruled out: visible but dead. */
+.btn-fix--eliminated {
+  border-color: color-mix(in srgb, var(--text-dim) 30%, transparent);
+  color: var(--text-dim);
+  opacity: 0.65;
+}
+.fix-eliminated-note {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.15em;
+}
 .btn-test           { width: 100%; }
 
 .btn-sm {
@@ -990,6 +1004,19 @@ body {
 }
 
 .shop-card-owned { opacity: 0.6; }
+.shop-card-locked { opacity: 0.75; }
+
+/* Purchase-ladder row affordances: owned check and locked-item price tag. */
+.ladder-owned {
+  color: var(--success);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.ladder-cost {
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
 
 .shop-tool-name {
   margin: 0;

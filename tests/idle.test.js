@@ -265,3 +265,68 @@ test('two-tech carry: short absences equal one combined absence', () => {
     'aggregate carry should also match'
   );
 });
+
+// --- Phase 2 (2026-07-04): tech skill and route tier drive the simulation ---
+
+test('a skill-2 tech succeeds at the trained rate and out-earns skill 1 (deterministically)', () => {
+  const faults = makeFaults();
+  const run = (skill) => {
+    const { state, now } = stateWithTech(8 * HOUR_MS);
+    state.techs[0].skill = skill;
+    return { report: simulateOfflineProgress(state, faults, now), state };
+  };
+  const s1 = run(1);
+  const s2 = run(2);
+  // Same seed (same tech id + lastSeen offset applied to the same now delta):
+  // the trained tech can never do worse, and over 16 jobs at 75% vs 90% should
+  // strictly earn more.
+  assert(
+    s2.report.totalEarned > s1.report.totalEarned,
+    `skill 2 (${s2.report.totalEarned}) must out-earn skill 1 (${s1.report.totalEarned}) over 8h`
+  );
+  assert(
+    s2.report.callbacksAdded <= s1.report.callbacksAdded,
+    'a trained tech botches no more jobs than an untrained one on the same draw'
+  );
+});
+
+test('a tech on the tier-3 route earns the tier-3 rate and draws tier-3 faults', () => {
+  const faults = makeFaults();
+  faults['froyo-thermistor-drift'] = {
+    id: 'froyo-thermistor-drift',
+    machineType: 'froyo-multihead',
+    tier: 3,
+    symptoms: [],
+    tests: {},
+    correctFix: 'replace-thermistor',
+    wrongFixes: ['replace-controller'],
+    payout: 220,
+    partsCost: 40,
+    flavour: 'Done.',
+  };
+  const { state, now } = stateWithTech(8 * HOUR_MS);
+  state.routes = [{ id: 'froyo-strip', clientId: 'yo-go-froyo' }];
+  state.techs[0].routeId = 'froyo-strip';
+  const report = simulateOfflineProgress(state, faults, now);
+  assert(report, 'simulation should run');
+  const perJob = TECHS.routeEarningsPerJob[3];
+  assertEqual(
+    report.totalEarned % perJob,
+    0,
+    `tier-3 route earnings should be multiples of $${perJob}, got $${report.totalEarned}`
+  );
+  for (const cb of state.jobs.callbacks) {
+    assertEqual(cb.faultId, 'froyo-thermistor-drift', 'rescues come from the tier-3 pool');
+    assertEqual(cb.clientId, 'yo-go-froyo', 'rescues belong to the route client');
+  }
+});
+
+test('an unknown route id in an old save falls back to the launch tier-2 behaviour', () => {
+  const faults = makeFaults();
+  const { state, now } = stateWithTech(4 * HOUR_MS);
+  state.routes = [{ id: 'some-retired-route', clientId: 'burgertown-high-st' }];
+  state.techs[0].routeId = 'some-retired-route';
+  const report = simulateOfflineProgress(state, faults, now);
+  assert(report, 'simulation should still run');
+  assertEqual(report.totalEarned % TECHS.routeEarningsPerJob[2], 0, 'paid at the tier-2 rate');
+});

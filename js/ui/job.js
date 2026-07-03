@@ -3,7 +3,7 @@
  * all mutations happen in the actions passed in from main.js.
  */
 
-import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms } from '../diagnosis.js';
+import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
@@ -494,8 +494,16 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
   const firstJob = isFirstJobOnboarding(state);
+  // Multimeter Tier 3 definitively rules out one wrong option (GDD §3.3 —
+  // tools deepen diagnosis). Rendered struck-through, not hidden: seeing WHAT
+  // was ruled out is itself evidence.
+  const ruledOut = eliminatedFix(state, job, faults);
   const fixButtons = job.fixOptions
-    .map((id) => `<button class="btn btn-fix" data-fix="${escapeHtml(id)}" ${outOfParts ? 'disabled' : ''}>${escapeHtml(fixLabel(id))}</button>`)
+    .map((id) =>
+      id === ruledOut
+        ? `<button class="btn btn-fix btn-fix--eliminated" disabled><s>${escapeHtml(fixLabel(id))}</s><span class="fix-eliminated-note">Meter ruled this out</span></button>`
+        : `<button class="btn btn-fix" data-fix="${escapeHtml(id)}" ${outOfParts ? 'disabled' : ''}>${escapeHtml(fixLabel(id))}</button>`
+    )
     .join('');
   const pendingFixLabel = pendingFirstFixId ? escapeHtml(fixLabel(pendingFirstFixId)) : '';
 

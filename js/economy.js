@@ -1,6 +1,6 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP, VAN, ROUTES } from '../config/balance.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -238,6 +238,17 @@ export const TOOL_CATALOGUE = {
       state.tools.multimeterTier = 2;
     },
   },
+  'multimeter-tier-3': {
+    name: 'Multimeter Tier 3',
+    blurb: 'Lab-grade meter. Definitively rules out one wrong fix option on every job.',
+    cost: TOOLS.multimeterTier3Cost,
+    owned: (state) => state.tools.multimeterTier >= 3,
+    // Tools are a ladder: no skipping straight to tier 3.
+    locked: (state) => (state.tools.multimeterTier < 2 ? 'Buy Multimeter Tier 2 first' : null),
+    apply: (state) => {
+      state.tools.multimeterTier = 3;
+    },
+  },
 };
 
 /**
@@ -256,13 +267,15 @@ export function restockVan(state) {
   return { ok: true, reason: null };
 }
 
-// The single contract route available at launch (GDD §9 v1.0: one route).
-const BURGERTOWN_ROUTE = { id: 'burgertown-south', clientId: 'burgertown-high-st' };
+// The route included with the first hire (GDD §3.1); later routes are bought.
+const BURGERTOWN_ROUTE_ID = 'burgertown-south';
 const TECH_NAMES = ['Dave', 'Mike'];
 
 /**
- * Hire a tech. Deducts the hire cost, creates the tech, and if tier 2 is
- * unlocked creates (or reuses) the Burgertown route and assigns the tech to it.
+ * Hire a tech. Deducts the hire cost, creates the tech, ensures the included
+ * Burgertown route exists, and assigns the hire to the owned route with the
+ * fewest techs (ties go to the earliest-contracted route) so coverage spreads
+ * across purchased routes without an assignment UI.
  * Refuses if unaffordable, already at max techs, or tier 2 not yet unlocked.
  * @param {object} state game state (mutated on success)
  * @param {number} [now] ms epoch, injectable for tests
@@ -275,17 +288,23 @@ export function hireTech(state, now = Date.now()) {
 
   state.player.cash -= TECHS.firstHireCost;
 
-  // Ensure the contract route exists.
-  if (!state.routes.find((r) => r.id === BURGERTOWN_ROUTE.id)) {
-    state.routes.push({ ...BURGERTOWN_ROUTE });
+  // Ensure the included contract route exists.
+  if (!state.routes.find((r) => r.id === BURGERTOWN_ROUTE_ID)) {
+    state.routes.push({ id: BURGERTOWN_ROUTE_ID, clientId: ROUTES[BURGERTOWN_ROUTE_ID].clientId });
   }
+
+  // Least-covered owned route gets the new hire.
+  const byLoad = state.routes
+    .map((r) => ({ r, load: state.techs.filter((t) => t.routeId === r.id).length }))
+    .sort((a, b) => a.load - b.load);
+  const routeId = byLoad[0].r.id;
 
   const name = TECH_NAMES[state.techs.length] ?? `Tech ${state.techs.length + 1}`;
   state.techs.push({
     id: `tech-${state.techs.length + 1}`,
     name,
     skill: 1,
-    routeId: BURGERTOWN_ROUTE.id,
+    routeId,
     hiredAt: now,
   });
 
@@ -304,10 +323,207 @@ export function buyTool(state, toolId) {
   const tool = TOOL_CATALOGUE[toolId];
   if (!tool) throw new Error(`Unknown tool id "${toolId}"`);
   if (tool.owned(state)) return { ok: false, reason: 'Already owned' };
+  const lockReason = tool.locked ? tool.locked(state) : null;
+  if (lockReason) return { ok: false, reason: lockReason };
   if (state.player.cash < tool.cost) return { ok: false, reason: 'Not enough cash' };
   state.player.cash -= tool.cost;
   tool.apply(state);
   return { ok: true, reason: null };
+}
+
+/**
+ * Buy the next van slot upgrade (VAN.slotUpgrades, in order). Stock is not
+ * granted — the free restock fills to the new capacity between jobs.
+ * @param {object} state game state (mutated on success)
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function upgradeVan(state) {
+  const next = VAN.slotUpgrades.find((u) => u.slots > state.van.slots);
+  if (!next) return { ok: false, reason: 'Van already at maximum slots' };
+  if (state.player.cash < next.cost) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= next.cost;
+  state.van.slots = next.slots;
+  return { ok: true, reason: null };
+}
+
+/**
+ * Train a tech to the next skill level (raises idle success rate per
+ * TECHS.successRateBySkill). One level per purchase, capped at TECHS.maxSkill.
+ * @param {object} state game state (mutated on success)
+ * @param {string} techId
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function trainTech(state, techId) {
+  const tech = state.techs.find((t) => t.id === techId);
+  if (!tech) return { ok: false, reason: 'No such tech' };
+  if (tech.skill >= TECHS.maxSkill) return { ok: false, reason: 'Already fully trained' };
+  if (state.player.cash < TECHS.trainingCost) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= TECHS.trainingCost;
+  tech.skill += 1;
+  return { ok: true, reason: null };
+}
+
+/**
+ * Buy a contract route from ROUTES (balance.js). On purchase, techs are
+ * re-spread so every owned route gets coverage: the newest tech moves onto the
+ * new route if the old one had more than one tech on it. Deterministic and
+ * legible — the shop staff list shows who works where.
+ * @param {object} state game state (mutated on success)
+ * @param {string} routeId key in ROUTES
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function buyRoute(state, routeId) {
+  const info = ROUTES[routeId];
+  if (!info) return { ok: false, reason: 'Unknown route' };
+  if (state.routes.some((r) => r.id === routeId)) return { ok: false, reason: 'Already contracted' };
+  if (state.player.tierUnlocked < info.tierRequired) {
+    return { ok: false, reason: `Unlock Tier ${info.tierRequired} first` };
+  }
+  if (state.player.cash < info.cost) return { ok: false, reason: 'Not enough cash' };
+  state.player.cash -= info.cost;
+  state.routes.push({ id: routeId, clientId: info.clientId });
+  // Re-spread: move the newest tech here if any route holds 2+ techs.
+  const crowded = state.techs.filter((t, _, all) =>
+    all.filter((o) => o.routeId === t.routeId).length > 1
+  );
+  if (crowded.length > 0) crowded[crowded.length - 1].routeId = routeId;
+  return { ok: true, reason: null };
+}
+
+/**
+ * The purchase ladder (2026-07-04): every buyable, cheapest first, so the shop
+ * can always show what's next — including locked items and their unlock
+ * conditions. Pure over state; each row's `buy` key maps to buyLadderItem.
+ * Costs all come from config/balance.js.
+ * @param {object} state
+ * @returns {Array<{id: string, name: string, detail: string, cost: number, owned: boolean, lockReason: string|null}>}
+ */
+export function purchaseLadder(state) {
+  const tech = (i) => state.techs[i] ?? null;
+  const techName = (i, fallback) => (tech(i) ? tech(i).name : fallback);
+  const successPct = (skill) => Math.round((TECHS.successRateBySkill[skill] ?? TECHS.baseSuccessRate) * 100);
+  const froyo = ROUTES['froyo-strip'];
+  const [van6, van8] = VAN.slotUpgrades;
+  const rows = [
+    {
+      id: 'multimeter-tier-2',
+      name: 'Multimeter Tier 2',
+      detail: TOOL_CATALOGUE['multimeter-tier-2'].blurb,
+      cost: TOOLS.multimeterTier2Cost,
+      owned: state.tools.multimeterTier >= 2,
+      lockReason: null,
+    },
+    {
+      id: 'hire-tech-1',
+      name: 'Hire a tech',
+      detail: `Works your contract route while you're away (${successPct(1)}% success).`,
+      cost: TECHS.firstHireCost,
+      owned: state.techs.length >= 1,
+      lockReason: state.player.tierUnlocked < 2 ? `Unlock Tier 2 first (rep ${REPUTATION.tierThresholds[2]})` : null,
+    },
+    {
+      id: 'hire-tech-2',
+      name: 'Hire a second tech',
+      detail: 'Doubles idle coverage across your routes.',
+      cost: TECHS.firstHireCost,
+      owned: state.techs.length >= 2,
+      lockReason:
+        state.player.tierUnlocked < 2
+          ? `Unlock Tier 2 first (rep ${REPUTATION.tierThresholds[2]})`
+          : state.techs.length < 1
+            ? 'Hire your first tech first'
+            : null,
+    },
+    {
+      id: 'van-slots-6',
+      name: `Van racking — ${van6.slots} slots`,
+      detail: 'Fewer restock runs between jobs.',
+      cost: van6.cost,
+      owned: state.van.slots >= van6.slots,
+      lockReason: null,
+    },
+    {
+      id: 'train-tech-1',
+      name: `Train ${techName(0, 'your first tech')} — skill 2`,
+      detail: `Success rate ${successPct(1)}% → ${successPct(2)}%: fewer botched idle jobs.`,
+      cost: TECHS.trainingCost,
+      owned: (tech(0)?.skill ?? 1) >= TECHS.maxSkill,
+      lockReason: tech(0) ? null : 'Hire a tech first',
+    },
+    {
+      id: 'train-tech-2',
+      name: `Train ${techName(1, 'your second tech')} — skill 2`,
+      detail: `Success rate ${successPct(1)}% → ${successPct(2)}%: fewer botched idle jobs.`,
+      cost: TECHS.trainingCost,
+      owned: (tech(1)?.skill ?? 1) >= TECHS.maxSkill,
+      lockReason: tech(1) ? null : 'Hire a second tech first',
+    },
+    {
+      id: 'route-froyo-strip',
+      name: `Contract: ${froyo.name}`,
+      detail: `Tier ${froyo.tier} route — techs assigned there earn $${TECHS.routeEarningsPerJob[froyo.tier]}/job.`,
+      cost: froyo.cost,
+      owned: state.routes.some((r) => r.id === 'froyo-strip'),
+      lockReason:
+        state.player.tierUnlocked < froyo.tierRequired
+          ? `Unlock Tier ${froyo.tierRequired} first (rep ${REPUTATION.tierThresholds[froyo.tierRequired]})`
+          : null,
+    },
+    {
+      id: 'van-slots-8',
+      name: `Van racking — ${van8.slots} slots`,
+      detail: 'A full day of parts on board.',
+      cost: van8.cost,
+      owned: state.van.slots >= van8.slots,
+      lockReason: state.van.slots < van6.slots ? `Buy the ${van6.slots}-slot racking first` : null,
+    },
+    {
+      id: 'multimeter-tier-3',
+      name: 'Multimeter Tier 3',
+      detail: TOOL_CATALOGUE['multimeter-tier-3'].blurb,
+      cost: TOOLS.multimeterTier3Cost,
+      owned: state.tools.multimeterTier >= 3,
+      lockReason: TOOL_CATALOGUE['multimeter-tier-3'].locked(state),
+    },
+  ];
+  return rows;
+}
+
+/**
+ * Buy a purchase-ladder row by id — dispatches to the specific purchase
+ * function. Unknown ids throw (programmer error, not player state).
+ * @param {object} state game state (mutated on success)
+ * @param {string} id ladder row id
+ * @param {number} [now] ms epoch, injectable for tests (tech hire timestamps)
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function buyLadderItem(state, id, now = Date.now()) {
+  switch (id) {
+    case 'multimeter-tier-2':
+    case 'multimeter-tier-3':
+      return buyTool(state, id);
+    case 'hire-tech-1':
+    case 'hire-tech-2':
+      return hireTech(state, now);
+    case 'van-slots-6':
+    case 'van-slots-8': {
+      // upgradeVan buys the NEXT tier; refuse a skip so the row is honest.
+      const want = id === 'van-slots-6' ? VAN.slotUpgrades[0].slots : VAN.slotUpgrades[1].slots;
+      const next = VAN.slotUpgrades.find((u) => u.slots > state.van.slots);
+      if (!next || next.slots !== want) {
+        return { ok: false, reason: next ? `Buy the ${next.slots}-slot racking first` : 'Van already at maximum slots' };
+      }
+      return upgradeVan(state);
+    }
+    case 'train-tech-1':
+      return state.techs[0] ? trainTech(state, state.techs[0].id) : { ok: false, reason: 'Hire a tech first' };
+    case 'train-tech-2':
+      return state.techs[1] ? trainTech(state, state.techs[1].id) : { ok: false, reason: 'Hire a second tech first' };
+    case 'route-froyo-strip':
+      return buyRoute(state, 'froyo-strip');
+    default:
+      throw new Error(`Unknown ladder item "${id}"`);
+  }
 }
 
 // Buyable refurb machines. Prices and the rule-5 margin rationale live in

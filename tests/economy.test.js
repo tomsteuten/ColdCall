@@ -1,7 +1,7 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, VAN, ROUTES } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
@@ -17,6 +17,12 @@ import {
   WORKSHOP_MACHINES,
   buyWorkshopMachine,
   sellWorkshopMachine,
+  upgradeVan,
+  trainTech,
+  buyRoute,
+  hireTech,
+  purchaseLadder,
+  buyLadderItem,
 } from '../js/economy.js';
 
 function makeFault() {
@@ -701,3 +707,153 @@ test('buyWorkshopMachine deducts cash, respects tier locks and affordability', (
 });
 
 
+
+// --- Phase 2 purchase ladder (2026-07-04) ---
+
+test('upgradeVan buys slot tiers in order at balance.js prices', () => {
+  const state = defaultState(); // 4 slots
+  state.player.cash = VAN.slotUpgrades[0].cost + VAN.slotUpgrades[1].cost;
+  assert(upgradeVan(state).ok, 'first upgrade should succeed');
+  assertEqual(state.van.slots, VAN.slotUpgrades[0].slots);
+  assert(upgradeVan(state).ok, 'second upgrade should succeed');
+  assertEqual(state.van.slots, VAN.slotUpgrades[1].slots);
+  assertEqual(state.player.cash, 0, 'exactly the two balance.js prices were charged');
+  const done = upgradeVan(state);
+  assert(!done.ok, 'no third upgrade exists');
+});
+
+test('upgradeVan refuses when unaffordable and mutates nothing', () => {
+  const state = defaultState();
+  state.player.cash = VAN.slotUpgrades[0].cost - 1;
+  assert(!upgradeVan(state).ok);
+  assertEqual(state.van.slots, STARTING.vanSlots);
+  assertEqual(state.player.cash, VAN.slotUpgrades[0].cost - 1);
+});
+
+test('buyLadderItem refuses skipping straight to the 8-slot van', () => {
+  const state = defaultState();
+  state.player.cash = 1e6;
+  const skip = buyLadderItem(state, 'van-slots-8');
+  assert(!skip.ok, 'must buy the 6-slot racking first');
+  assertEqual(state.van.slots, STARTING.vanSlots);
+  assert(buyLadderItem(state, 'van-slots-6').ok);
+  assert(buyLadderItem(state, 'van-slots-8').ok);
+  assertEqual(state.van.slots, VAN.slotUpgrades[1].slots);
+});
+
+test('trainTech raises skill to 2 for the balance.js price, capped at maxSkill', () => {
+  const state = defaultState();
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: 0 });
+  state.player.cash = TECHS.trainingCost;
+  assert(trainTech(state, 'tech-1').ok);
+  assertEqual(state.techs[0].skill, 2);
+  assertEqual(state.player.cash, 0);
+  state.player.cash = TECHS.trainingCost;
+  assert(!trainTech(state, 'tech-1').ok, 'already at maxSkill');
+  assert(!trainTech(state, 'nobody').ok, 'unknown tech refused');
+  assertEqual(state.player.cash, TECHS.trainingCost, 'refusals never charge');
+});
+
+test('buyRoute gates on tier, charges the balance.js price, refuses double-buys', () => {
+  const state = defaultState();
+  state.player.cash = ROUTES['froyo-strip'].cost * 2;
+  const locked = buyRoute(state, 'froyo-strip');
+  assert(!locked.ok, 'tier 3 route must be locked at tier 1');
+  state.player.tierUnlocked = 3;
+  assert(buyRoute(state, 'froyo-strip').ok);
+  assertEqual(state.routes.map((r) => r.id), ['froyo-strip']);
+  assertEqual(state.player.cash, ROUTES['froyo-strip'].cost);
+  assert(!buyRoute(state, 'froyo-strip').ok, 'already contracted');
+  assert(!buyRoute(state, 'route-66').ok, 'unknown route refused');
+});
+
+test('buyRoute moves the newest tech onto the new route when a route is crowded', () => {
+  const state = defaultState();
+  state.player.tierUnlocked = 3;
+  state.player.cash = ROUTES['froyo-strip'].cost;
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: 0 });
+  state.techs.push({ id: 'tech-2', name: 'Mike', skill: 1, routeId: 'burgertown-south', hiredAt: 1 });
+  assert(buyRoute(state, 'froyo-strip').ok);
+  assertEqual(state.techs[0].routeId, 'burgertown-south', 'Dave stays');
+  assertEqual(state.techs[1].routeId, 'froyo-strip', 'newest tech covers the new route');
+});
+
+test('hireTech assigns the new hire to the least-covered owned route', () => {
+  const state = defaultState();
+  state.player.tierUnlocked = 3;
+  state.player.cash = TECHS.firstHireCost * 2 + ROUTES['froyo-strip'].cost;
+  assert(hireTech(state).ok, 'first hire');
+  assertEqual(state.techs[0].routeId, 'burgertown-south', 'first hire creates + takes Burgertown');
+  assert(buyRoute(state, 'froyo-strip').ok, 'buy the empty second route');
+  assert(hireTech(state).ok, 'second hire');
+  assertEqual(state.techs[1].routeId, 'froyo-strip', 'second hire covers the empty route');
+});
+
+test('multimeter tier 3 requires tier 2 first, then upgrades', () => {
+  const state = defaultState();
+  state.player.cash = TOOLS.multimeterTier3Cost + TOOLS.multimeterTier2Cost;
+  const locked = buyTool(state, 'multimeter-tier-3');
+  assert(!locked.ok, 'tier 3 must be locked before tier 2');
+  assert(locked.reason.includes('Tier 2'), locked.reason);
+  assert(buyTool(state, 'multimeter-tier-2').ok);
+  assert(buyTool(state, 'multimeter-tier-3').ok);
+  assertEqual(state.tools.multimeterTier, 3);
+  assertEqual(state.player.cash, 0);
+});
+
+test('purchaseLadder lists every rung cheapest-first with lock reasons visible', () => {
+  const state = defaultState(); // fresh: tier 1, $500, no techs
+  const ladder = purchaseLadder(state);
+  assert(ladder.length >= 9, `expected >= 9 rungs, got ${ladder.length}`);
+  for (let i = 1; i < ladder.length; i++) {
+    assert(ladder[i].cost >= ladder[i - 1].cost, 'ladder must be sorted cheapest-first');
+  }
+  for (const row of ladder) {
+    assert(typeof row.cost === 'number' && row.cost > 0, `${row.id} needs a cost`);
+    assert(row.name && row.detail, `${row.id} needs player-facing copy`);
+  }
+  // A fresh save sees the locked items WITH their unlock conditions.
+  const hire = ladder.find((r) => r.id === 'hire-tech-1');
+  assert(hire.lockReason && hire.lockReason.includes('Tier 2'), 'hire shows its unlock condition');
+  const route = ladder.find((r) => r.id === 'route-froyo-strip');
+  assert(route.lockReason && route.lockReason.includes('Tier 3'), 'route shows its unlock condition');
+  // There is always a next goal: at least one rung not owned.
+  assert(ladder.some((r) => !r.owned), 'a fresh save has goals');
+});
+
+test('the ladder always offers a next goal within reach until ~$30k lifetime', () => {
+  // Wanting-engine check: at every representative wallet on the way to the
+  // $30k prestige gate, the cheapest unowned rung costs no more than 5x the
+  // wallet — so "what's next" is always visible and near.
+  const state = defaultState();
+  state.player.tierUnlocked = 3;
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: 0 });
+  state.techs.push({ id: 'tech-2', name: 'Mike', skill: 1, routeId: 'burgertown-south', hiredAt: 1 });
+  for (const wallet of [500, 1500, 3000, 6000, 12000, 25000]) {
+    const unowned = purchaseLadder(state).filter((r) => !r.owned);
+    assert(unowned.length > 0, `wallet $${wallet}: ladder exhausted too early`);
+    const cheapest = unowned[0];
+    assert(
+      cheapest.cost <= wallet * 5,
+      `wallet $${wallet}: next goal ${cheapest.id} at $${cheapest.cost} is beyond 5x wallet`
+    );
+  }
+});
+
+test('rule 5: even both techs at skill 2 on the best routes stay below active $/min', () => {
+  // Best idle config: maxTechs techs, all trained, on the highest-paying route.
+  const bestRate = TECHS.successRateBySkill[TECHS.maxSkill];
+  const bestPerJob = Math.max(...Object.values(TECHS.routeEarningsPerJob));
+  const idlePerMin = (TECHS.maxTechs * TECHS.jobsPerHour * bestRate * bestPerJob) / 60;
+  // Worst active: minimum tier-1 net with no speed bonus, one job in about a minute.
+  const worstActivePerMin = JOBS.tier1.payoutMin - JOBS.tier1.partsCostMax;
+  assert(
+    idlePerMin < worstActivePerMin,
+    `best idle $${idlePerMin.toFixed(2)}/min must stay below worst active $${worstActivePerMin}/min`
+  );
+  // And skill data is sane: training must actually help, never reach certainty.
+  assert(TECHS.successRateBySkill[2] > TECHS.successRateBySkill[1], 'skill 2 must beat skill 1');
+  assert(TECHS.successRateBySkill[2] < 1, 'no perfect techs — rescues must keep existing');
+  assertEqual(TECHS.successRateBySkill[1], TECHS.baseSuccessRate, 'skill 1 is the launch base rate');
+});

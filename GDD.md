@@ -94,6 +94,23 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
 4. **Techs** — hire, train (raises success rate), specialise (soft serve / coffee / ovens).
 5. **Reputation** — earned per clean job, lost on callbacks. Gates client tiers and contract offers.
 
+> **Decision of record (2026-07-04) — the purchase ladder.** Playtesting showed
+> the wanting engine died after the second tech (~$2k): nothing left to save
+> for until prestige at $30k. The shop is now a single **purchase ladder**
+> (`purchaseLadder()` in economy.js, every cost in `config/balance.js`) shown
+> in full — locked rungs display their unlock conditions, so the next goal is
+> always visible at roughly 2–5× the current wallet: Multimeter T2 $1.5k →
+> tech hires $2k → van 6 slots $2.5k → tech training $4k each (skill 2 = 90%
+> idle success, `TECHS.successRateBySkill`; rule 5 re-proved by test with both
+> techs trained on the best route) → **Froyo Strip contract route** $6k at
+> Tier 3 (`ROUTES` — techs there draw tier-3 faults and earn $70/job; hires
+> auto-spread to the least-covered route) → van 8 slots $9k → **Multimeter
+> Tier 3** $12k (definitively rules out one wrong fix option on every job —
+> a diagnosis deepener per §3.3's tools rule; disabled on MotD so the shared
+> puzzle stays tool-fair, and seeded per job so a refresh never re-rolls it).
+> This promotes a second contract route from v1.x into the live build; tech
+> specialisation remains v1.x.
+
 ### 3.4 Prestige: "Sell the Business"
 - Sell the company, keep a **Founder Bonus** (permanent multiplier from lifetime reputation), restart in a new region with a new client mix and remixed fault frequencies.
 - Unlocks at first ~2–4 hours of play. Classic incremental hook: each run is faster and pushes one tier deeper.

@@ -4,6 +4,7 @@
 
 import { settleJob } from './economy.js';
 import { settleMotd } from './motd.js';
+import { mulberry32 } from './rng.js';
 import { DIAGNOSIS } from '../config/balance.js';
 
 /**
@@ -267,6 +268,27 @@ export function commitFix(state, fixId, faults) {
     testsUsed,
     cleanStreak: state.stats.cleanStreak,
   };
+}
+
+/**
+ * The wrong fix Multimeter Tier 3 rules out on the active job, or null when it
+ * doesn't apply (below tier 3, MotD — the shared puzzle must stay tool-fair per
+ * GDD §5 — or a fault with no wrong fixes). Deterministic per job (rule 6):
+ * seeded on the job's identity, so a refresh never re-rolls which option the
+ * meter eliminated. Buying the meter mid-job reveals the same option it would
+ * have shown at the start.
+ * @param {object} state game state
+ * @param {object} job state.jobs.active
+ * @param {Object<string, object>} faults fault library keyed by id
+ * @returns {string|null} the eliminated fix id
+ */
+export function eliminatedFix(state, job, faults) {
+  if ((state.tools.multimeterTier ?? 1) < 3) return null;
+  if (job.motd) return null;
+  const wrong = faults[job.faultId]?.wrongFixes;
+  if (!Array.isArray(wrong) || wrong.length === 0) return null;
+  const rng = mulberry32(`mm3:${job.faultId}:${job.clientId}:${job.startedAt ?? 0}`);
+  return wrong[Math.floor(rng() * wrong.length)];
 }
 
 /**
