@@ -29,25 +29,50 @@ export function validateFault(fault, fileName, machineTypeIds = null) {
   if (typeof fault.tier !== 'number' || fault.tier < 1 || fault.tier > 5) {
     errors.push(`field "tier" must be a number 1-5`);
   }
-  if (
-    !Array.isArray(fault.symptoms) ||
-    fault.symptoms.length < 1 ||
-    fault.symptoms.length > 4 ||
-    !fault.symptoms.every((s) => typeof s === 'string' && s !== '')
-  ) {
-    errors.push(`field "symptoms" must be an array of 1-4 non-empty strings`);
-  }
-  if (typeof fault.tests !== 'object' || fault.tests === null || Array.isArray(fault.tests)) {
-    errors.push(`field "tests" must be an object mapping test id to result string`);
-  } else {
+  const badSymptoms = (arr) =>
+    !Array.isArray(arr) ||
+    arr.length < 1 ||
+    arr.length > 4 ||
+    !arr.every((s) => typeof s === 'string' && s !== '');
+  const checkTests = (tests, path) => {
+    if (typeof tests !== 'object' || tests === null || Array.isArray(tests)) {
+      errors.push(`field "${path}" must be an object mapping test id to result string`);
+      return;
+    }
     // Rule 4: every key in tests is a known test id.
-    for (const [testId, result] of Object.entries(fault.tests)) {
+    for (const [testId, result] of Object.entries(tests)) {
       if (!(testId in TESTS)) {
-        errors.push(`field "tests" has unknown test id "${testId}" (known: ${Object.keys(TESTS).join(', ')})`);
+        errors.push(`field "${path}" has unknown test id "${testId}" (known: ${Object.keys(TESTS).join(', ')})`);
       }
       if (typeof result !== 'string' || result === '') {
-        errors.push(`field "tests.${testId}" must be a non-empty string`);
+        errors.push(`field "${path}.${testId}" must be a non-empty string`);
       }
+    }
+  };
+  if (badSymptoms(fault.symptoms)) {
+    errors.push(`field "symptoms" must be an array of 1-4 non-empty strings`);
+  }
+  checkTests(fault.tests, 'tests');
+  // Rule 6: symptomVariants (optional) — alternative presentations of the same
+  // fault. Each carries its own symptoms and may override individual test results.
+  if ('symptomVariants' in fault) {
+    if (
+      !Array.isArray(fault.symptomVariants) ||
+      fault.symptomVariants.length < 1 ||
+      fault.symptomVariants.length > 3
+    ) {
+      errors.push(`field "symptomVariants" must be an array of 1-3 variant objects when present`);
+    } else {
+      fault.symptomVariants.forEach((v, i) => {
+        if (typeof v !== 'object' || v === null || Array.isArray(v)) {
+          errors.push(`field "symptomVariants[${i}]" must be an object`);
+          return;
+        }
+        if (badSymptoms(v.symptoms)) {
+          errors.push(`field "symptomVariants[${i}].symptoms" must be an array of 1-4 non-empty strings`);
+        }
+        if ('tests' in v) checkTests(v.tests, `symptomVariants[${i}].tests`);
+      });
     }
   }
   if (typeof fault.correctFix !== 'string' || fault.correctFix === '') {

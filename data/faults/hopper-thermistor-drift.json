@@ -13,6 +13,29 @@
     "temp-probe": "Independent probe reads hopper at 3.2 °C — well in spec. Display still claims 9 °C.",
     "continuity-test": "Thermistor resistance is way off the curve for its actual temperature. Sensor has drifted."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "HOPPER TEMP alarm chirping every few hours.",
+        "Staff swear the mix is cold every time they check.",
+        "Compressor barely resting."
+      ],
+      "tests": {
+        "error-log": "HOPPER TEMP HIGH logged 41 times this week. Every one self-cleared.",
+        "temp-probe": "Hand probe puts the hopper at 3.5 °C — in spec. The display insists 8.9 °C."
+      }
+    },
+    {
+      "symptoms": [
+        "Machine keeps dropping to standby claiming hopper over-temp.",
+        "Product texture has been perfect all day."
+      ],
+      "tests": {
+        "error-log": "Repeated OVER TEMP standby events. No compressor or refrigeration faults logged.",
+        "temp-probe": "Independent probe reads the hopper at 3.0 °C. The controller is being lied to."
+      }
+    }
+  ],
   "correctFix": "replace-hopper-thermistor",
   "wrongFixes": ["replace-compressor", "regas-refrigeration", "replace-controller-board"],
   "payout": 130,

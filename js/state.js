@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -232,6 +232,20 @@ export const MIGRATIONS = {
       old.settings.graphicsMode = 'vector';
     }
     old.schemaVersion = 12;
+    return old;
+  },
+  // v12 -> v13: jobs gained a symptom-variant index (0 = the fault's base
+  // presentation). Every pre-variant job and callback was created from the base
+  // symptoms — the only presentation that existed — so 0 is the factually
+  // correct value, not a guess.
+  12: (old) => {
+    for (const cb of old.jobs.callbacks) {
+      if (typeof cb.variant !== 'number') cb.variant = 0;
+    }
+    if (old.jobs.active && typeof old.jobs.active.variant !== 'number') {
+      old.jobs.active.variant = 0;
+    }
+    old.schemaVersion = 13;
     return old;
   },
 };

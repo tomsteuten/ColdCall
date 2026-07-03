@@ -6,6 +6,7 @@ import { STARTING } from '../config/balance.js';
 import {
   settleJob,
   speedBonus,
+  earnedSpeedBonus,
   buyTool,
   restockVan,
   utcDateStringAfter,
@@ -154,21 +155,38 @@ test('speedBonus floors at zero — exhaustive testing never drops pay below bas
   assertEqual(speedBonus(1e6), 0, 'bonus must floor at 0 so thoroughness is never punished');
 });
 
-test('correct fresh fix adds the speed bonus on top of net', () => {
+test('correct fresh fix adds the speed bonus on top of net (once a test was run)', () => {
   const state = defaultState();
-  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 5 });
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    minutesSpent: 5,
+    testsRun: ['temp-probe'],
+  });
   assertEqual(earned, 120 - 30 + speedBonus(5));
 });
 
-test('a blind commit (zero minutes) earns the maximum speed bonus', () => {
+test('a zero-test blind commit earns NO speed bonus (2026-07-04, GDD §2.1)', () => {
   const state = defaultState();
-  const { earned } = settleJob(state, makeFault(), true, 'client-1', { minutesSpent: 0 });
-  assertEqual(earned, 120 - 30 + DIAGNOSIS.speedBonusMax);
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    minutesSpent: 0,
+    testsRun: [],
+  });
+  assertEqual(earned, 120 - 30, 'blind commit must forfeit the bonus');
+  assertEqual(earnedSpeedBonus(0, 0), 0, 'the gate lives in earnedSpeedBonus');
+  assert(
+    DIAGNOSIS.minTestsForBonus >= 1,
+    'balance.js must require at least one test for the bonus'
+  );
 });
 
-test('missing minutesSpent defaults to the full bonus (back-compat with old jobs)', () => {
+test('one test at zero extra minutes earns the full bonus — the gate is tests, not time', () => {
+  assertEqual(earnedSpeedBonus(0, 1), DIAGNOSIS.speedBonusMax);
+});
+
+test('missing minutesSpent with evidence run defaults to the full bonus (back-compat)', () => {
   const state = defaultState();
-  const { earned } = settleJob(state, makeFault(), true, 'client-1'); // no minutesSpent
+  const { earned } = settleJob(state, makeFault(), true, 'client-1', {
+    testsRun: ['error-log'],
+  }); // no minutesSpent — the generous reading for an old in-flight job
   assertEqual(earned, 120 - 30 + DIAGNOSIS.speedBonusMax);
 });
 
@@ -196,22 +214,31 @@ test('invariant: informed diagnosis beats both blind guessing and exhaustive tes
   // Informed: two targeted tests, then the correct fix.
   const informedMinutes =
     DIAGNOSIS.testMinutes['error-log'] + DIAGNOSIS.testMinutes['temp-probe'];
-  const informed = net + speedBonus(informedMinutes);
+  const informed = net + earnedSpeedBonus(informedMinutes, 2);
 
-  // Blind guess: correct-rate-weighted mix of (full bonus) and (callback outcome).
-  // The miss value is generous to guessing — the immediate partial PLUS the
-  // eventual rescue at the callback rate. Even so, informed must win.
-  const guessRight = net + speedBonus(0);
+  // Blind guess: correct-rate-weighted mix of (net, NO bonus — a zero-test
+  // commit forfeits it since 2026-07-04) and (callback outcome). The miss value
+  // is generous to guessing — the immediate partial PLUS the eventual rescue at
+  // the callback rate. Even so, informed must win.
+  const guessRight = net + earnedSpeedBonus(0, 0);
   const missPartial = Math.round(f.payout * JOBS.wrongFixPayoutMult);
   const rescue = Math.round(net * JOBS.callbackJobPayoutMult);
   const guessEV = p * guessRight + (1 - p) * (missPartial + rescue);
 
-  // Exhaustive: run every test, then the correct fix (bonus forfeited).
+  // Exhaustive: run every test, then the correct fix (bonus decayed to nothing).
+  const allTests = Object.keys(DIAGNOSIS.testMinutes);
   const allMinutes = Object.values(DIAGNOSIS.testMinutes).reduce((a, b) => a + b, 0);
-  const exhaustive = net + speedBonus(allMinutes);
+  const exhaustive = net + earnedSpeedBonus(allMinutes, allTests.length);
 
   assert(informed > guessEV, `informed ${informed} must beat blind-guess EV ${guessEV.toFixed(1)}`);
   assert(informed > exhaustive, `informed ${informed} must beat exhaustive ${exhaustive}`);
+
+  // And a LUCKY blind guess (best case, not just EV) must still lose to informed
+  // play on the same fault — the bonus gate is what guarantees it.
+  assert(
+    informed > guessRight,
+    `informed ${informed} must beat even a lucky blind guess ${guessRight}`
+  );
 });
 
 test('invariant: the speed bonus never lets a callback rescue out-earn a fresh fix', () => {
@@ -219,7 +246,10 @@ test('invariant: the speed bonus never lets a callback rescue out-earn a fresh f
   // bonus. Even a blind fresh commit (max bonus) and an exhaustive fresh commit
   // (zero bonus) must both beat the best a callback can pay on the same fault.
   const f = makeFault();
-  const freshMax = settleJob(defaultState(), f, true, 'c', { minutesSpent: 0 }).earned;
+  const freshMax = settleJob(defaultState(), f, true, 'c', {
+    minutesSpent: 0,
+    testsRun: ['error-log'], // bonus unlocked: the best a fresh fix can pay
+  }).earned;
   const freshMin = settleJob(defaultState(), f, true, 'c', { minutesSpent: 1e6 }).earned;
   const callbackBest = settleJob(defaultState(), f, true, 'c', {
     callback: { misses: 1 },

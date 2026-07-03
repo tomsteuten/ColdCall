@@ -125,6 +125,7 @@ const actions = {
         techId: cb.techId ?? null,
         techName: cb.techName ?? null,
         evidence: cb.evidence ?? null,
+        variant: cb.variant ?? 0,
       });
       screen = 'home';
       save(state);

@@ -12,6 +12,29 @@
     "temp-probe": "Barrel temp in spec. Hopper temp in spec.",
     "inspect-beater": "Scraper blades are worn down to nubs. Ice is building up on the barrel wall."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Serve texture gritty with ice flecks.",
+        "Machine louder than usual under load.",
+        "Manager says it's been creeping up for weeks."
+      ],
+      "tests": {
+        "error-log": "Intermittent BEATER TORQUE HIGH warnings, more frequent every week for a month.",
+        "inspect-beater": "Blade edges chamfered round — a rind of hard ice on the barrel wall they're no longer shaving."
+      }
+    },
+    {
+      "symptoms": [
+        "Overrun collapsed — product coming out dense and wet.",
+        "Beater audibly labouring during every draw."
+      ],
+      "tests": {
+        "error-log": "No active errors. Motor current trend has drifted upward for six weeks straight.",
+        "inspect-beater": "Scraper blades worn to nubs. Ice build-up on the barrel wall dragging the beater."
+      }
+    }
+  ],
   "correctFix": "replace-scraper-blades",
   "wrongFixes": ["replace-beater-motor", "regas-refrigeration", "replace-barrel-seal"],
   "payout": 110,

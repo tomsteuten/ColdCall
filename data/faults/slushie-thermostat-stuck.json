@@ -13,8 +13,35 @@
     "inspect-beater": "Auger is healthy under the ice. Mix ratio tastes right.",
     "continuity-test": "Thermostat contacts read welded closed. It's calling for cold forever."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Solid frozen bowl two mornings running, even after staff set it warmer.",
+        "Auger straining."
+      ],
+      "tests": {
+        "temp-probe": "Bowl at −11 °C — miles below any setpoint. It never stopped calling for cold.",
+        "inspect-beater": "Auger healthy under the ice. Mix ratio tastes right.",
+        "continuity-test": "Thermostat contacts welded closed."
+      }
+    },
+    {
+      "symptoms": [
+        "Bowl over-freezes overnight; fine for an hour after a manual defrost, then locks up again.",
+        "OVERTORQUE alarm each morning."
+      ],
+      "tests": {
+        "temp-probe": "An hour after defrost the bowl is already 6 °C below setpoint and falling.",
+        "inspect-beater": "Mix tastes right; auger fine. Not the product's fault.",
+        "continuity-test": "Stat reads closed at every temperature. It's stuck."
+      }
+    }
+  ],
   "correctFix": "replace-thermostat",
-  "wrongFixes": ["drain-and-remix-product", "replace-auger-motor"],
+  "wrongFixes": [
+    "drain-and-remix-product",
+    "replace-auger-motor"
+  ],
   "payout": 105,
   "partsCost": 18,
   "flavour": "It had one job: knowing when to stop.",

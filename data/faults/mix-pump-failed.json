@@ -13,8 +13,34 @@
     "temp-probe": "Barrel temp trending upward. Hopper at correct fill level.",
     "continuity-test": "Mix pump motor windings read open-circuit. Motor has burned out."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "MIX LOW alarm, hopper full, and no pump hum when the machine calls for mix.",
+        "Barrel slowly warming."
+      ],
+      "tests": {
+        "error-log": "MIX LOW active. No pump fault code — the controller doesn't know the pump is dead.",
+        "continuity-test": "Pump motor windings read open-circuit. It's burned out."
+      }
+    },
+    {
+      "symptoms": [
+        "Staff noticed a hot-electrics smell near the base yesterday.",
+        "Now MIX LOW with a full hopper and watery product."
+      ],
+      "tests": {
+        "inspect-beater": "Pump housing discoloured and smelling of varnish. That motor cooked itself.",
+        "continuity-test": "Open circuit across the pump windings. Gone."
+      }
+    }
+  ],
   "correctFix": "replace-mix-pump",
-  "wrongFixes": ["replace-mix-level-sensor", "replace-mix-inlet-valve", "replace-controller-board"],
+  "wrongFixes": [
+    "replace-mix-level-sensor",
+    "replace-mix-inlet-valve",
+    "replace-controller-board"
+  ],
   "payout": 140,
   "partsCost": 60,
   "flavour": "The pump was doing nothing because the pump was nothing.",

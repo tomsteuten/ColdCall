@@ -7,9 +7,11 @@ import {
   startJob,
   testAvailability,
   runTest,
+  testResult,
   commitFix,
   shuffled,
   fixLabel,
+  jobSymptoms,
 } from '../js/diagnosis.js';
 import { mulberry32 } from '../js/rng.js';
 
@@ -139,16 +141,28 @@ test('continuity-test is available on a MotD job regardless of multimeter tier',
   assert(!testAvailability(state, 'continuity-test').available, 'still blocked on non-MotD job');
 });
 
-test('commitFix with the correct fix pays payout minus parts plus the speed bonus', () => {
-  const state = freshJobState(); // no tests run -> the full speed bonus
+test('commitFix with the correct fix but zero tests pays base net only — no speed bonus', () => {
+  // 2026-07-04 (GDD §2.1): a blind commit forfeits the bonus, so memorised
+  // symptom→fix pairs can't dominate informed diagnosis.
+  const state = freshJobState(); // no tests run -> the bonus is forfeited
   const cashBefore = state.player.cash;
-  const { correct, earned, minutesSpent } = commitFix(state, 'right-fix', FAULTS);
+  const { correct, earned, minutesSpent, testsUsed } = commitFix(state, 'right-fix', FAULTS);
   assert(correct, 'should be correct');
   assertEqual(minutesSpent, 0, 'no tests were run');
-  assertEqual(earned, 100 - 20 + DIAGNOSIS.speedBonusMax);
+  assertEqual(testsUsed, 0, 'commitFix reports the tests used for the receipt');
+  assertEqual(earned, 100 - 20, 'zero-test commit earns net with no bonus');
   assertEqual(state.player.cash, cashBefore + earned);
   assertEqual(state.jobs.active, null);
   assertEqual(state.jobs.callbacks, []);
+});
+
+test('commitFix after one cheap test pays net plus the decayed speed bonus', () => {
+  const state = freshJobState();
+  runTest(state, 'error-log', FAULTS); // the cheapest test unlocks the bonus
+  const spent = DIAGNOSIS.testMinutes['error-log'];
+  const { earned, testsUsed } = commitFix(state, 'right-fix', FAULTS);
+  assertEqual(testsUsed, 1);
+  assertEqual(earned, 100 - 20 + (DIAGNOSIS.speedBonusMax - spent * DIAGNOSIS.bonusDecayPerMin));
 });
 
 test('running tests before a correct fix spends the clock and shrinks the bonus', () => {
@@ -309,3 +323,108 @@ test('commitFix with workshop machine updates status on correct and consumes par
 });
 
 
+
+// --- symptom variants (2026-07-04, GDD §2.1) ---
+
+function makeVariantFault() {
+  return {
+    ...makeFault(),
+    id: 'variant-fault',
+    symptoms: ['Base symptom.'],
+    tests: { 'temp-probe': 'Base probe result.', 'error-log': 'Base log result.' },
+    symptomVariants: [
+      {
+        symptoms: ['Variant one symptom.'],
+        tests: { 'temp-probe': 'Variant one probe result.' },
+      },
+      {
+        symptoms: ['Variant two symptom.'],
+      },
+    ],
+  };
+}
+const VFAULTS = { 'variant-fault': makeVariantFault() };
+
+/** Start a variant-fault job with a chosen PRNG and return the state. */
+function variantJobState(next, callback = null) {
+  const state = defaultState();
+  startJob(state, VFAULTS['variant-fault'], 'client-1', next, callback);
+  return state;
+}
+
+test('startJob draws a variant deterministically from the seeded PRNG', () => {
+  const a = variantJobState(mulberry32(1)).jobs.active.variant;
+  const b = variantJobState(mulberry32(1)).jobs.active.variant;
+  assertEqual(a, b, 'same seed must draw the same variant (rule 6 — MotD identical for all)');
+  assert(a >= 0 && a <= 2, 'variant index within base + 2 variants');
+  // Across seeds every presentation is reachable.
+  const seen = new Set();
+  for (let seed = 0; seed < 40; seed++) {
+    seen.add(variantJobState(mulberry32(seed)).jobs.active.variant);
+  }
+  assertEqual([...seen].sort().join(','), '0,1,2', 'all three presentations occur');
+});
+
+test('jobSymptoms returns the drawn variant symptoms, base for variant 0', () => {
+  for (let seed = 0; seed < 40; seed++) {
+    const state = variantJobState(mulberry32(seed));
+    const symptoms = jobSymptoms(state.jobs.active, VFAULTS);
+    const v = state.jobs.active.variant;
+    const expected = [['Base symptom.'], ['Variant one symptom.'], ['Variant two symptom.']][v];
+    assertEqual(symptoms, expected, `variant ${v} symptoms`);
+  }
+});
+
+test('variant test overrides win; unlisted variant tests fall back to base, then generic', () => {
+  // Find a seed that draws variant 1 (has a temp-probe override, no error-log).
+  let state = null;
+  for (let seed = 0; seed < 100 && !state; seed++) {
+    const s = variantJobState(mulberry32(seed));
+    if (s.jobs.active.variant === 1) state = s;
+  }
+  assert(state, 'expected some seed to draw variant 1');
+  assertEqual(runTest(state, 'temp-probe', VFAULTS), 'Variant one probe result.', 'override wins');
+  assertEqual(runTest(state, 'error-log', VFAULTS), 'Base log result.', 'falls back to base');
+  assertEqual(
+    runTest(state, 'inspect-beater', VFAULTS),
+    TESTS['inspect-beater'].generic,
+    'falls back to generic when neither variant nor base lists the test'
+  );
+});
+
+test('a fault without variants always draws variant 0 and shows base symptoms', () => {
+  const state = freshJobState();
+  assertEqual(state.jobs.active.variant, 0);
+  assertEqual(jobSymptoms(state.jobs.active, FAULTS), ['It is broken.']);
+});
+
+test('a wrong fix stores the variant on the callback; the return visit replays it', () => {
+  // Draw a non-base variant, botch the fix, then claim the callback: the
+  // machine must come back in the same presentation, not a rerolled one.
+  let state = null;
+  for (let seed = 0; seed < 100 && !state; seed++) {
+    const s = variantJobState(mulberry32(seed));
+    if (s.jobs.active.variant === 2) state = s;
+  }
+  assert(state, 'expected some seed to draw variant 2');
+  commitFix(state, 'wrong-a', VFAULTS);
+  assertEqual(state.jobs.callbacks[0].variant, 2, 'callback remembers the presentation');
+
+  const cb = state.jobs.callbacks[0];
+  const rng = mulberry32(999); // a different seed must NOT reroll the variant
+  startJob(state, VFAULTS['variant-fault'], cb.clientId, rng, {
+    misses: cb.misses,
+    source: cb.source,
+    evidence: cb.evidence,
+    variant: cb.variant,
+  });
+  assertEqual(state.jobs.active.variant, 2, 'return visit replays the original variant');
+  assertEqual(jobSymptoms(state.jobs.active, VFAULTS), ['Variant two symptom.']);
+});
+
+test('an out-of-range saved variant falls back to base symptoms, never breaks the job', () => {
+  const state = variantJobState(mulberry32(1));
+  state.jobs.active.variant = 9; // a save can reference a variant the library dropped
+  assertEqual(jobSymptoms(state.jobs.active, VFAULTS), ['Base symptom.']);
+  assertEqual(testResult(state.jobs.active, 'temp-probe', VFAULTS), 'Base probe result.');
+});

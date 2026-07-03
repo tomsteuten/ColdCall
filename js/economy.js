@@ -30,6 +30,20 @@ export function speedBonus(minutesSpent) {
 }
 
 /**
+ * The speed bonus a job actually earns: the decay curve above, gated on having
+ * run at least DIAGNOSIS.minTestsForBonus tests (2026-07-04, GDD §2.1 — a
+ * zero-test blind commit forfeits the bonus, so guessing can't dominate).
+ * Single source of truth for settlement and every UI that previews the bonus.
+ * @param {number} minutesSpent simulated minutes the active job accumulated
+ * @param {number} testsCount how many tests were run before committing
+ * @returns {number} bonus dollars, always >= 0
+ */
+export function earnedSpeedBonus(minutesSpent, testsCount) {
+  if (testsCount < DIAGNOSIS.minTestsForBonus) return 0;
+  return speedBonus(minutesSpent);
+}
+
+/**
  * Settle a finished job: apply cash, lifetime earnings, reputation and stats.
  *
  * Fresh job — correct: payout minus parts, plus a speed bonus that decays with
@@ -50,19 +64,22 @@ export function speedBonus(minutesSpent) {
  * @param {object} fault the fault that was (or wasn't) fixed
  * @param {boolean} correct whether the committed fix was the correct one
  * @param {string} clientId for the callback queue entry
- * @param {{callback?: {misses: number, source?: string, techId?: string|null, techName?: string|null}|null, minutesSpent?: number, testsRun?: string[], now?: number}} [opts]
+ * @param {{callback?: {misses: number, source?: string, techId?: string|null, techName?: string|null}|null, minutesSpent?: number, testsRun?: string[], variant?: number, now?: number}} [opts]
  *   callback context (source defaults to 'player' — the conservative lower rate),
  *   simulated minutes spent from the active job, the tests the player ran (saved
  *   as evidence on a wrong-fix callback so the return visit continues the
- *   investigation, GDD §2.1), and an injectable clock for tests
- * @returns {{earned: number, unlockedTier: number|null}} for the invoice screen
+ *   investigation, GDD §2.1), the symptom-variant index the job presented (saved
+ *   on a wrong-fix callback so the return visit shows the same machine, not a
+ *   rerolled presentation), and an injectable clock for tests
+ * @returns {{earned: number, repDelta: number, unlockedTier: number|null}} for the invoice screen
  */
 export function settleJob(state, fault, correct, clientId, opts = {}) {
-  const { callback = null, minutesSpent = 0, testsRun = [], now = Date.now() } = opts;
+  const { callback = null, minutesSpent = 0, testsRun = [], variant = 0, now = Date.now() } = opts;
   // A callback with no source predates the split (old in-flight job) — treat it
   // as a player obligation, the lower rate, so the change never over-pays.
   const source = callback ? callback.source ?? 'player' : 'player';
   let earned;
+  let repDelta;
   const multiplier = state.player.founderBonus || 1.0;
 
   if (correct) {
@@ -73,16 +90,19 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
     }
     const net = fault.payout - fault.partsCost;
     // No speed bonus on a rescue — callbacks are already discounted (GDD §2.1).
+    // On a fresh job the bonus is gated on having run at least one test.
     const callbackMult =
       source === 'tech' ? JOBS.rescueCallbackPayoutMult : JOBS.callbackJobPayoutMult;
-    earned = callback ? Math.round(net * callbackMult) : net + speedBonus(minutesSpent);
+    earned = callback
+      ? Math.round(net * callbackMult)
+      : net + earnedSpeedBonus(minutesSpent, testsRun.length);
 
     // Apply founderBonus to correct fix cash earned
     earned = Math.round(earned * multiplier);
 
     // Apply founderBonus to correct fix reputation gain
-    const repGain = Math.round(REPUTATION.correctFix * multiplier);
-    state.player.reputation += repGain;
+    repDelta = Math.round(REPUTATION.correctFix * multiplier);
+    state.player.reputation += repDelta;
 
     state.stats.jobsCompleted += 1;
     if (!callback) state.stats.cleanStreak += 1;
@@ -92,9 +112,8 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
     // Apply founderBonus to wrong fix cash earned (if any)
     earned = Math.round(earned * multiplier);
 
-    state.player.reputation -= callback
-      ? REPUTATION.repeatCallbackPenalty
-      : REPUTATION.callbackPenalty;
+    repDelta = -(callback ? REPUTATION.repeatCallbackPenalty : REPUTATION.callbackPenalty);
+    state.player.reputation += repDelta;
     state.stats.callbacksCaused += 1;
     state.stats.cleanStreak = 0;
     state.jobs.callbacks.push({
@@ -109,6 +128,9 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
       // investigation instead of repeating button presses (GDD §2.1). Null when
       // the player committed blind — nothing to restore, a clean start.
       evidence: testsRun.length ? testsRun.slice() : null,
+      // The symptom variant this job presented — the return visit must show the
+      // same machine in the same state, never a rerolled presentation.
+      variant,
       ...(callback && source === 'tech'
         ? {
             techId: typeof callback.techId === 'string' ? callback.techId : null,
@@ -119,7 +141,7 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   }
   state.player.cash += earned;
   state.player.lifetimeEarnings += earned;
-  return { earned, unlockedTier: checkTierUnlock(state) };
+  return { earned, repDelta, unlockedTier: checkTierUnlock(state) };
 }
 
 /**

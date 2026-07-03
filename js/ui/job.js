@@ -3,8 +3,8 @@
  * all mutations happen in the actions passed in from main.js.
  */
 
-import { TESTS, testAvailability, testResult, fixLabel } from '../diagnosis.js';
-import { dueCallbacks, speedBonus, WORKSHOP_MACHINES } from '../economy.js';
+import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms } from '../diagnosis.js';
+import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
 import { canPlayToday } from '../motd.js';
@@ -81,8 +81,11 @@ export function testCostCopy(job, testId) {
   if (job.callback) return `+${cost} min simulated job time`;
   if (job.motd) return `+${cost} min simulated job time · adds 1 test to your score`;
 
-  const before = speedBonus(job.minutesSpent ?? 0);
-  const after = speedBonus((job.minutesSpent ?? 0) + cost);
+  // The bonus is gated on running at least one test (GDD §2.1), so the first
+  // test UNLOCKS it — the preview shows $0 → $36, an incentive, not a cost.
+  const testsSoFar = job.testsRun.length;
+  const before = earnedSpeedBonus(job.minutesSpent ?? 0, testsSoFar);
+  const after = earnedSpeedBonus((job.minutesSpent ?? 0) + cost, testsSoFar + 1);
   return `+${cost} min · speed bonus $${before} → $${after}`;
 }
 
@@ -480,9 +483,13 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   // Make the speed/thoroughness trade-off visible before each test (GDD §2.1).
   // Only fresh, non-MotD jobs earn the bonus — callbacks are already discounted
   // and MotD pays no cash, so showing a dollar bonus there would mislead.
+  // Before the first test the bonus is locked (blind commits earn none).
   const minutes = job.minutesSpent ?? 0;
+  const bonusCopy = job.testsRun.length >= DIAGNOSIS.minTestsForBonus
+    ? `Speed bonus: <strong>$${earnedSpeedBonus(minutes, job.testsRun.length)}</strong>`
+    : `Speed bonus: <strong>locked</strong> — run a test to earn it`;
   const clockBar = !job.callback && !job.motd
-    ? `<p class="job-clock">Job clock: ${minutes} min · Speed bonus: <strong>$${speedBonus(minutes)}</strong></p>`
+    ? `<p class="job-clock">Job clock: ${minutes} min · ${bonusCopy}</p>`
     : '';
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
@@ -568,7 +575,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
             </div>` : ''}
 
-            <ul class="symptoms">${fault.symptoms.map((s) => `<li>${s}</li>`).join('')}</ul>
+            <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>${s}</li>`).join('')}</ul>
 
           </div>
 
@@ -739,7 +746,7 @@ export function invoiceView({ state, invoice }) {
     receiptNote = '';
 
   } else if (correct) {
-    const bonus = speedBonus(invoice.minutesSpent ?? 0);
+    const bonus = earnedSpeedBonus(invoice.minutesSpent ?? 0, invoice.testsUsed ?? 0);
     outcomeClass = 'receipt-outcome--good';
     outcomeText = 'Fixed!';
     lineItems = `

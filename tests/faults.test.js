@@ -163,3 +163,70 @@ test('loadGameData excludes a bad fault and console.errors the file and field', 
     `console.error should name file and field, got: ${logged.join(' | ')}`
   );
 });
+
+// --- symptomVariants validation (2026-07-04, SCHEMA.md rule 6) ---
+
+function goodVariantFault() {
+  const f = goodFault();
+  f.symptomVariants = [
+    {
+      symptoms: ['Drip tray full of mix by lunchtime.'],
+      tests: { 'inspect-beater': 'O-ring flattened to a ribbon.' },
+    },
+    { symptoms: ['Slow weep of mix from the door seam.'] },
+  ];
+  return f;
+}
+
+test('a fault with well-formed symptomVariants passes validation', () => {
+  assertEqual(validateFault(goodVariantFault(), FILE, MACHINES), []);
+});
+
+test('symptomVariants must be an array of 1-3 objects', () => {
+  const notArray = goodVariantFault();
+  notArray.symptomVariants = { symptoms: ['x'] };
+  assert(
+    validateFault(notArray, FILE, MACHINES).some((e) => e.includes('"symptomVariants"')),
+    'non-array should be named'
+  );
+  const tooMany = goodVariantFault();
+  tooMany.symptomVariants = Array.from({ length: 4 }, () => ({ symptoms: ['x'] }));
+  assert(
+    validateFault(tooMany, FILE, MACHINES).some((e) => e.includes('"symptomVariants"')),
+    'more than 3 variants should be named'
+  );
+});
+
+test('a variant with bad symptoms is named with its index', () => {
+  const f = goodVariantFault();
+  f.symptomVariants[1].symptoms = [];
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(
+    errors.some((e) => e.includes('"symptomVariants[1].symptoms"')),
+    `should name the variant index: ${errors.join(' | ')}`
+  );
+});
+
+test('a variant test override with an unknown test id is named', () => {
+  const f = goodVariantFault();
+  f.symptomVariants[0].tests['x-ray-vision'] = 'You see everything.';
+  const errors = validateFault(f, FILE, MACHINES);
+  assert(
+    errors.some((e) => e.includes('symptomVariants[0].tests') && e.includes('x-ray-vision')),
+    `should name the variant tests path: ${errors.join(' | ')}`
+  );
+});
+
+test('at least 15 tier 1-2 faults ship symptom variants (the memorisation fix)', () => {
+  // Phase-1 content bar (2026-07-04): the deduction puzzle stays fresh only if
+  // the common faults rotate presentations. Guards against variant regressions.
+  const index = JSON.parse(readFileSync(join(root, 'data/faults/index.json'), 'utf8'));
+  let withVariants = 0;
+  for (const file of index) {
+    const fault = JSON.parse(readFileSync(join(root, 'data/faults', file), 'utf8'));
+    if (fault.tier <= 2 && Array.isArray(fault.symptomVariants) && fault.symptomVariants.length >= 2) {
+      withVariants++;
+    }
+  }
+  assert(withVariants >= 15, `expected >= 15 tier 1-2 faults with 2+ variants, found ${withVariants}`);
+});

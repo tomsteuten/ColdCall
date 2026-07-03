@@ -20,6 +20,7 @@ can't list a directory, so that manifest is how the loader finds fault files.
 | `wrongFixes` | string[] | yes | Plausible-but-wrong fix ids offered alongside the correct one (the traps). 1–4 entries, must not contain `correctFix`. |
 | `payout` | number | yes | Base payout in $ for a correct first-time fix. Stays within the tier's range in `config/balance.js`. |
 | `partsCost` | number | yes | Cost in $ of parts consumed by the correct fix. `0` for procedure-only fixes. |
+| `symptomVariants` | object[] | no | 1–3 **alternative presentations** of the same fault (added 2026-07-04 to kill symptom memorisation). Each entry is `{ "symptoms": [...], "tests": {...} }`: `symptoms` follows the same rules as the base field; `tests` is optional and **overrides individual test results** (unlisted tests fall back to the base `tests`, then to the generic result). One presentation is drawn per job with the seeded job PRNG — base symptoms count as presentation 0, so a fault with 2 variants shows each roughly a third of the time. The MotD date seed makes the draw identical for every player (rule 6), and a callback replays the variant its original job presented. Write variants with the same real-equipment authenticity as the base: same underlying fault, different discriminating evidence. |
 | `flavour` | string | yes | One-liner shown on the invoice. Pun-heavy, screenshot bait. |
 | `lesson` | string | yes | Player-facing diagnostic reasoning shown on a **failure** receipt (GDD §2.1). Name the discriminating clue and why the obvious wrong fix is a trap, in 1–2 sentences. Plain player language — do **not** paste `authenticityNote` verbatim. |
 | `authenticityNote` | string | no | Real-world note for contributors — why this fault is genuine. Never shown in game. |
@@ -40,6 +41,9 @@ Defined by the diagnosis engine; faults may only reference these:
 3. `wrongFixes` is non-empty and does not include `correctFix`.
 4. Every key in `tests` is a known test id.
 5. `payout` and `partsCost` are positive numbers (partsCost may be 0).
+6. `symptomVariants`, when present, is an array of 1–3 objects; each has valid
+   `symptoms` (same rules as the base field) and, if present, a valid `tests`
+   override map (known test ids, non-empty result strings).
 
 ## Example
 

@@ -13,8 +13,34 @@
     "temp-probe": "Bowl temps in spec. Refrigeration fine.",
     "inspect-beater": "Agitator turns but the drive belt is glazed and slipping. Mix barely moving."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Slush separating into layers within the hour.",
+        "Squeal from the drive on startup, then silence."
+      ],
+      "tests": {
+        "error-log": "No faults logged. Agitator runtime normal.",
+        "inspect-beater": "Drive belt glazed shiny and slipping on the pulley. Motor itself spins strong."
+      }
+    },
+    {
+      "symptoms": [
+        "Agitator freewheels, catches, freewheels again.",
+        "One bowl mixing noticeably worse than the other."
+      ],
+      "tests": {
+        "temp-probe": "Temps in spec. This is mechanical, not refrigeration.",
+        "inspect-beater": "Belt stretched and cracked, jumping the pulley under load."
+      }
+    }
+  ],
   "correctFix": "replace-agitator-belt",
-  "wrongFixes": ["replace-agitator-motor", "replace-slushie-thermostat", "clean-condenser-coil"],
+  "wrongFixes": [
+    "replace-agitator-motor",
+    "replace-slushie-thermostat",
+    "clean-condenser-coil"
+  ],
   "payout": 85,
   "partsCost": 10,
   "flavour": "A five-dollar belt was standing between this syrup and a uniform mixture.",

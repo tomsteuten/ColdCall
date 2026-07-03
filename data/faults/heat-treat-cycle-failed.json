@@ -13,8 +13,32 @@
     "temp-probe": "Mix and barrel temps in spec right now. Heater gets warm when commanded.",
     "continuity-test": "Heater element and mix temp sensor both read perfectly in spec."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Locked out at open, padlock icon alternating with HTR FAIL 12.",
+        "Night crew mention the power blinked during the storm."
+      ],
+      "tests": {
+        "error-log": "Heat-treat cycle aborted 3:12 am — supply interruption logged. Barrel never held pasteurisation temp."
+      }
+    },
+    {
+      "symptoms": [
+        "Machine locked out. Manager already tried a reset combo off a forum.",
+        "Display alternating HTR FAIL 12 and CALL SERVICE."
+      ],
+      "tests": {
+        "error-log": "Cycle aborted 1:58 am — hopper lid opened and cold mix added mid-pasteurisation. The cycle can't complete after that."
+      }
+    }
+  ],
   "correctFix": "rerun-heat-treat-cycle",
-  "wrongFixes": ["replace-heater-element", "replace-mix-temp-sensor", "replace-controller-board"],
+  "wrongFixes": [
+    "replace-heater-element",
+    "replace-mix-temp-sensor",
+    "replace-controller-board"
+  ],
   "payout": 120,
   "partsCost": 0,
   "flavour": "Turned it off and on again, professionally.",

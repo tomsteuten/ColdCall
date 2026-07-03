@@ -51,9 +51,10 @@ export const JOBS = {
  * The job clock is a SIMULATED clock, never wall-clock: each test adds its
  * `testMinutes` to the active job's minutesSpent, so a phone interruption never
  * costs anything and every run is deterministic. The correct-fresh-fix bonus
- * starts full on a blind commit and decays with those minutes — committing blind
- * keeps the full bonus but risks the callback; exhausting every test forfeits the
- * bonus but never drops below base payout. Being thorough is safe, being sharp pays.
+ * decays with those minutes and requires at least minTestsForBonus tests —
+ * a zero-test blind commit forfeits it (2026-07-04), so the sharp play is a few
+ * targeted tests, not a guess. Exhausting every test forfeits the bonus but
+ * never drops below base payout. Being thorough is safe, being sharp pays.
  */
 export const DIAGNOSIS = {
   // Fictional minutes each test costs. Cheap/vague tests are quick; the slow,
@@ -70,6 +71,11 @@ export const DIAGNOSIS = {
   // (30 min) forfeits it entirely, a targeted couple keeps most of it.
   speedBonusMax: 40,
   bonusDecayPerMin: 2,
+  // The bonus is only earned when at least this many tests were run before
+  // committing (2026-07-04: blind-commit dominance removed, GDD §2.1). A
+  // zero-test commit forfeits the bonus entirely — sharp play means reading
+  // evidence fast, not skipping evidence.
+  minTestsForBonus: 1,
 };
 
 /** Reputation deltas (GDD §3.3: earned per clean job, lost on callbacks). */

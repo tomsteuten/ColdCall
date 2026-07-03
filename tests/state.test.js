@@ -659,3 +659,39 @@ test('fresh saves default to rendered graphics; migrated saves are never flipped
   assertEqual(migrated.settings.graphicsMode, 'vector', 'player choice must survive');
 });
 
+test('v12 save migrates to v13: callbacks and active job gain variant 0 (base presentation)', () => {
+  // Every pre-variant job was created from the fault's base symptoms — the only
+  // presentation that existed — so 0 is factually correct, not a guess.
+  const v12Fixture = defaultState();
+  v12Fixture.schemaVersion = 12;
+  v12Fixture.jobs.callbacks = [
+    {
+      faultId: 'worn-scraper-blades',
+      clientId: 'burgertown-high-st',
+      dueDay: '2026-07-01',
+      expiryDay: '2026-07-04',
+      misses: 1,
+      source: 'player',
+      evidence: ['temp-probe'],
+    },
+  ];
+  v12Fixture.jobs.active = {
+    faultId: 'door-o-ring-gone',
+    clientId: 'burgertown-high-st',
+    machineType: 'soft-serve-commercial',
+    startedAt: 0,
+    testsRun: [],
+    minutesSpent: 0,
+    fixOptions: ['replace-door-o-ring', 'replace-dispense-door'],
+    callback: null,
+    motd: false,
+    puzzleDateStr: null,
+  };
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v12Fixture)));
+
+  assertEqual(migrated.schemaVersion, SCHEMA_VERSION);
+  assertEqual(migrated.jobs.callbacks[0].variant, 0, 'old callbacks presented the base symptoms');
+  assertEqual(migrated.jobs.active.variant, 0, 'old in-flight jobs presented the base symptoms');
+  assertEqual(migrated.jobs.callbacks[0].evidence, ['temp-probe'], 'evidence untouched');
+});

@@ -3,12 +3,36 @@
   "lesson": "A leak at the dispense door is almost always the O-ring — a routine wear item, never the door or barrel seal. It is obvious enough that extra tests just burn job time you will want later.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
-  "symptoms": ["Mix leaking from the dispense door."],
+  "symptoms": [
+    "Mix leaking from the dispense door."
+  ],
   "tests": {
     "inspect-beater": "Door O-ring is flattened and cracked. That'll do it."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Drip tray full of mix by lunchtime.",
+        "Dispense handle sticky no matter how often it's wiped."
+      ],
+      "tests": {
+        "inspect-beater": "Door O-ring flattened to a ribbon and split. The door itself is true and undamaged."
+      }
+    },
+    {
+      "symptoms": [
+        "Slow weep of mix from the door seam, worst right after each serve."
+      ],
+      "tests": {
+        "inspect-beater": "O-ring gone hard and cracked right around. Barrel seal bone dry — it's the door ring."
+      }
+    }
+  ],
   "correctFix": "replace-door-o-ring",
-  "wrongFixes": ["replace-dispense-door", "replace-barrel-seal"],
+  "wrongFixes": [
+    "replace-dispense-door",
+    "replace-barrel-seal"
+  ],
   "payout": 90,
   "partsCost": 10,
   "flavour": "Sealed the deal for the price of a rubber band.",

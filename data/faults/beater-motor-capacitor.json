@@ -13,8 +13,35 @@
     "inspect-beater": "Beater spins freely by hand. No ice, no seizure, nothing jammed.",
     "continuity-test": "Motor windings read perfect. The run capacitor reads dead — it's gone."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Loud hum then a click from behind the panel; the barrel never turns.",
+        "Worked fine at close last night."
+      ],
+      "tests": {
+        "error-log": "BEATER OVERCURRENT on every start attempt since opening.",
+        "inspect-beater": "Beater turns freely by hand — nothing jammed, no ice.",
+        "continuity-test": "Windings in spec. Run capacitor measures a fraction of its rated microfarads — it's gone."
+      }
+    },
+    {
+      "symptoms": [
+        "Beater only starts if someone spins the drive by hand first.",
+        "Dies again on the next cycle."
+      ],
+      "tests": {
+        "inspect-beater": "Free to rotate by hand. No mechanical resistance at all.",
+        "continuity-test": "Motor windings healthy. The run capacitor is bulged at the top and reads dead."
+      }
+    }
+  ],
   "correctFix": "replace-run-capacitor",
-  "wrongFixes": ["replace-beater-motor", "run-defrost-cycle", "replace-controller-board"],
+  "wrongFixes": [
+    "replace-beater-motor",
+    "run-defrost-cycle",
+    "replace-controller-board"
+  ],
   "payout": 140,
   "partsCost": 20,
   "flavour": "Saved a nine-hundred-dollar motor with a twenty-dollar can of electrons.",

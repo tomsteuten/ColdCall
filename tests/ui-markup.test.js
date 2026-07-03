@@ -58,9 +58,11 @@ function onboardingState() {
   return state;
 }
 
-test('diagnostic cost copy shows minutes and projected speed-bonus consequence', () => {
+test('diagnostic cost copy shows the first test UNLOCKING the speed bonus ($0 → $36)', () => {
+  // The bonus is gated on running at least one test (GDD §2.1, 2026-07-04), so
+  // before any test the earned bonus is $0 and the first test raises it.
   const state = onboardingState();
-  assertEqual(testCostCopy(state.jobs.active, 'error-log'), '+2 min · speed bonus $40 → $36');
+  assertEqual(testCostCopy(state.jobs.active, 'error-log'), '+2 min · speed bonus $0 → $36');
 });
 
 test('first fresh job renders integrated diagnosis guidance and an irreversible-choice guard', () => {
@@ -68,7 +70,7 @@ test('first fresh job renders integrated diagnosis guidance and an irreversible-
   assert(isFirstJobOnboarding(state), 'fresh first ticket should receive onboarding');
   const initial = jobView({ state, faults, machines, clients });
   assert(initial.includes('Read the symptoms.'), 'first ticket should teach the loop');
-  assert(initial.includes('+2 min · speed bonus $40 → $36'), 'test cost must be visible before use');
+  assert(initial.includes('+2 min · speed bonus $0 → $36'), 'test cost must be visible before use');
   assert(initial.includes('Your first selection gets one confirmation.'), 'first fix should advertise the guard');
 
   const guarded = jobView({

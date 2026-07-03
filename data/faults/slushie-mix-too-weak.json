@@ -12,8 +12,34 @@
     "temp-probe": "Bowl temp right on setpoint. The refrigeration is doing exactly what it's told.",
     "inspect-beater": "Auger is healthy under the ice — but the mix tastes like faintly sweet water. Way under syrup ratio."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Right bowl seized into a glacier overnight.",
+        "Drive motor breaker has tripped twice this morning."
+      ],
+      "tests": {
+        "error-log": "AUGER OVERTORQUE trips since opening. Nothing else.",
+        "inspect-beater": "Auger fine under the ice. The melt tastes like faintly sweet water — way under syrup ratio."
+      }
+    },
+    {
+      "symptoms": [
+        "Bowl frozen solid the day after the new hire's first solo refill.",
+        "Auger stalling with a groan you can hear from the counter."
+      ],
+      "tests": {
+        "temp-probe": "Bowl bang on setpoint. Refrigeration blameless.",
+        "inspect-beater": "Under the ice the mix is barely sweet. Somebody went easy on the concentrate."
+      }
+    }
+  ],
   "correctFix": "drain-and-remix-product",
-  "wrongFixes": ["replace-auger-motor", "replace-thermostat", "regas-refrigeration"],
+  "wrongFixes": [
+    "replace-auger-motor",
+    "replace-thermostat",
+    "regas-refrigeration"
+  ],
   "payout": 85,
   "partsCost": 0,
   "flavour": "Diagnosis: somebody was stretching the syrup.",
