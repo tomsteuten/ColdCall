@@ -40,6 +40,37 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-03 — Claude Code — Session 23: motion/UI polish pass (post-v1.0)
+
+- **Files touched:** `css/main.css`, `js/main.js`, `js/ui/job.js`, `sw.js`,
+  `tests/ui-markup.test.js`.
+- **Contract:** main.js now toggles `app-rerender` on `#app` when a render draws
+  the **same view** as the previous render, and `modal-rerender` on the settings
+  overlay when it was already open — CSS uses these to mute one-shot entrance
+  animations (`.screen`, `.receipt`, `.motd-card`, modal, …) so only actual
+  navigation animates. Any new entrance animation must be added to the
+  `#app.app-rerender :is(...)` mute list, and any new looping/ambient animation
+  must NOT be. Status-bar cash gets `stat--bump-up`/`stat--bump-down` when
+  `player.cash` changed between renders (applied post-render in main.js — view
+  functions stay pure). Home callbacks button gains `btn-callbacks--due` only
+  when a callback is actually claimable. The 5× duplicated `open-settings`
+  listener wiring in job.js was collapsed to one; a test now fails on any
+  duplicated `data-action` wiring.
+- **Graphics mode:** both — wrapper-level changes only; no machine-art changes.
+- **sw.js cache bumped?** yes v18→v19 (css/main.css, js/main.js, js/ui/job.js).
+- **prefers-reduced-motion honored?** yes, strengthened: the old guard only
+  covered `.machine-stage`; a global catch-all (end of main.css) now zeroes
+  every animation/transition, including the SVG LED/fluid loops that were
+  previously unguarded.
+- **Schema change?** none — still v12. All new state is transient render
+  bookkeeping in main.js.
+- **Tests:** `node tests/run.js` → 249 passing, 0 failed (+2).
+- **Open / unverified:** verified in headless Chromium at 380px and 1280px
+  (screenshots + computed-style assertions: same-view re-renders muted,
+  navigation animates, modal pops once, cash bump fires, reduced-motion zeroes
+  durations, no console errors from this change). Not yet felt on a real phone —
+  judge the receipt print / MotD pop timing in normal play.
+
 ### 2026-07-03 — Claude Code — Session 22: the finishing session (v1.0 ship pass)
 
 - **Files touched:** `js/state.js`, `js/economy.js`, `js/main.js`, `js/audio.js`

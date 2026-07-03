@@ -7,6 +7,27 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 23 done — motion/UI polish; on branch claude/motion-ui-improvements-z766ij)
+
+**Session 23 was a motion/UI polish pass on top of the shipped v1.0.** The
+headline fix: render() redraws the whole DOM on every action, so the screen
+entrance animation used to replay on every click (running a test re-faded the
+entire job screen). main.js now tags same-view re-renders (`app-rerender` /
+`modal-rerender`) and CSS mutes one-shot entrances under them — only actual
+navigation animates. On top of that: a global `prefers-reduced-motion` guard
+(the old one only covered machine art — SVG LED/fluid loops ran regardless),
+button hover/press/focus feedback, a status-bar cash bump on money movement,
+receipt print-in + failure-lesson/actions stagger on the invoice, MotD card
+pop (the share moment), settings-modal fade/pop, a breathe pulse on the
+Callbacks button only when one is actually due, and the settings button's 5×
+duplicated click wiring collapsed to one (with a test that fails on any future
+duplicate wiring). No state or economy changes; schema stays v12; sw.js cache
+v18→v19. `node tests/run.js` → **249 passing, 0 failed**. Verified in headless
+Chromium at 380px + 1280px. Full contract in HANDOFF.md. Not pushed to main —
+work lives on `claude/motion-ui-improvements-z766ij` pending Tom's say-so.
+
+---
+
 ## Status (Session 22 done — the finishing session; pushed to main)
 
 **Session 22 worked the full ship list: correctness/save-safety, the first real

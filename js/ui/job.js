@@ -372,7 +372,7 @@ export function homeView({ state, justUnlockedTier, offlineReport, expiryReport,
       ${prestigeSection}
 
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
-      ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
+      ${total > 0 ? `<button class="btn btn-callbacks${due > 0 ? ' btn-callbacks--due' : ''}" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
       ${workshopSection}
 
@@ -815,21 +815,6 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
     el.addEventListener('click', actions.openSettings)
   );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-    el.addEventListener('click', actions.openSettings)
-  );
-  root.querySelectorAll('[data-action="open-settings"]').forEach((el) =>
-
-    el.addEventListener('click', actions.openSettings)
-
-  );
-
   root.querySelectorAll('[data-action="start-motd"]').forEach((el) =>
     el.addEventListener('click', actions.startMotd)
   );

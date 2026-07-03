@@ -371,6 +371,29 @@ test('the offline report attributes jobs and misses per technician', () => {
   assert(html.includes('back on the board tomorrow'), 'offline callbacks should be explained, not left to seem vanished');
 });
 
+// --- Motion/UI polish: attention cues only where action is possible ---
+
+test('home Callbacks button pulses only when a callback is actually due', () => {
+  const realNow = Date.now;
+  Date.now = () => Date.parse('2026-06-13T12:00:00Z');
+  try {
+    const due = stateWithCallback({ dueDay: '2026-06-10' });
+    assert(homeView({ state: due }).includes('btn-callbacks--due'),
+      'a due callback should draw attention');
+    const pendingOnly = stateWithCallback({ dueDay: '2026-06-14', source: 'tech' });
+    assert(!homeView({ state: pendingOnly }).includes('btn-callbacks--due'),
+      'a queued-but-not-due callback has nothing to act on and must stay still');
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+test('each data-action is wired exactly once (duplicated listeners fire actions repeatedly)', () => {
+  const wired = [...jobUi.matchAll(/querySelectorAll\('\[data-action="([\w-]+)"\]'\)/g)].map((m) => m[1]);
+  const dupes = wired.filter((a, i) => wired.indexOf(a) !== i);
+  assertEqual(dupes.length, 0, `duplicate wiring for: ${[...new Set(dupes)].join(', ')}`);
+});
+
 test('the staff explainer states jobs/hour, success, offline cap, wage, and callback risk before hiring', () => {
   const html = staffExplainerHTML();
   assert(html.includes(`${TECHS.jobsPerHour} jobs/hour`), 'should state expected jobs/hour');

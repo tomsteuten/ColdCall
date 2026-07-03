@@ -360,7 +360,31 @@ const actions = {
   },
 };
 
+// Motion bookkeeping: which view the last render showed, whether the settings
+// modal was already open, and the cash shown last render. render() redraws the
+// whole DOM on every action, so without these the entrance animations would
+// replay on every click instead of only on actual navigation.
+let lastViewKey = null;
+let lastSettingsOpen = false;
+let lastCash = null;
+
+/** The view render() is about to draw — mirrors its branch order exactly. */
+function currentViewKey() {
+  if (screen === 'motd') return 'motd';
+  if (screen === 'shop' && !state.jobs.active && !invoice) return 'shop';
+  if (repairBeat) return 'repair';
+  if (invoice) return 'invoice';
+  if (state.jobs.active) return 'job';
+  return screen; // 'callbacks' | 'home'
+}
+
 function render() {
+  // Mark same-view re-renders before drawing so CSS can mute one-shot
+  // entrance animations (only navigation animates — see css/main.css).
+  const viewKey = currentViewKey();
+  app.classList.toggle('app-rerender', viewKey === lastViewKey);
+  lastViewKey = viewKey;
+
   if (screen === 'motd') {
     motdScreen.render(app, { state, motdResult, actions });
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {
@@ -391,9 +415,22 @@ function render() {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = modalHtml;
     const modalEl = tempDiv.firstElementChild;
+    // The modal is recreated on every render while open; only the actual
+    // open should play the entrance (toggling a setting must not re-pop).
+    if (lastSettingsOpen) modalEl.classList.add('modal-rerender');
     app.appendChild(modalEl);
     settingsScreen.wire(modalEl, actions);
   }
+  lastSettingsOpen = settingsOpen;
+
+  // Cash movement feedback: bump the status-bar figure when the number the
+  // player just saw changed. The element is freshly created each render, so
+  // adding the class here plays the animation exactly once.
+  if (lastCash !== null && state.player.cash !== lastCash) {
+    const cashEl = app.querySelector('.status-bar .stat');
+    if (cashEl) cashEl.classList.add(state.player.cash > lastCash ? 'stat--bump-up' : 'stat--bump-down');
+  }
+  lastCash = state.player.cash;
 }
 
 // One delegated listener gives every button a soft blip, gated on the audio
