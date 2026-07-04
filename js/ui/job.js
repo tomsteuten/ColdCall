@@ -6,7 +6,7 @@
 import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
-import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { mulberry32 } from '../rng.js';
@@ -144,7 +144,7 @@ export function statusBar(state) {
     </header>`;
 }
 
-export function homeView({ state, faults, machines = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels }) {
+export function homeView({ state, faults, machines = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
@@ -261,17 +261,32 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
   // Compact one-line banner, expanding on tap (2026-07-04 home tightening):
   // the full sales pitch was crowding the ticket loop off the screen. Open
   // state is transient UI state, remembered across re-renders via homePanels.
+  // Selling is hours of purchases gone in one go, so the card must make the
+  // trade legible (what survives, what the new owners keep) and the button is
+  // two-step — armed via the transient prestigeConfirm flag, never one tap
+  // (2026-07-04 prestige playtest: the numbers were sound, the blind tap wasn't).
   const prestigeSection = state.player.lifetimeEarnings >= PRESTIGE.lifetimeEarningsThreshold
     ? `<details class="home-details home-details--prestige" data-home-panel="prestige"${homePanels?.prestige ? ' open' : ''}>
          <summary class="home-details-summary">Sell the Business — Founder Bonus ${(currentFounderBonus * 100).toFixed(0)}% → ${(nextFounderBonus * 100).toFixed(0)}%</summary>
          <div class="home-details-body">
-           <p class="home-offline-detail">Lifetime earnings reached <strong>$${state.player.lifetimeEarnings.toLocaleString('en-US')}</strong> (threshold $${PRESTIGE.lifetimeEarningsThreshold.toLocaleString('en-US')}). Sell up to restart in a new region with a permanent <strong>Founder Bonus</strong>.</p>
+           <p class="home-offline-detail">Lifetime earnings reached <strong>$${state.player.lifetimeEarnings.toLocaleString('en-US')}</strong> (threshold $${PRESTIGE.lifetimeEarningsThreshold.toLocaleString('en-US')}). Sell up and restart in a new region with a permanent <strong>Founder Bonus</strong> — it multiplies your job pay and reputation gain on every future run.</p>
            <ul class="home-offline-techs prestige-numbers">
              <li class="home-offline-tech">Current Founder Bonus: <strong>${(currentFounderBonus * 100).toFixed(0)}%</strong></li>
              <li class="home-offline-tech">Reputation value: <strong>+${(prestigeBonusGained * 100).toFixed(0)}%</strong></li>
              <li class="home-offline-tech">New Founder Bonus: <strong>${(nextFounderBonus * 100).toFixed(0)}%</strong></li>
            </ul>
-           <button class="btn btn-prestige" data-action="sell-business">Sell the Business</button>
+           <p class="prestige-keep">You keep: the Founder Bonus, the Fault Codex, your Machine of the Day streak, and lifetime stats.</p>
+           <p class="prestige-lose">The new owners keep: your cash (you restart with $${STARTING.cash.toLocaleString('en-US')}), reputation and tier, tools, van racking, techs and their training, contract routes, workshop machines, and queued callbacks.</p>
+           ${prestigeConfirm
+             ? `<div class="prestige-confirm" role="alert">
+                 <p><strong>Sell for +${(prestigeBonusGained * 100).toFixed(0)}% Founder Bonus?</strong></p>
+                 <p>Tools, van, techs and routes go with the business. This can't be undone.</p>
+                 <div class="first-fix-actions">
+                   <button class="btn btn-prestige" data-action="confirm-sell-business">Sell the Business</button>
+                   <button class="btn btn-sm" data-action="cancel-sell-business">Keep the business</button>
+                 </div>
+               </div>`
+             : `<button class="btn btn-prestige" data-action="sell-business">Sell the Business</button>`}
          </div>
        </details>`
     : '';
@@ -925,6 +940,14 @@ function wire(root, actions) {
 
     el.addEventListener('click', actions.sellBusiness)
 
+  );
+
+  root.querySelectorAll('[data-action="confirm-sell-business"]').forEach((el) =>
+    el.addEventListener('click', actions.confirmSellBusiness)
+  );
+
+  root.querySelectorAll('[data-action="cancel-sell-business"]').forEach((el) =>
+    el.addEventListener('click', actions.cancelSellBusiness)
   );
 
   root.querySelectorAll('[data-buy-workshop-machine]').forEach((el) =>

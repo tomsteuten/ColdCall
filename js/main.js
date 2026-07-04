@@ -78,6 +78,11 @@ let pendingFirstFixId = null;
 // session so tapping a button inside a panel doesn't slam it shut.
 const homePanels = { prestige: false, workshop: false };
 
+// Selling the business wipes hours of purchases, so the button is two-step:
+// the first tap arms this transient flag and the card re-renders with an
+// explicit confirm/cancel (same pattern as pendingFirstFixId — never saved).
+let prestigeConfirm = false;
+
 // A correct fix earns a brief repair beat (GDD §2.3) shown before the invoice.
 // Transient and purely cosmetic: the money is already settled inside commitFix
 // (the settlement boundary), so a refresh mid-beat lands on home with cash
@@ -217,12 +222,23 @@ const actions = {
     render();
   },
   sellBusiness() {
+    prestigeConfirm = true;
+    homePanels.prestige = true; // keep the card open across the re-render
+    render();
+  },
+  confirmSellBusiness() {
+    prestigeConfirm = false;
+    homePanels.prestige = false; // next unlock starts collapsed again
     try {
       prestige(state);
       save(state);
     } catch (e) {
       console.error(e.message);
     }
+    render();
+  },
+  cancelSellBusiness() {
+    prestigeConfirm = false;
     render();
   },
   buyWorkshopMachine(machineType) {
@@ -404,6 +420,7 @@ function render() {
       corruptSaveBlob,
       pendingFirstFixId,
       homePanels,
+      prestigeConfirm,
       screen,
       actions,
     });

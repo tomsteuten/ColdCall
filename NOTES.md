@@ -7,6 +7,79 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 25 done — prestige-vs-ladder playtest; sell moment made legible; committed, NOT pushed)
+
+**Session 25 worked item (1) from session 24's list: the prestige-vs-ladder
+tension.** `node tests/run.js` → **307 passing, 0 failed**. sw.js cache is
+**v21**. Schema stays **v14** (the fix is transient UI state only).
+
+### The verdict (GDD §3.4 decision of record, 2026-07-04)
+
+**The economy is a good decision point, not a trap — no numbers changed.**
+Simulated full playthroughs through the real engine (scratchpad script driving
+pickTicket → startJob → runTest → commitFix → buyLadderItem, 3 seeds,
+ladder-follower player, 60s/job wall-clock conversion):
+
+- The $30k gate lands at ~182 jobs ≈ 3 focused hours (GDD's 2–4h target ✓),
+  with 7 of 9 ladder rungs owned ($22k spent), ~$8.5k cash, rep ~182 — so the
+  card offers **+~180%** while the player stares at the $9k van and $12k meter.
+- Sell at the gate → founderBonus ~2.8×, run 2 reaches $30k in ~70 min.
+  Finish the $43k ladder first (~90 more minutes, done at ~$43k lifetime with
+  ~$500 cash) → sell at ~4.5×, run 2 takes ~45 min.
+- Bonus grows ~linearly with continued play (~+0.6×/hour, since rep ≈ jobs)
+  while each sale shortens the next run — **neither strategy dominates**; sell
+  timing is a genuine taste call. Because founderBonus multiplies rep gain too,
+  rep-at-$30k is ~constant across runs (~200), so each cycle adds ~+2× in
+  ever-shorter wall time. Healthy accelerating loop; rule 5 intact throughout.
+
+**The trap was the UX, and that's what shipped:** "Sell the Business" was a
+single un-confirmed tap on a card that never said what a sale wipes — while
+the game confirms a mere first fix commit. Now: the card lists **You keep**
+(Founder Bonus, Codex, MotD streak, stats) and **The new owners keep** (cash →
+$500, rep/tier, tools, van, techs+training, routes, workshop, callbacks), the
+detail line says the bonus multiplies job pay *and* rep gain, and the button is
+**two-step** — first tap arms a transient `prestigeConfirm` (same pattern as
+`pendingFirstFixId`, never saved), showing a warn-bordered confirm ("Sell for
++182% Founder Bonus? … can't be undone") with a "Keep the business" cancel.
+
+### Verified
+
+- 307 tests green (new markup test: keep/lose copy present, no one-tap sell,
+  armed card shows confirm/cancel and restates the bonus).
+- Live in the preview browser (port 8124 — Tom's own server holds 8123; a
+  `static-alt` entry was added to .claude/launch.json): seeded v14 save at the
+  exact simulated decision point ($8,526 cash, rep 182, T3, 2 trained techs,
+  froyo route), 380px and 1280px. Arm → cancel leaves the save untouched;
+  arm → confirm resets to $500/rep 0/T1/meter 1/van 4/no techs-routes with
+  founderBonus 2.82, prestigeCount 1, codex+motd kept, home reads "Founder
+  Bonus: 282%". Zero console errors.
+
+### Loose ends
+
+- Flagged as a background-task chip: `prestige()` leaves `state.contract`
+  untouched, so prestiging while holding a Tier-3 Today's-contract makes it
+  uncompletable until the next UTC day. Needs a design call (clear-and-regen
+  vs "it's the player's day"). See GDD §5.
+- Session 24's remaining candidates are untouched: (2) the symptom-variant
+  memorisation playtest needs ~2h of REAL human play — that one is Tom's;
+  (3) the dedicated visual session (hero ticket card, Codex grouping,
+  diegetic surfaces) per DESIGN.md.
+- **NOT pushed** — commit is local, awaiting Tom's say-so.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Session 25 verified the
+> prestige-vs-ladder tension (numbers stand; sim data in the §3.4 decision of
+> record) and shipped keep/lose copy + a two-step confirm on the sell moment.
+> `node tests/run.js` should be 307 green, schema v14, sw.js cache v21. The
+> session-25 commit may still be unpushed — ask Tom. Next candidates: (a) the
+> visual session Tom prefers (home hero ticket card, Codex grouping by machine,
+> diegetic surfaces — DESIGN.md is the style guide); (b) the contract-vs-
+> prestige chip if Tom hasn't run it; (c) Tom's own 2h symptom-variant
+> playtest debrief if he's done it. Don't push without Tom's say-so.
+
+---
+
 ## Status (Session 24 done — Phase 5 daily comeback hooks; retention brief complete; pushed to main)
 
 **Session 24 shipped the retention brief's cut Phase 5, completing all five

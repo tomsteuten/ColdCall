@@ -543,3 +543,26 @@ test("home shows Today's contract with machine name, progress badge, and reward"
   state.contract.date = '2020-01-01';
   assert(!homeView({ state }).includes("Today's contract"), 'stale contract must not render');
 });
+
+test('prestige card states what is kept and lost, and never sells in one tap (2026-07-04)', () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = 40000;
+  state.player.reputation = 182;
+
+  const html = homeView({ state, faults: {} });
+  assert(html.includes('You keep:'), 'card must list what survives the sale');
+  assert(html.includes('Fault Codex'), 'codex survival must be stated');
+  assert(html.includes('The new owners keep:'), 'card must list what is wiped');
+  assert(html.includes('tools, van racking, techs'), 'wiped purchases must be named');
+  assert(html.includes('restart with $500'), 'cash reset must be explicit');
+  assert(html.includes('data-action="sell-business"'), 'unarmed card shows the arming button');
+  assert(!html.includes('data-action="confirm-sell-business"'), 'no confirm button until armed');
+
+  // Armed: the confirm/cancel pair replaces the one-tap button.
+  const armed = homeView({ state, faults: {}, prestigeConfirm: true, homePanels: { prestige: true } });
+  assert(armed.includes('data-action="confirm-sell-business"'), 'armed card shows confirm');
+  assert(armed.includes('data-action="cancel-sell-business"'), 'armed card shows cancel');
+  assert(!armed.includes('data-action="sell-business"'), 'arming button gone while armed');
+  assert(armed.includes('+182%'), 'confirm restates the bonus at stake');
+  assert(armed.includes("can't be undone"), 'irreversibility must be stated');
+});
