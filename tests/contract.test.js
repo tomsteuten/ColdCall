@@ -2,8 +2,8 @@
 
 import { defaultState, validateState } from '../js/state.js';
 import { generateContract, ensureContract, recordContractProgress } from '../js/contract.js';
-import { settleJob } from '../js/economy.js';
-import { CONTRACT } from '../config/balance.js';
+import { settleJob, prestige } from '../js/economy.js';
+import { CONTRACT, PRESTIGE } from '../config/balance.js';
 
 const MACHINES = [
   { id: 'slushie-machine', name: 'Polar Twister Twin-Bowl Slushie', tier: 1 },
@@ -147,6 +147,37 @@ test('rule 5: the daily reward only ever pays for active fixes, once, from balan
   recordContractProgress(state, 'slushie-machine', NOON);
   const drained = [1, 2, 3].map(() => recordContractProgress(state, 'slushie-machine', NOON));
   assertEqual(drained, [null, null, null], 'a paid contract is inert for the rest of the day');
+});
+
+test('prestige mid-day: unpaid contract regenerates for the new region, paid stays complete (GDD §5)', () => {
+  // Unpaid: cleared by the sale, and the same-day action boundary issues the
+  // new region's contract — always a machine the fresh run can actually ticket.
+  const state = defaultState();
+  state.player.tierUnlocked = 3;
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
+  ensureContract(state, MACHINES, NOON);
+  state.contract.progress = 1; // mid-contract, unpaid
+  prestige(state);
+  assertEqual(state.contract, null, 'the unpaid contract goes with the business');
+  const regen = ensureContract(state, MACHINES, NOON);
+  assertEqual(regen.date, TODAY, 'same day, fresh contract');
+  assertEqual(regen.machineType, 'slushie-machine', 'targets the post-prestige tier, never a dead objective');
+  assertEqual(regen.progress, 0);
+  assertEqual(regen.paid, false);
+
+  // Paid: survives the sale, and the boundary must NOT mint a fresh unpaid one
+  // over it — that would let a fast second run collect the daily reward twice.
+  const done = defaultState();
+  done.player.tierUnlocked = 3;
+  done.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
+  ensureContract(done, MACHINES, NOON);
+  done.contract.progress = done.contract.count;
+  done.contract.paid = true;
+  const kept = { ...done.contract };
+  prestige(done);
+  assertEqual(done.contract, kept, "the day's paid contract survives the sale");
+  const after = ensureContract(done, MACHINES, NOON);
+  assertEqual(after.paid, true, 'no second unpaid contract the same day');
 });
 
 test('validateState accepts a null contract, a valid contract, and rejects a hostile one', () => {

@@ -663,6 +663,14 @@ export function prestige(state) {
 
   // Reset offlineJobCarry
   state.offlineJobCarry = 0;
+
+  // Today's contract is the business's work, not the player's knowledge
+  // (contrast the codex, which survives): an unpaid contract goes with the
+  // sale — its target may be a tier the new region can't even ticket — and
+  // the next action boundary issues the new region's contract for today.
+  // A PAID contract stays as the day's done deal: keeping it is what stops
+  // a fast second run from collecting the daily reward twice (GDD §5).
+  if (state.contract && !state.contract.paid) state.contract = null;
 }
 
 

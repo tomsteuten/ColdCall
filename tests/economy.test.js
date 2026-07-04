@@ -932,6 +932,27 @@ test('codex mastery counts only faults still in the library (retired ids ignored
   assertEqual(r.total, 4);
 });
 
+test("prestige clears an unpaid Today's contract — the work goes with the business", () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
+  state.contract = {
+    date: '2026-07-04', machineType: 'froyo-multihead', count: 3, reward: 225, progress: 2, paid: false,
+  };
+  prestige(state);
+  assertEqual(state.contract, null, 'an unpaid contract must not survive the sale — its target tier may be unticketable');
+});
+
+test('prestige keeps a paid contract so the daily reward cannot be collected twice', () => {
+  const state = defaultState();
+  state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;
+  const paid = {
+    date: '2026-07-04', machineType: 'froyo-multihead', count: 2, reward: 150, progress: 2, paid: true,
+  };
+  state.contract = { ...paid };
+  prestige(state);
+  assertEqual(state.contract, paid, "the day's done deal stays — it is what blocks a second same-day payout");
+});
+
 test('codex survives prestige — the collection is meta-progress', () => {
   const state = defaultState();
   state.player.lifetimeEarnings = PRESTIGE.lifetimeEarningsThreshold;

@@ -56,10 +56,18 @@ detail line says the bonus multiplies job pay *and* rep gain, and the button is
 
 ### Loose ends
 
-- Flagged as a background-task chip: `prestige()` leaves `state.contract`
-  untouched, so prestiging while holding a Tier-3 Today's-contract makes it
-  uncompletable until the next UTC day. Needs a design call (clear-and-regen
-  vs "it's the player's day"). See GDD §5.
+- ~~Flagged as a background-task chip: `prestige()` leaves `state.contract`
+  untouched~~ **RESOLVED same day (session 25b, spawned from the chip):**
+  `prestige()` now clears an **unpaid** contract (the business's work goes
+  with the sale; boot/next-ticket regenerates the new region's contract for
+  the same day, deterministically at the new tier) and keeps a **paid** one
+  (the day's done deal — keeping it is what blocks a double payout from a
+  fast second run). Decision of record in GDD §5. Tests: prestige clears
+  unpaid / keeps paid (economy.test.js) + the full same-day regen round trip
+  (contract.test.js). `node tests/run.js` → **310 passing**. sw.js cache
+  **v22**. Verified live at 380px: unpaid Tier-3 contract disappears the
+  moment the sale confirms, reload issues "Fix 3 × Polar Twister · +$120 ·
+  0/3" at Tier 1, zero console errors. Schema stays v14.
 - Session 24's remaining candidates are untouched: (2) the symptom-variant
   memorisation playtest needs ~2h of REAL human play — that one is Tom's;
   (3) the dedicated visual session (hero ticket card, Codex grouping,
@@ -70,13 +78,14 @@ detail line says the bonus multiplies job pay *and* rep gain, and the button is
 
 > Read CLAUDE.md and the top of NOTES.md. Session 25 verified the
 > prestige-vs-ladder tension (numbers stand; sim data in the §3.4 decision of
-> record) and shipped keep/lose copy + a two-step confirm on the sell moment.
-> `node tests/run.js` should be 307 green, schema v14, sw.js cache v21. The
-> session-25 commit may still be unpushed — ask Tom. Next candidates: (a) the
-> visual session Tom prefers (home hero ticket card, Codex grouping by machine,
-> diegetic surfaces — DESIGN.md is the style guide); (b) the contract-vs-
-> prestige chip if Tom hasn't run it; (c) Tom's own 2h symptom-variant
-> playtest debrief if he's done it. Don't push without Tom's say-so.
+> record) and shipped keep/lose copy + a two-step confirm on the sell moment;
+> session 25b made prestige clear an unpaid Today's-contract (paid ones stay —
+> GDD §5 decision of record). `node tests/run.js` should be 310 green, schema
+> v14, sw.js cache v22. Both commits may still be unpushed — ask Tom. Next
+> candidates: (a) the visual session Tom prefers (home hero ticket card, Codex
+> grouping by machine, diegetic surfaces — DESIGN.md is the style guide);
+> (b) Tom's own 2h symptom-variant playtest debrief if he's done it. Don't
+> push without Tom's say-so.
 
 ---
 

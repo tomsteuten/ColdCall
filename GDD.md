@@ -186,6 +186,15 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
     balance.js reward (`CONTRACT.rewardPerFix[tier] × count`) exactly once on
     completion, and lands on the receipt as well as the home panel. Rule 5 is
     safe by construction: the reward only ever tops up active play.
+    **Decision of record (2026-07-04) — the contract and prestige:** the
+    contract is the *business's* work, not the player's knowledge (contrast
+    the codex, which survives). Selling the business clears an **unpaid**
+    contract — its target may be a tier the fresh run can't even ticket, and
+    a dead objective on the home screen is exactly the guilt-shaped noise
+    pillar 4 forbids — and the next action boundary issues the new region's
+    contract for the same day (deterministic: date + the new tier). A **paid**
+    contract survives the sale as the day's done deal; keeping it is what
+    stops a fast second run from collecting the daily reward twice.
 
 ---
 
