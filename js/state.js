@@ -384,6 +384,21 @@ export function validateState(s) {
       throw new Error(`Save has a bad codex fix count for "${faultId}" (expected number)`);
     }
   }
+  // Today's contract is null (not yet generated) or a well-typed object — the
+  // UI interpolates count/progress/reward as numbers.
+  if (s.contract !== null && s.contract !== undefined) {
+    if (typeof s.contract !== 'object') {
+      throw new Error('Save has a bad "contract" (expected object or null)');
+    }
+    for (const field of ['count', 'progress', 'reward']) {
+      if (typeof s.contract[field] !== 'number') {
+        throw new Error(`Save has a bad "contract.${field}" (expected number)`);
+      }
+    }
+    if (typeof s.contract.machineType !== 'string' || typeof s.contract.date !== 'string') {
+      throw new Error('Save has a bad "contract.machineType"/"contract.date" (expected string)');
+    }
+  }
   for (const tech of s.techs) {
     if (typeof tech.name !== 'string') {
       throw new Error('Save has a tech with a bad "name" (expected string)');

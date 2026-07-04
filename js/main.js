@@ -8,6 +8,7 @@ import { simulateOfflineProgress } from './idle.js';
 import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
+import { ensureContract } from './contract.js';
 import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk } from './audio.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
@@ -104,6 +105,9 @@ function commitSelectedFix(fixId) {
 const actions = {
   nextTicket() {
     justUnlockedTier = null;
+    // A session can cross UTC midnight: refresh yesterday's contract before the
+    // job starts so its progress lands on the right day's objective.
+    ensureContract(state, machines);
     // Fresh tickets only — callbacks are never auto-claimed (GDD §3.1); the
     // player chooses them from the Callbacks list via takeCallback().
     const next = mulberry32(Date.now());
@@ -437,6 +441,10 @@ if (state.jobs.active && !faults[state.jobs.active.faultId]) {
 // the board for being old, never for the new offline jobs queued this load.
 expiryReport = expireCallbacks(state);
 offlineReport = simulateOfflineProgress(state, faults);
+
+// Generate (or refresh) today's contract before first render (GDD §5). After
+// offline sim so a stale contract never absorbs credit from simulated jobs.
+ensureContract(state, machines);
 
 render();
 save(state);

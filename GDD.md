@@ -164,15 +164,27 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
   milestones, and the codex **survives prestige** — it's the player's knowledge,
   not the business's assets.
 
-> **Not yet shipped (cut at the 2026-07-04 session's usage limit, in scope-cut
-> order per the session brief):** the daily comeback hooks — MotD played-state
-> countdown to the next puzzle, an at-risk-streak cue on the unplayed MotD
-> button, and "Today's contract" (a seeded-by-date bonus objective on home,
-> e.g. "Fix 2 froyo machines · +$150"). These were the last item on the
-> session's phase list and nothing was scaffolded for them — no half-built
-> code, no schema fields reserved. Next session can design the contract shape
-> fresh; schema v14's `contract: null` slot from the Codex migration remains
-> unused and available, or a new bump can supersede it if the shape doesn't fit.
+- **Daily comeback hooks** (decision of record 2026-07-04, shipped session 24 —
+  completing the retention brief's Phase 5):
+  - **MotD played state counts down** to the next puzzle ("New puzzle in
+    5h 12m") — computed at render from UTC midnight, never ticked; a stale
+    label refreshes on the next interaction, which is all a daily puzzle needs.
+  - **The unplayed MotD button warns when a streak is at risk** ("4-day streak
+    at risk", warn badge). At-risk means precisely: yesterday's puzzle was
+    played *and solved*, today's is unplayed. A lapsed or failed streak shows
+    nothing — it isn't at risk, it's already gone; guilt-flavoured nagging
+    would breach pillar 4.
+  - **Today's contract:** one bonus objective per day on home ("Fix 2 ×
+    YogurtMaster · +$150"). Generated deterministically from the UTC date +
+    the player's unlocked tier (rule 6) and **pinned into `state.contract` at
+    generation** (fills the slot reserved by schema v14 — no new bump), so a
+    mid-day tier unlock or balance patch never rerolls a contract in progress;
+    the target is always a machine the player can actually get tickets for.
+    Progress counts **correct active client fixes only** (fresh tickets and
+    callbacks; workshop repairs and MotD are not client jobs), pays the
+    balance.js reward (`CONTRACT.rewardPerFix[tier] × count`) exactly once on
+    completion, and lands on the receipt as well as the home panel. Rule 5 is
+    safe by construction: the reward only ever tops up active play.
 
 ---
 

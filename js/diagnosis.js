@@ -256,7 +256,7 @@ export function commitFix(state, fixId, faults) {
   const callback = job.callback ?? null;
   const minutesSpent = job.minutesSpent ?? 0;
   const testsUsed = job.testsRun.length;
-  const { earned, repDelta, unlockedTier } = settleJob(state, fault, correct, job.clientId, {
+  const { earned, repDelta, unlockedTier, contract } = settleJob(state, fault, correct, job.clientId, {
     callback,
     minutesSpent,
     testsRun: job.testsRun,
@@ -277,6 +277,7 @@ export function commitFix(state, fixId, faults) {
     testsUsed,
     cleanStreak: state.stats.cleanStreak,
     codex,
+    contract,
   };
 }
 

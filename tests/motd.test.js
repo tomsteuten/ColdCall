@@ -1,7 +1,7 @@
 /** @file Machine of the Day: deterministic draw, once-per-day guard, streak rules, share card. */
 
 import { defaultState } from '../js/state.js';
-import { pickMotdFault, canPlayToday, settleMotd, buildShareCard, getTodayDateStr } from '../js/motd.js';
+import { pickMotdFault, canPlayToday, settleMotd, buildShareCard, getTodayDateStr, nextPuzzleCountdown, streakAtRisk } from '../js/motd.js';
 import { startJob, commitFix } from '../js/diagnosis.js';
 import { MOTD } from '../config/balance.js';
 
@@ -356,4 +356,51 @@ test('share card: backward-compat — no stats arg produces no flourish line', (
   const result = { testsUsed: 1, solved: true, streak: 1 };
   const card = buildShareCard(result, '2026-06-12');
   assert(!card.includes('🧹') && !card.includes('⚠️'), `no stats line without arg: ${card}`);
+});
+
+// --- daily comeback hooks (GDD §5, 2026-07-04) ---
+
+test('nextPuzzleCountdown counts down to the next UTC midnight', () => {
+  // 21:47 UTC → 2h 13m to midnight.
+  assertEqual(nextPuzzleCountdown(Date.UTC(2026, 6, 4, 21, 47, 0)), '2h 13m');
+  // 23:30:30 UTC → 30m (ceil of 29.5), inside the last hour: no hours part.
+  assertEqual(nextPuzzleCountdown(Date.UTC(2026, 6, 4, 23, 30, 30)), '30m');
+  // Exactly midnight → a full day remains.
+  assertEqual(nextPuzzleCountdown(Date.UTC(2026, 6, 4, 0, 0, 0)), '24h 0m');
+});
+
+test('streakAtRisk: solved yesterday + unplayed today = the streak is at risk', () => {
+  const now = Date.UTC(2026, 6, 4, 12, 0, 0); // today = 2026-07-04
+  const state = defaultState();
+  state.motd.lastPlayedDate = '2026-07-03';
+  state.motd.streak = 3;
+  state.motd.lastResult = { testsUsed: 2, simMinutes: 7, solved: true, faultId: 'f' };
+  assertEqual(streakAtRisk(state, now), 3);
+});
+
+test('streakAtRisk is 0 when played today, already broken, or last play failed', () => {
+  const now = Date.UTC(2026, 6, 4, 12, 0, 0);
+  const base = () => {
+    const s = defaultState();
+    s.motd.lastPlayedDate = '2026-07-03';
+    s.motd.streak = 3;
+    s.motd.lastResult = { testsUsed: 2, simMinutes: 7, solved: true, faultId: 'f' };
+    return s;
+  };
+
+  const played = base();
+  played.motd.lastPlayedDate = '2026-07-04'; // already played today
+  assertEqual(streakAtRisk(played, now), 0, 'nothing at risk once today is played');
+
+  const stale = base();
+  stale.motd.lastPlayedDate = '2026-07-02'; // skipped yesterday: already broken
+  assertEqual(streakAtRisk(stale, now), 0, 'a lapsed streak is not "at risk", it is gone');
+
+  const failed = base();
+  failed.motd.lastResult.solved = false; // yesterday was played but missed
+  failed.motd.streak = 0;
+  assertEqual(streakAtRisk(failed, now), 0, 'a failed yesterday leaves no streak to lose');
+
+  const fresh = defaultState(); // never played
+  assertEqual(streakAtRisk(fresh, now), 0);
 });

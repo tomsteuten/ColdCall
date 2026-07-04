@@ -40,6 +40,48 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-04 — Claude Code — Session 24: Phase 5 daily comeback hooks (brief complete)
+
+- **Files touched:** `js/contract.js` (new), `js/motd.js`, `js/economy.js`,
+  `js/diagnosis.js`, `js/state.js` (validateState only), `js/main.js`,
+  `js/ui/job.js`, `config/balance.js` (`CONTRACT`), `css/main.css`
+  (`.home-contract*`, `.btn-subtext`), `sw.js` (v19→v20 + `js/contract.js`),
+  `tests/contract.test.js` (new), `tests/motd.test.js`,
+  `tests/ui-markup.test.js`, `GDD.md`, `NOTES.md`.
+- **Contract:** `state.contract` is now live: null or `{date, machineType,
+  count, reward, progress, paid}` — validateState type-checks every
+  interpolated field, so any new field the UI renders must be added there.
+  Generation/refresh happens ONLY at action boundaries via
+  `ensureContract(state, machines)` (boot + nextTicket in main.js) — never
+  call it from render, and a same-day contract must never be regenerated
+  (it's pinned; tests enforce this). Progress is recorded ONLY inside
+  `settleJob`'s correct branch via `recordContractProgress` — workshop and
+  MotD paths deliberately never call it; don't "fix" that. `settleJob` and
+  `commitFix` results gained a `contract` key (null when the fix didn't touch
+  the contract) — the receipt renders from it. js/contract.js has a local
+  `utcToday` on purpose: importing economy.js from it would create a cycle
+  (economy → contract → economy). New motd.js exports `nextPuzzleCountdown`
+  and `streakAtRisk` power the home MotD button states.
+- **Graphics mode:** n/a — no art changes.
+- **sw.js cache bumped?** yes v19→v20 (new app-shell file `js/contract.js`;
+  css/js/ui changes).
+- **prefers-reduced-motion honored?** yes — no new motion; the countdown is a
+  static text label, deliberately not a ticking timer.
+- **Schema change?** none — v14's reserved `contract: null` slot is now used;
+  the existing v13→v14 migration and its fixture test already cover it.
+- **Tests:** `node tests/run.js` → 306 passing, 0 failed. Played headless
+  (Playwright driving system Chrome, `channel: 'chrome'` — no bundled
+  browser on this machine) at 380px and 1280px, fresh + seeded v14 mid-game
+  save: at-risk badge shows/clears, contract generates on boot, progresses on
+  matching fixes only, completes with the receipt line, pays once, and the
+  played MotD button counts down. Zero console errors; screenshots in the
+  session scratchpad (not committed).
+- **Open / unverified:** the contract regenerates only at boot/nextTicket, so
+  a home screen left open across UTC midnight hides the stale contract until
+  the next action — accepted (honest, no render mutations). Next-session
+  candidates are in NOTES.md's cold-start prompt (prestige-vs-ladder
+  playtest, variant-rotation playtest, visual session).
+
 ### 2026-07-04 — Claude Code — Session 23: retention pass (Phases 1–4 of 5)
 
 - **Files touched:** `js/state.js` (schema v12→v14, two migrations),

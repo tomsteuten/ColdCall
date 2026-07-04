@@ -219,3 +219,17 @@ export const MOTD = {
 export const CODEX = {
   milestones: { 25: 250, 50: 750, 75: 1500, 100: 3000 },
 };
+
+/**
+ * Today's contract (GDD §5, 2026-07-04): one seeded-by-date bonus objective a
+ * day — "Fix N <machine> · +$R". Rule 5 is safe by construction: the reward
+ * only pays for ACTIVE correct fixes (fresh tickets and callbacks; workshop
+ * and MotD don't count), once per day, on top of normal job pay.
+ */
+export const CONTRACT = {
+  countMin: 2,
+  countMax: 3,
+  // Reward per required fix, by the target machine's tier. Total reward =
+  // rewardPerFix[tier] × count (e.g. 2 froyo fixes → 2 × $75 = $150).
+  rewardPerFix: { 1: 40, 2: 60, 3: 75 },
+};

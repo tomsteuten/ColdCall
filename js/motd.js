@@ -55,6 +55,38 @@ export function canPlayToday(state, now = Date.now()) {
 }
 
 /**
+ * Human countdown to the next puzzle (UTC midnight): "5h 12m", or "43m" inside
+ * the last hour. Computed at render, never ticked — a stale label re-renders on
+ * the next interaction, which is exactly the fidelity a daily puzzle needs.
+ * @param {number} [now] ms epoch, injectable for tests
+ * @returns {string}
+ */
+export function nextPuzzleCountdown(now = Date.now()) {
+  const nextMidnight = Date.parse(getTodayDateStr(now) + 'T00:00:00Z') + DAY_MS;
+  const mins = Math.max(1, Math.ceil((nextMidnight - now) / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/**
+ * The streak that dies at UTC midnight if the player skips today's puzzle:
+ * non-zero only when there IS a live streak (yesterday's puzzle was played and
+ * solved) and today's is still unplayed. Played-today or an already-broken
+ * streak (last play before yesterday) returns 0 — nothing is at risk.
+ * @param {object} state
+ * @param {number} [now] ms epoch, injectable for tests
+ * @returns {number} the at-risk streak length, or 0
+ */
+export function streakAtRisk(state, now = Date.now()) {
+  if (!canPlayToday(state, now)) return 0;
+  if (!(state.motd.streak > 0)) return 0;
+  const yesterdayStr = utcDateStringAfter(-1, now);
+  if (state.motd.lastPlayedDate !== yesterdayStr) return 0;
+  return state.motd.lastResult?.solved === true ? state.motd.streak : 0;
+}
+
+/**
  * Settle a completed MotD run: update state.motd.* (no cash or rep touched).
  * Returns the result object for the UI.
  *

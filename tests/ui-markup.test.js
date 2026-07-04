@@ -494,3 +494,52 @@ test('emoji stay out of UI chrome: home, callbacks and MotD button use badges', 
   assert(html.includes('Streak 3'), 'streak is words, not fire');
   assert(html.includes('dot--ok'), 'workshop status uses dots');
 });
+
+// --- daily comeback hooks on home (GDD §5, 2026-07-04) ---
+
+test('played MotD button shows the countdown to the next puzzle', () => {
+  const state = defaultState();
+  state.motd.lastPlayedDate = new Date(Date.now()).toISOString().slice(0, 10); // played today
+  state.motd.lastResult = { testsUsed: 1, simMinutes: 2, solved: true, faultId: 'f' };
+  const html = homeView({ state });
+  assert(html.includes('New puzzle in'), 'played state must count down to the next puzzle');
+  assert(html.includes('btn-subtext'), 'countdown uses the design-system subtext line');
+});
+
+test('unplayed MotD button warns when a live streak is at risk', () => {
+  const state = defaultState();
+  const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  state.motd.lastPlayedDate = yesterday;
+  state.motd.streak = 4;
+  state.motd.lastResult = { testsUsed: 1, simMinutes: 2, solved: true, faultId: 'f' };
+  const html = homeView({ state });
+  assert(html.includes('4-day streak at risk'), 'at-risk streak must be visible on the button');
+  assert(!html.includes('New puzzle in'), 'no countdown while today is still playable');
+
+  // No streak, nothing at risk: the button stays clean.
+  const fresh = defaultState();
+  assert(!homeView({ state: fresh }).includes('streak at risk'));
+});
+
+test("home shows Today's contract with machine name, progress badge, and reward", () => {
+  const state = defaultState();
+  const today = new Date(Date.now()).toISOString().slice(0, 10);
+  state.contract = {
+    date: today, machineType: 'slushie-machine', count: 2, reward: 80, progress: 1, paid: false,
+  };
+  const html = homeView({ state, machines: [{ id: 'slushie-machine', name: 'Polar Twister', tier: 1 }] });
+  assert(html.includes("Today's contract"), 'contract panel present');
+  assert(html.includes('Fix 2 × Polar Twister'), 'target machine named from machines.json');
+  assert(html.includes('+$80'), 'reward visible');
+  assert(html.includes('1/2'), 'progress visible');
+
+  // Completed contract shows the success badge instead of progress.
+  state.contract.progress = 2;
+  state.contract.paid = true;
+  const done = homeView({ state, machines: [{ id: 'slushie-machine', name: 'Polar Twister', tier: 1 }] });
+  assert(done.includes('Complete'), 'paid contract reads Complete');
+
+  // A stale (yesterday's) contract is hidden, never shown as today's.
+  state.contract.date = '2020-01-01';
+  assert(!homeView({ state }).includes("Today's contract"), 'stale contract must not render');
+});

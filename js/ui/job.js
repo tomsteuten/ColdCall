@@ -7,7 +7,7 @@ import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms, eliminatedF
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE } from '../../config/balance.js';
-import { canPlayToday } from '../motd.js';
+import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml } from '../utils.js';
 import { mulberry32 } from '../rng.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
@@ -144,7 +144,7 @@ export function statusBar(state) {
     </header>`;
 }
 
-export function homeView({ state, faults, justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels }) {
+export function homeView({ state, faults, machines = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
@@ -167,14 +167,41 @@ export function homeView({ state, faults, justUnlockedTier, offlineReport, expir
   const motdPlayed = !canPlayToday(state);
   const motdResult = state.motd.lastResult;
   // Emoji are share-card flavour, not UI (2026-07-04): played state uses the
-  // design-system badges instead of ✅/❌/🔥.
+  // design-system badges instead of ✅/❌/🔥. Daily comeback hooks (GDD §5):
+  // the played state counts down to the next puzzle; the unplayed state warns
+  // when yesterday's streak dies at UTC midnight.
+  const atRisk = streakAtRisk(state);
   const motdSection = motdPlayed && motdResult
     ? `<button class="btn btn-motd" data-action="open-motd-result">
          Machine of the Day
          <span class="badge ${motdResult.solved ? 'badge--success' : 'badge--warn'}">${motdResult.solved ? 'Solved' : 'Missed'}</span>
          ${state.motd.streak > 1 ? `<span class="badge">Streak ${state.motd.streak}</span>` : ''}
+         <span class="btn-subtext">New puzzle in ${nextPuzzleCountdown()}</span>
        </button>`
-    : `<button class="btn btn-motd" data-action="start-motd">Machine of the Day</button>`;
+    : `<button class="btn btn-motd" data-action="start-motd">
+         Machine of the Day
+         ${atRisk > 0 ? `<span class="badge badge--warn">${atRisk}-day streak at risk</span>` : ''}
+       </button>`;
+
+  // Today's contract (GDD §5): the second daily hook, right under MotD. State
+  // is pinned at generation; render only shows today's (a stale one regenerates
+  // on the next action boundary, so hide it rather than lie about the date).
+  const contract = state.contract;
+  const contractIsToday = contract && contract.date === new Date(Date.now()).toISOString().slice(0, 10);
+  const contractMachine = contractIsToday
+    ? (machines.find((m) => m.id === contract.machineType)?.name ?? contract.machineType.replace(/-/g, ' '))
+    : null;
+  const contractSection = contractIsToday
+    ? `<div class="home-contract${contract.paid ? ' home-contract--done' : ''}">
+         <p class="home-contract-title">Today's contract</p>
+         <p class="home-contract-body">
+           Fix ${contract.count} × ${escapeHtml(contractMachine)} · +$${contract.reward.toLocaleString('en-US')}
+           ${contract.paid
+             ? `<span class="badge badge--success">Complete</span>`
+             : `<span class="badge">${contract.progress}/${contract.count}</span>`}
+         </p>
+       </div>`
+    : '';
 
   const offlineBanner = offlineReport
     ? (() => {
@@ -342,6 +369,7 @@ export function homeView({ state, faults, justUnlockedTier, offlineReport, expir
       <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
       ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
+      ${contractSection}
       ${prestigeSection}
       ${workshopSection}
       <button class="btn" data-action="open-codex">Codex — ${codexMastered}/${codexTotal} mastered</button>
@@ -792,6 +820,15 @@ export function invoiceView({ state, invoice }) {
       ].join('')
     : '';
 
+  // Today's contract (GDD §5): progress lands on the receipt so the daily goal
+  // pays off inside the loop, not just back on the home screen.
+  const contractInfo = invoice.contract;
+  const contractLine = contractInfo
+    ? contractInfo.justCompleted
+      ? `<p class="receipt-codex">Contract complete: +$${contractInfo.reward.toLocaleString('en-US')}</p>`
+      : `<p class="receipt-codex">Today's contract: ${contractInfo.progress}/${contractInfo.count}</p>`
+    : '';
+
   return `
     ${statusBar(state)}
     <section class="screen screen-invoice">
@@ -803,6 +840,7 @@ export function invoiceView({ state, invoice }) {
         ${streakLine}
         ${receiptNote}
         ${codexLines}
+        ${contractLine}
         ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
         ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>

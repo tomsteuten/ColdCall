@@ -1,6 +1,7 @@
 /** @file All earning/spending math. Every number it uses comes from config/balance.js. */
 
 import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, STARTING, PRESTIGE, WORKSHOP, VAN, ROUTES, CODEX } from '../config/balance.js';
+import { recordContractProgress } from './contract.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000; // time unit, not a tunable
 
@@ -71,7 +72,7 @@ export function earnedSpeedBonus(minutesSpent, testsCount) {
  *   investigation, GDD §2.1), the symptom-variant index the job presented (saved
  *   on a wrong-fix callback so the return visit shows the same machine, not a
  *   rerolled presentation), and an injectable clock for tests
- * @returns {{earned: number, repDelta: number, unlockedTier: number|null}} for the invoice screen
+ * @returns {{earned: number, repDelta: number, unlockedTier: number|null, contract: object|null}} for the invoice screen
  */
 export function settleJob(state, fault, correct, clientId, opts = {}) {
   const { callback = null, minutesSpent = 0, testsRun = [], variant = 0, now = Date.now() } = opts;
@@ -80,6 +81,7 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   const source = callback ? callback.source ?? 'player' : 'player';
   let earned;
   let repDelta;
+  let contract = null;
   const multiplier = state.player.founderBonus || 1.0;
 
   if (correct) {
@@ -106,6 +108,11 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
 
     state.stats.jobsCompleted += 1;
     if (!callback) state.stats.cleanStreak += 1;
+
+    // Today's contract (GDD §5): every correct ACTIVE client fix counts —
+    // fresh or callback, it's still a machine of that type fixed today.
+    // Workshop and MotD never reach settleJob, so they never count.
+    contract = recordContractProgress(state, fault.machineType, now);
   } else {
     earned = callback ? 0 : Math.round(fault.payout * JOBS.wrongFixPayoutMult);
 
@@ -141,7 +148,7 @@ export function settleJob(state, fault, correct, clientId, opts = {}) {
   }
   state.player.cash += earned;
   state.player.lifetimeEarnings += earned;
-  return { earned, repDelta, unlockedTier: checkTierUnlock(state) };
+  return { earned, repDelta, unlockedTier: checkTierUnlock(state), contract };
 }
 
 /**

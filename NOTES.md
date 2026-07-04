@@ -7,6 +7,53 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 24 done — Phase 5 daily comeback hooks; retention brief complete; pushed to main)
+
+**Session 24 shipped the retention brief's cut Phase 5, completing all five
+phases.** `node tests/run.js` → **306 passing, 0 failed**. sw.js cache is
+**v20**. Schema stays **v14** — Today's contract fills the `contract: null`
+slot the v13→v14 migration reserved, so no new migration was needed.
+
+### What session 24 shipped (all GDD §5, decisions of record dated 2026-07-04)
+
+- **MotD countdown:** the played-state button shows "New puzzle in 5h 12m"
+  (to UTC midnight, computed at render, never ticked — `nextPuzzleCountdown`
+  in js/motd.js).
+- **At-risk streak:** the unplayed button shows a warn badge ("4-day streak
+  at risk") only when yesterday's puzzle was played *and solved* and today's
+  is unplayed (`streakAtRisk`). A lapsed/failed streak shows nothing — no
+  guilt mechanics (pillar 4).
+- **Today's contract** (new `js/contract.js`): one seeded-by-date bonus
+  objective a day ("Fix 3 × Polar Twister · +$120"), generated from
+  date + tierUnlocked (rule 6) and pinned into `state.contract` at generation
+  so a mid-day tier unlock can't reroll it. Progress counts correct ACTIVE
+  client fixes only (fresh + callbacks; workshop/MotD excluded), reward =
+  `CONTRACT.rewardPerFix[tier] × count` from balance.js, paid exactly once,
+  surfaced on the home panel and the receipt. `validateState` type-checks all
+  interpolated contract fields; regeneration happens at action boundaries
+  (boot + next ticket), never in render.
+- Verified headless (system Chrome via Playwright) at 380px and 1280px, fresh
+  save + seeded v14 mid-game save, full contract completion loop and MotD
+  played/unplayed states — zero console errors.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. The 5-phase retention brief is
+> COMPLETE (sessions 23–24): symptom variants, purchase ladder, Fault Codex,
+> loop/home tightening, daily comeback hooks. `node tests/run.js` should be
+> 306 green, schema v14, sw.js cache v20. Candidate next work, in the order
+> Fable recommended (session 24): (1) a 30-minute playtest of the
+> prestige-vs-ladder tension — the ladder now totals ~$43k of purchases but
+> prestige at $30k lifetime wipes tools/van/techs; decide whether that's a
+> good decision point or a feel-bad trap; (2) playtest whether symptom-variant
+> rotation actually kills memorisation after ~2h of play; (3) a dedicated
+> visual session — home-screen hero ticket card, Codex grouping by machine,
+> diegetic surfaces — using DESIGN.md as the style guide (optionally with
+> Claude Design generating directions to hand-port). Don't push without Tom's
+> say-so.
+
+---
+
 ## Status (Session 23 done — retention pass, Phases 1–4 of 5; pushed to main)
 
 **Session 23 worked a 5-phase retention brief in strict order and shipped four
