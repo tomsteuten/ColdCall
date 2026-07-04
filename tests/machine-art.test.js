@@ -44,6 +44,20 @@ test('fault and open states produce different machine markup', () => {
   }
 });
 
+test('interaction states (probe/leads/ajar) render for every machine, distinct from fault', () => {
+  for (const machineId of MACHINES) {
+    const fault = machineSvg(machineId, 'fault');
+    for (const state of ['probe', 'leads', 'ajar']) {
+      const svg = machineSvg(machineId, state);
+      assert(typeof svg === 'string' && svg.startsWith('<svg '), `${machineId}/${state} should render`);
+      assert(svg !== fault, `${machineId}/${state} must visibly differ from the plain fault art`);
+      assert(svg.includes(`machine-state-${state}`), `${machineId}/${state} should carry its CSS state class`);
+    }
+    // The probe and leads props actually appear.
+    assert(machineSvg(machineId, 'leads').includes('#ef6a6a'), `${machineId}/leads should show the red meter lead`);
+  }
+});
+
 test('open inspection art remains visibly faulty, distinct from working art', () => {
   const slushieOpen = machineSvg('slushie-machine', 'open');
   assert(slushieOpen.includes('E-04'), 'open slushie should retain its fault code');

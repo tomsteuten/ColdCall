@@ -63,10 +63,14 @@
     import { machineSvg } from './js/machine-art.js';
 
     const MACHINES = [
-      { id: 'slushie-machine',       name: 'Polar Twister Twin-Bowl Slushie (Tier 1)' },
-      { id: 'soft-serve-commercial', name: 'FrostKing 4500 Soft Serve (Tier 2)' },
+      { id: 'slushie-machine',          name: 'Polar Twister Twin-Bowl Slushie (Tier 1)' },
+      { id: 'soft-serve-commercial',    name: 'FrostKing 4500 Soft Serve (Tier 2)' },
+      { id: 'froyo-multihead',          name: 'YogurtMaster 3000 Multihead Froyo (Tier 3)' },
+      { id: 'granita-slushie',          name: 'GlacierGlide Triple-Bowl Granita (Tier 3)' },
+      { id: 'commercial-ice-dispenser', name: 'IceO-Matic 9000 Ice Dispenser (Tier 3)' },
     ];
-    const STATES = ['fault', 'open', 'working'];
+    // Base states + the tests-as-touches interaction states (2026-07-04).
+    const STATES = ['fault', 'open', 'working', 'probe', 'leads', 'ajar'];
 
     const root = document.getElementById('preview');
 

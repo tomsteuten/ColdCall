@@ -7,7 +7,76 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 25 done — prestige-vs-ladder playtest; sell moment made legible; committed, NOT pushed)
+## Status (Session 26 done — SVG machine art rebuilt + interaction states; committed, NOT pushed)
+
+**Session 26 rebuilt the entire vector art set.** Tom rated the old flat SVGs
+"crappy" (he plays in rendered mode); he chose **independent stylized look**
+(not a trace of the raster renders) with **machines + interaction states**
+scope via an in-session question. `node tests/run.js` → **311 passing, 0
+failed**. sw.js cache **v23**. No schema change.
+
+### What shipped
+
+- **js/machine-art.js rewritten** (same exported API): shared visual language
+  — per-instance gradient `defs()` (steel/glass/fluid/trim, id-prefixed so
+  multiple inline SVGs never collide), top-left lighting, ground shadows,
+  shared helpers (`led`, `warnBadge`, `tempProbe`, `meterLeads`, `miniSwirl`).
+  All 5 machines redrawn with real-equipment silhouettes: slushie (twin bowls,
+  spiral augers, domed lids, pull taps), soft serve (hopper deck, FROSTKING
+  brand strip, bolted dispense doors, barrel+coil internals when open, swirl
+  cone on the tray when working), froyo multihead (three heads + covers,
+  three barrels when open, three swirls when working), granita (three tapered
+  bowls, granita speckles, augers on the existing CSS spin classes + a new
+  `--center` rule with phase offset), ice dispenser (louvred bin, dark
+  alcove + push paddle, tumbling cubes when working, melt puddle on fault).
+- **Three interaction states per machine** for the future tests-as-touches
+  diagnosis UI (NOT yet wired into gameplay): `'probe'` (lid off, thermometer
+  in product), `'leads'` (access cover off, red/black meter clips), `'ajar'`
+  (panel cracked open, screwdriver out). All build on the fault presentation
+  and keep the fault code/amber language.
+- machine-css-preview.html now renders the full 5 machines × 6 states grid.
+- Tests: +1 (interaction states render for every machine, differ from fault,
+  carry `machine-state-<state>` class, leads shows the red clip). Existing
+  content pins kept: E-04 on open slushie, amber on open soft serve, no
+  COOL/34°F leakage into open.
+- GDD §7 decision of record added.
+
+### Verified
+
+- All 30 (5×6) states render as valid SVG in node; 311 tests green.
+- Live at 380px in the real job screen (vector mode forced on a seeded save):
+  fault → run test → open transition works, E-04 + blinking warn triangle
+  retained, teardown story (lids set aside, augers lifted) reads. Preview-tool
+  grid checked at multiple sizes. **Iteration gotcha:** python http.server
+  sends no cache headers, so the browser HTTP cache + SW serve stale modules —
+  verify with `import('./js/machine-art.js?dev='+Date.now())` or
+  `fetch(f, {cache:'reload'})` before trusting what you see.
+
+### Next
+
+- The interactive-machine session (tap the panel/beater/terminals to run
+  tests) now has all its art states ready. The diagnosis information-design
+  pass (inspect-beater dominance: 42/52 faults author it, 40/42 uniquely
+  identifying — measured session 25 follow-up) and the symptoms-above-the-fold
+  layout fix remain open from the "honest thoughts" review.
+- **NOT pushed** — awaiting Tom's say-so.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Session 26 rebuilt all SVG machine
+> art (independent stylized look, 5 machines × 6 states incl. probe/leads/ajar
+> interaction states for a future tests-as-touches UI) — 311 tests green,
+> sw.js v23, schema v14. Open candidates, roughly in leverage order: (1) the
+> symptoms-first job-screen layout fix (desktop buries symptoms below art);
+> (2) the diagnosis information-design pass — inspect-beater names the culprit
+> on 40/52 faults, rewrite results as evidence not verdicts + machine-specific
+> tests + an information-design invariant test; (3) wire the interaction art
+> states into a tap-the-machine diagnosis UI; (4) Burgertown narrative arc.
+> Don't push without Tom's say-so.
+
+---
+
+## Status (Session 25 done — prestige-vs-ladder playtest; sell moment made legible; pushed to main 2026-07-04)
 
 **Session 25 worked item (1) from session 24's list: the prestige-vs-ladder
 tension.** `node tests/run.js` → **307 passing, 0 failed**. sw.js cache is
@@ -72,7 +141,7 @@ detail line says the bonus multiplies job pay *and* rep gain, and the button is
   memorisation playtest needs ~2h of REAL human play — that one is Tom's;
   (3) the dedicated visual session (hero ticket card, Codex grouping,
   diegetic surfaces) per DESIGN.md.
-- **NOT pushed** — commit is local, awaiting Tom's say-so.
+- Pushed to main with the 25b commit on Tom's say-so (2026-07-04).
 
 ### Cold-start prompt for the next session
 

@@ -1410,6 +1410,13 @@ body {
   transform-origin: 112px 25px;
   animation: agitator-spin 1.5s linear infinite;
 }
+/* Third bowl on the triple-bowl granita (2026-07-04 art rebuild); offset phase
+ * so the three augers don't wobble in lockstep. */
+.machine-state-working .machine-agitator-group--center {
+  transform-origin: 80px 25px;
+  animation: agitator-spin 1.5s linear infinite;
+  animation-delay: 0.5s;
+}
 
 /* Evaporator coil pulsing glow when open/working */
 @keyframes evaporator-pulse {
