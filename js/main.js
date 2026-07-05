@@ -9,7 +9,7 @@ import { pickTicket } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
-import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk } from './audio.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, stamp as sfxStamp, fanfare as sfxFanfare } from './audio.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
@@ -103,6 +103,9 @@ function commitSelectedFix(fixId) {
   }
   if (result.correct) sfxJingle(state.settings.audio);
   else sfxThunk(state.settings.audio);
+  // A tier unlock or a completed daily contract is a bigger deal than a plain
+  // fix — layer the fanfare on top rather than replacing the jingle/thunk.
+  if (result.unlockedTier || result.contract?.justCompleted) sfxFanfare(state.settings.audio);
   save(state);
   render();
 }
@@ -150,6 +153,9 @@ const actions = {
   },
   runTest(testId) {
     runTest(state, testId, faults);
+    // Test results "stamp in" (2026-07-05 game-feel session): the visual is a
+    // CSS animation on the fresh .test-result element; this is its sound half.
+    sfxStamp(state.settings.audio);
     save(state);
     render();
   },

@@ -8,7 +8,7 @@ import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
 import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
@@ -89,6 +89,58 @@ export function testCostCopy(job, testId) {
   return `+${cost} min · speed bonus $${before} → $${after}`;
 }
 
+/** Small ambient DOM particles (steam/frost) drifting over the art slot.
+ * Pure CSS-driven (no JS animation loop) so it stays cheap on a phone;
+ * `.art-particles` is hidden under prefers-reduced-motion in main.css. */
+function artParticlesHtml() {
+  return `<span class="art-particles" aria-hidden="true">
+    <span class="art-particle"></span>
+    <span class="art-particle"></span>
+    <span class="art-particle"></span>
+    <span class="art-particle"></span>
+  </span>`;
+}
+
+/**
+ * Shared art-slot markup for the job and repair views: picks raster or SVG
+ * art for the given machine+state and wraps it with the shared motion/
+ * particle layer so both views stay visually identical.
+ * @param {string} machineType
+ * @param {string} artState 'fault' | 'open' | 'working'
+ * @param {string} graphicsMode state.settings.graphicsMode
+ * @param {{fallback?: string, glow?: boolean}} [opts] fallback text for an
+ *   unknown machine; glow adds the one-shot correct-fix flash (repair view only)
+ */
+function artSlotHtml(machineType, artState, graphicsMode, opts = {}) {
+  const { fallback = '', glow = false } = opts;
+  const imageSrc = machineImageSrc(machineType, artState, graphicsMode);
+  const svg = imageSrc ? null : machineSvg(machineType, artState);
+  const machineClass = String(machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const hasArt = Boolean(imageSrc || svg);
+  const artSlotClass = hasArt
+    ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--${artState}`
+    : 'art-slot';
+  const content = imageSrc
+    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
+    : (svg ?? fallback);
+  return `<div class="${artSlotClass}" aria-hidden="true">
+    ${content}
+    ${hasArt ? artParticlesHtml() : ''}
+    ${glow ? '<span class="repair-glow" aria-hidden="true"></span>' : ''}
+  </div>`;
+}
+
+/** Escalating clean-streak flame (GDD §5 daily hooks territory) — a small CSS
+ * icon, not emoji (DESIGN.md anti-pattern), tiered at 5/10/20 so a long streak
+ * reads as visibly hotter without changing the underlying number's meaning. */
+function streakFlameHtml(streak) {
+  if (streak < 5) return '';
+  const tier = streak >= 20 ? 3 : streak >= 10 ? 2 : 1;
+  return `<span class="streak-flame streak-flame--${tier}" title="${streak} clean in a row" aria-hidden="true">
+    <svg viewBox="0 0 12 16" width="12" height="16"><path d="M6 0c1 2.5-2 3.5-2 6.5A2 2 0 0 0 6 8.5 2 2 0 0 0 8 6.5c1 1 1.5 2.3 1.5 3.5A3.5 3.5 0 0 1 6 13.5 3.5 3.5 0 0 1 2.5 10c0-3 2.5-4 3.5-10z" fill="currentColor"/></svg>
+  </span>`;
+}
+
 /**
  * Render the job flow into root.
  * @param {HTMLElement} root
@@ -111,6 +163,7 @@ export function render(root, ctx) {
     root.innerHTML = repairView(ctx);
   } else if (invoice) {
     root.innerHTML = invoiceView(ctx);
+    wireInvoiceJuice(root);
   } else if (state.jobs.active) {
     root.innerHTML = jobView(ctx);
   } else if (screen === 'callbacks') {
@@ -159,9 +212,9 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
         : `Callbacks (${pending} returning soon)`;
   const unlockBanner =
     justUnlockedTier === 2
-      ? `<p class="home-unlock">Tier 2 unlocked — Burgertown is calling.</p>`
+      ? `<p class="home-unlock celebration-card">Tier 2 unlocked — Burgertown is calling.</p>`
       : justUnlockedTier
-        ? `<p class="home-unlock">Tier ${justUnlockedTier} clients unlocked.</p>`
+        ? `<p class="home-unlock celebration-card">Tier ${justUnlockedTier} clients unlocked.</p>`
         : '';
 
   const motdPlayed = !canPlayToday(state);
@@ -374,7 +427,7 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
     ${statusBar(state)}
     <section class="screen screen-home">
       ${brand}
-      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row` : ''}${bonusCopy}</p>
+      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>
 
       ${unlockBanner}
       ${corruptBanner}
@@ -542,62 +595,59 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   // Art state: 'open' once the player has run at least one test (machine is being
   // inspected); 'fault' before that (machine showing symptoms, panel closed).
   const artState = job.testsRun.length > 0 ? 'open' : 'fault';
-  const imageSrc = machineImageSrc(job.machineType, artState, state.settings.graphicsMode);
-  const svg = imageSrc ? null : machineSvg(job.machineType, artState);
-  const machineClass = String(job.machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
-  const artSlotClass = imageSrc || svg
-    ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--${artState}`
-    : 'art-slot';
-  const artSlotContent = imageSrc
-    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
-    : (svg ?? `[ ${safeMachineName} ]`);
+  const artSlot = artSlotHtml(job.machineType, artState, state.settings.graphicsMode, {
+    fallback: `[ ${safeMachineName} ]`,
+  });
 
+  // Symptoms are the caller's complaint — the ticket itself — so they render
+  // as the first content after the status bar on every viewport (2026-07-05
+  // game-feel session). The ticket panel sits outside job-cols precisely so
+  // the two-column desktop grid can't push it below the fold or behind the
+  // diagnostics buttons; job-cols only holds the art and the controls that
+  // act on the evidence above it.
   return `
     ${statusBar(state)}
     <section class="screen screen-job">
+
+      <div class="panel job-ticket">
+
+        ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
+
+        ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
+
+        <h2 class="job-client">${clientName}</h2>
+
+        <p class="job-machine">${safeMachineName}</p>
+
+        <blockquote class="job-ticket-order">
+
+          <p class="panel-label">Reported symptoms</p>
+
+          ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
+
+            <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
+
+            <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
+
+            <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
+
+          </div>` : ''}
+
+          <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${s}”</li>`).join('')}</ul>
+
+        </blockquote>
+
+        ${portraitHtml}
+
+        ${clockBar}
+
+      </div>
+
       <div class="job-cols">
 
         <div class="job-col-left">
 
-          <div class="panel">
-
-            ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
-
-            ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
-
-            <h2 class="job-client">${clientName}</h2>
-
-            <p class="job-machine">${safeMachineName}</p>
-
-            ${portraitHtml}
-
-            ${clockBar}
-
-          </div>
-
-
-
-          <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
-
-
-
-          <div class="panel">
-
-            <h3 class="panel-label">Reported symptoms</h3>
-
-            ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
-
-              <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
-
-              <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
-
-              <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
-
-            </div>` : ''}
-
-            <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>${s}</li>`).join('')}</ul>
-
-          </div>
+          ${artSlot}
 
         </div>
 
@@ -667,15 +717,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
  * @returns {string}
  */
 export function repairView({ state, repairBeat }) {
-  const imageSrc = machineImageSrc(repairBeat.machineType, 'working', state.settings.graphicsMode);
-  const svg = imageSrc ? null : machineSvg(repairBeat.machineType, 'working');
-  const machineClass = String(repairBeat.machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
-  const artSlotClass = imageSrc || svg
-    ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--working`
-    : 'art-slot';
-  const artSlotContent = imageSrc
-    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
-    : (svg ?? '[ repaired ]');
+  const artSlot = artSlotHtml(repairBeat.machineType, 'working', state.settings.graphicsMode, {
+    fallback: '[ repaired ]',
+    glow: true, // the one-shot brighten/glow beat (GDD §7 game-feel pass, 2026-07-05)
+  });
 
   return `
     ${statusBar(state)}
@@ -684,7 +729,7 @@ export function repairView({ state, repairBeat }) {
 
         <div class="repair-col-left">
 
-          <div class="${artSlotClass}" aria-hidden="true">${artSlotContent}</div>
+          ${artSlot}
 
         </div>
 
@@ -762,7 +807,7 @@ export function invoiceView({ state, invoice }) {
       <div class="receipt-line"><span>Job payout</span><span>$${fault.payout}</span></div>
       <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
       <div class="receipt-line"><span>${callbackSource === 'tech' ? 'Rescue rate' : 'Callback rate'}</span><span>×${callbackRatePct(callbackSource)}%</span></div>
-      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
+      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span class="receipt-count" data-count-target="${earned}">$${earned}</span></div>`;
     receiptNote = '';
 
   } else if (correct) {
@@ -773,7 +818,7 @@ export function invoiceView({ state, invoice }) {
       <div class="receipt-line"><span>Job payout</span><span>$${fault.payout}</span></div>
       <div class="receipt-line"><span>Parts</span><span>−$${fault.partsCost}</span></div>
       <div class="receipt-line"><span>Speed bonus</span><span>+$${bonus}</span></div>
-      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span>$${earned}</span></div>`;
+      <div class="receipt-line receipt-line--total"><span>TOTAL</span><span class="receipt-count" data-count-target="${earned}">$${earned}</span></div>`;
     receiptNote = '';
 
   } else if (callback) {
@@ -787,7 +832,7 @@ export function invoiceView({ state, invoice }) {
     outcomeClass = 'receipt-outcome--bad';
     outcomeText = 'Callback.';
     lineItems = `
-      <div class="receipt-line"><span>Partial payout</span><span>$${earned}</span></div>`;
+      <div class="receipt-line"><span>Partial payout</span><span class="receipt-count" data-count-target="${earned}">$${earned}</span></div>`;
     receiptNote = `<p class="receipt-note">Wrong call — that machine will be back tomorrow.</p>`;
 
   }
@@ -818,7 +863,7 @@ export function invoiceView({ state, invoice }) {
       : '';
   const streakLine =
     !isWorkshop && correct && !callback && (invoice.cleanStreak ?? 0) >= 2
-      ? `<div class="receipt-line receipt-line--rep"><span>Clean streak</span><span>${invoice.cleanStreak} in a row</span></div>`
+      ? `<div class="receipt-line receipt-line--rep"><span>Clean streak</span><span>${invoice.cleanStreak} in a row ${streakFlameHtml(invoice.cleanStreak)}</span></div>`
       : '';
 
   // Codex feedback (GDD §5): a first-time diagnosis and any milestone bonuses
@@ -840,13 +885,18 @@ export function invoiceView({ state, invoice }) {
   const contractInfo = invoice.contract;
   const contractLine = contractInfo
     ? contractInfo.justCompleted
-      ? `<p class="receipt-codex">Contract complete: +$${contractInfo.reward.toLocaleString('en-US')}</p>`
+      ? `<p class="receipt-codex celebration-card">Contract complete: +$${contractInfo.reward.toLocaleString('en-US')}</p>`
       : `<p class="receipt-codex">Today's contract: ${contractInfo.progress}/${contractInfo.count}</p>`
     : '';
 
+  // A wrong fix gets one hard screen-shake as the receipt lands (2026-07-05
+  // game-feel session); a correct one already got its glow beat on the repair
+  // screen just before this, so the invoice itself stays calm.
+  const shakeClass = !isWorkshop && !correct ? ' screen-shake' : '';
+
   return `
     ${statusBar(state)}
-    <section class="screen screen-invoice">
+    <section class="screen screen-invoice${shakeClass}">
       <div class="receipt">
         <div class="receipt-header">— COLD CALL SERVICES —</div>
         <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
@@ -856,7 +906,7 @@ export function invoiceView({ state, invoice }) {
         ${receiptNote}
         ${codexLines}
         ${contractLine}
-        ${unlockedTier ? `<p class="receipt-unlock">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
+        ${unlockedTier ? `<p class="receipt-unlock celebration-card">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
         ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>
       ${learningBlock}
@@ -969,6 +1019,42 @@ function wire(root, actions) {
   );
 
   wireRepairHold(root, actions);
+}
+
+/**
+ * Animate the invoice's settlement number (GDD §7 game-feel pass, 2026-07-05):
+ * the TOTAL/payout row counts up from $0 with a floating "+$N" badge instead
+ * of appearing fully-formed. The value shown at rest is already correct in
+ * the server-rendered markup, so skipping this (reduced motion, or a $0 line)
+ * is always a safe no-op — never a missing or wrong number.
+ * @param {HTMLElement} root
+ */
+function wireInvoiceJuice(root) {
+  const target = root.querySelector('[data-count-target]');
+  if (!target) return;
+  const end = Number(target.dataset.countTarget);
+  if (!Number.isFinite(end) || end <= 0 || prefersReducedMotion()) return;
+
+  const DURATION = 650;
+  let start = 0;
+  function tick(now) {
+    if (!target.isConnected) return;
+    start = start || now;
+    const p = Math.min(1, (now - start) / DURATION);
+    const eased = 1 - Math.pow(1 - p, 3);
+    target.textContent = `$${Math.round(end * eased).toLocaleString('en-US')}`;
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  target.textContent = '$0';
+  requestAnimationFrame(tick);
+
+  const line = target.closest('.receipt-line');
+  if (!line) return;
+  const float = document.createElement('span');
+  float.className = 'receipt-float';
+  float.textContent = `+$${end.toLocaleString('en-US')}`;
+  float.addEventListener('animationend', () => float.remove());
+  line.appendChild(float);
 }
 
 /**

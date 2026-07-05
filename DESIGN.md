@@ -126,6 +126,16 @@ everywhere rather than defining a dozen near-duplicate tokens.
   line items, `--total` bold row. The single warm surface; the payoff beat.
 - **`.callback-card`** (full, for due callbacks) vs **`.callback-line`**
   (one-line, for not-yet-due). Match this due/pending split in any new queue UI.
+- **`.job-ticket`** (2026-07-05) — the job screen's full-width header panel:
+  client/machine name plus the reported symptoms quoted as a work order
+  (`.job-ticket-order`, left-accent blockquote). Rendered outside `.job-cols`
+  so it's always the first content after the status bar, on every viewport —
+  see §7 anti-patterns for why.
+- **`.streak-flame`** (2026-07-05) — small inline SVG icon (not emoji) marking
+  an escalating clean streak at 5/10/20 via `--1`/`--2`/`--3` glow tiers.
+- **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
+  unlock, completed daily contract) for a half-second bouncy entrance. Not an
+  auto-dismissing popup; the element stays put afterward like any other line.
 
 **No emoji as UI chrome.** ✅⚠️🔥📋❌ were removed in favour of badges/dots
 (2026-07-04). Emoji live **only** in flavour text and the MotD share-card grid
@@ -140,6 +150,22 @@ everywhere rather than defining a dozen near-duplicate tokens.
   it disables machine-art animation and internal keyframes. Any new animation
   ships with a reduced-motion off-switch in the same change. Motion is feedback
   and polish, never required to understand or play.
+- **Game-feel pass (2026-07-05):** machine art now breathes continuously
+  (`idle-breathe`, filter-based so it never fights a state's own transform
+  animation) and gets a one-shot jolt only when a fault ticket's art first
+  mounts (`machine-fault-jolt-once`), plus four small DOM particles
+  (`.art-particles`) drifting over the slot — real elements per CLAUDE.md's
+  DOM-first rule, not canvas. A correct fix gets a one-shot glow overlay
+  (`.repair-glow`) on the repair screen; a wrong fix gets one hard shake
+  (`.screen-shake`) on the invoice screen, layered onto the shared fade-in,
+  not replacing it. The receipt prints its lines in sequence (`.receipt > *`
+  staggered `nth-child` delays) and its settlement number counts up from $0
+  with a floating `+$N` badge — driven from JS in `job.js` (`wireInvoiceJuice`),
+  gated on `prefersReducedMotion()` from `utils.js` since a JS-driven tween
+  needs its own check, not just a CSS media query. Test results stamp in
+  (`.test-result`'s `test-result-stamp` keyframe) with a matching sound in
+  `js/audio.js` (`stamp`); tier unlock / contract completion pair
+  `.celebration-card` with a `fanfare` sound.
 
 ## 7. Anti-patterns (things that broke this system before — don't repeat)
 
@@ -154,6 +180,12 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - **New app-shell CSS/JS without bumping `sw.js`** — PWA users get stale assets.
 - **Colour drift** — don't use warn/amber/success decoratively. Their meaning
   (failure / money / correctness) is load-bearing; misuse makes the UI lie.
+- **Burying the evidence below the chrome.** The job screen used to put the
+  reported symptoms third in the left column — below the header panel and the
+  machine art — while the diagnostics buttons sat visible top-right on desktop.
+  Fixed 2026-07-05 (`.job-ticket`, §5): the thing the player needs to read
+  before acting renders before the controls that act on it, full-width, above
+  any multi-column split.
 
 ---
 

@@ -7,6 +7,115 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 27 done — game-feel pass: symptoms-first layout + juice; committed, NOT pushed)
+
+**Session 27 worked the "looks pretty mid" verdict from session 25/26 notes.**
+Diagnosis stood: the gap was moment-to-moment feedback, not illustration
+fidelity (art was already rebuilt in session 26). `node tests/run.js` →
+**311 passing, 0 failed** (no new tests added — this was a pure presentation
+pass; existing markup tests already assert on text/class presence, not exact
+DOM position, so they didn't need updating). sw.js cache **v24**. Schema
+stays **v14** — nothing here touches state shape, `config/balance.js`, or
+`economy.js` (rule 5 untouched by construction, not just by inspection).
+
+### What shipped
+
+- **Symptoms-first job layout** (`js/ui/job.js` `jobView`, `css/main.css`
+  `.job-ticket`): reported symptoms are now the first content after the
+  status bar on every viewport. The client/machine header + symptoms (quoted
+  as a work order, left-accent blockquote) moved into one full-width panel
+  rendered *outside* `.job-cols`, so the two-column desktop grid can no
+  longer bury it behind the art or below the fold. `.job-cols` now only
+  holds the art slot (left) and the diagnostics/commit-fix controls (right).
+  DESIGN.md §5/§7 updated with the component and the anti-pattern it fixes.
+- **The juice pass**, all DOM/CSS + a little JS, no canvas needed (particles
+  didn't jank at 375px, so the pre-authorized canvas fallback went unused):
+  - Invoice: the settlement number counts up from $0 with a floating `+$N`
+    badge (`wireInvoiceJuice` in job.js, gated on the new
+    `prefersReducedMotion()` in `utils.js` since a JS tween needs its own
+    check, not just a CSS media query); receipt lines print in sequence via
+    staggered `nth-child` delays; rep/streak lines pop in with one extra beat.
+  - Wrong fix: one hard `.screen-shake` on the invoice screen, layered onto
+    the existing fade-in. Correct fix: a one-shot `.repair-glow` flash on the
+    repair beat's art slot before the invoice.
+  - Test results stamp in (`test-result-stamp` keyframe) with a new soft
+    "key" sound (`stamp` in `js/audio.js`), instead of popping in.
+  - Machine art: continuous ambient "breathing" on every state (`idle-breathe`,
+    filter-based so it never fights a state's own transform animation) plus a
+    one-shot jolt only when a fault ticket's art first mounts
+    (`machine-fault-jolt-once`, replacing the old *repeating* jolt); four
+    small DOM particles (`.art-particles`) drift over the art slot on every
+    state (real elements, not canvas).
+  - Clean streak gains a small SVG flame icon (not emoji — DESIGN.md
+    anti-pattern) at 5/10/20, escalating via glow tier and a pulse at tier 3.
+  - Tier unlock and completed-daily-contract moments get a half-second bouncy
+    `.celebration-card` entrance, plus a new `fanfare` sound (`js/audio.js`),
+    layered alongside the existing jingle/thunk in `main.js`'s
+    `commitSelectedFix`.
+  - Shared `artSlotHtml()` helper factored out in job.js so the job and
+    repair views build identical art-slot markup (art/particles/glow) from
+    one place instead of two copies.
+- `js/audio.js` gained two functions: `stamp`, `fanfare`. `js/utils.js` gained
+  `prefersReducedMotion()`. Every new CSS animation is covered by the
+  `prefers-reduced-motion: reduce` query in main.css (consolidated, not
+  scattered); every new JS-driven animation checks `prefersReducedMotion()`
+  before doing anything, so skipping it is always a no-op against the
+  already-correct server-rendered text.
+- GDD.md §7 and DESIGN.md §5/§6/§7 updated with decisions of record.
+
+### Verified
+
+- 311 tests green throughout (ran after every sub-change, not just at the end).
+- Live in the preview browser at 375px and 1280px width (a fresh port,
+  **static-alt2 on 8125**, was needed mid-session — see gotcha below).
+  Confirmed: symptoms render first on both widths (desktop: `.job-cols`
+  computed as a 422px/422px grid sitting *below* the full-width ticket
+  panel); a wrong fix's shake settles cleanly back to neutral (no residual
+  offset); a correct fix's invoice shows the total counting up ($0 → final,
+  `.receipt-float` badge present mid-tween, confirmed via DOM inspection
+  since screenshots land after the ~650ms tween finishes); a completed daily
+  contract showed the `.celebration-card` line live; particles present in
+  the art slot (4 per mount); simulated `prefers-reduced-motion` via a
+  monkeypatched `matchMedia` and confirmed the count-up skips straight to
+  the final value with no float badge. Zero console errors across the whole
+  session.
+- **Cache gotcha got worse, not just repeated:** this session, `static-alt`
+  on port 8124 served genuinely stale JS (`utils.js` missing the new export)
+  even after unregistering the SW, clearing the Cache Storage API, and
+  `location.reload()` / `fetch(url, {cache:'reload'})` — none of it forced
+  revalidation. Root cause looks like heuristic HTTP caching on python's
+  header-less responses compounding across a whole session's worth of
+  browsing on one origin, not just one stale module. **Fix that actually
+  worked: a brand-new port the browser has never fetched from** — added
+  `static-alt2` (port 8125) to `.claude/launch.json`. If this recurs, add
+  another fresh port rather than fighting the cache further; a per-file
+  `?dev=timestamp` query bypasses it too (confirmed) but doesn't help a real
+  page load, only manual `fetch()` probes from `preview_eval`.
+- **NOT pushed** — awaiting Tom's say-so.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Session 27 was a game-feel pass:
+> symptoms now render first on the job screen (before header/art/diagnostics)
+> on every viewport, plus a full juice pass (invoice count-up + printer
+> receipt, wrong-fix shake, correct-fix glow, test-result stamp-in with
+> sound, ambient machine-art breathing + one-shot fault jolt + DOM
+> steam/frost particles, escalating clean-streak flame, celebratory
+> tier-unlock/contract-complete cards). `node tests/run.js` should be 311
+> green, schema v14, sw.js cache v24. No economy/balance changes. If the dev
+> server serves stale JS despite unregistering the SW, don't fight it — add
+> a fresh port to `.claude/launch.json` (see this session's cache-gotcha
+> note) rather than retrying reload/cache-bust tricks on the same origin.
+> Open candidates, in leverage order: (1) the diagnosis information-design
+> pass — inspect-beater names the culprit on 40/52 faults, rewrite results as
+> evidence not verdicts + machine-specific tests + an information-design
+> invariant test (no single diagnostic uniquely identifies more than ~30% of
+> its machine's fault pool); (2) the tests-as-touches interactive machine —
+> all art states (probe/leads/ajar) are ready from session 26; (3) the
+> Burgertown narrative arc. Don't push without Tom's say-so.
+
+---
+
 ## Status (Session 26 done — SVG machine art rebuilt + interaction states; committed, NOT pushed)
 
 **Session 26 rebuilt the entire vector art set.** Tom rated the old flat SVGs

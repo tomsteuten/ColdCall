@@ -72,3 +72,36 @@ export function thunk(enabled) {
     tone(ac, { freq: 164.81, at: 0.1, dur: 0.18, type: 'sawtooth', peak: 0.035 });
   } catch { /* sound is optional, never fatal */ }
 }
+
+/**
+ * A soft mechanical "key" click for a test result stamping in — distinct from
+ * the generic button blip (lower, shorter, no ring) so it reads as evidence
+ * landing on the page rather than another UI press.
+ * @param {boolean} enabled state.settings.audio
+ */
+export function stamp(enabled) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    tone(ac, { freq: 340, at: 0.0, dur: 0.04, type: 'square', peak: 0.03 });
+    tone(ac, { freq: 180, at: 0.02, dur: 0.05, type: 'square', peak: 0.025 });
+  } catch { /* sound is optional, never fatal */ }
+}
+
+/**
+ * A brighter three-note rise for a bigger deal than a plain correct fix —
+ * tier unlock or a completed daily contract — layered alongside the fix
+ * jingle rather than replacing it.
+ * @param {boolean} enabled state.settings.audio
+ */
+export function fanfare(enabled) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    tone(ac, { freq: 659.25, at: 0.0, dur: 0.1, type: 'triangle', peak: 0.04 });  // E5
+    tone(ac, { freq: 830.61, at: 0.09, dur: 0.1, type: 'triangle', peak: 0.04 }); // G#5
+    tone(ac, { freq: 1046.5, at: 0.18, dur: 0.28, type: 'triangle', peak: 0.045 }); // C6
+  } catch { /* sound is optional, never fatal */ }
+}

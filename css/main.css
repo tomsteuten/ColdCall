@@ -168,6 +168,30 @@ body {
 .dot--ok   { background: var(--success); box-shadow: 0 0 4px color-mix(in srgb, var(--success) 60%, transparent); }
 .dot--warn { background: var(--warn);    box-shadow: 0 0 4px color-mix(in srgb, var(--warn) 60%, transparent); }
 
+/* Escalating clean-streak flame at 5/10/20 (2026-07-05 game-feel session) —
+ * a small CSS icon, not emoji (DESIGN.md anti-pattern), so tiering is glow
+ * intensity + a pulse at the top tier rather than a bigger/redder picture. */
+.streak-flame {
+  display: inline-flex;
+  vertical-align: middle;
+  color: var(--amber);
+}
+
+.streak-flame--1 { opacity: 0.75; }
+
+.streak-flame--2 {
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--amber) 60%, transparent));
+}
+
+@keyframes streak-flame-pulse {
+  0%, 100% { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--amber) 70%, transparent)); }
+  50%      { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--amber) 90%, transparent)); }
+}
+
+.streak-flame--3 {
+  animation: streak-flame-pulse 1.4s ease-in-out infinite;
+}
+
 /* MotD score dots: one per test used, sized up for the result card. */
 .score-dot {
   display: inline-block;
@@ -240,14 +264,29 @@ body {
   z-index: 1;
   transform-origin: 50% 78%;
   will-change: transform, filter;
+  animation: idle-breathe 4.5s ease-in-out infinite;
 }
 
-@keyframes machine-fault-jolt {
-  0%, 78%, 100% { transform: translateX(0) rotate(0); }
-  80% { transform: translateX(-1px) rotate(-0.25deg); }
-  83% { transform: translateX(1.5px) rotate(0.35deg); }
-  86% { transform: translateX(-0.75px) rotate(-0.15deg); }
-  89% { transform: translateX(0); }
+/* Ambient "the machine is a real object, not a photo" life on every state
+ * (2026-07-05 game-feel session). Filter-based (not transform) so it never
+ * conflicts with a state's own transform animation below — CSS animations
+ * that both touch the same property fight for it; different properties
+ * layer cleanly on the same element. */
+@keyframes idle-breathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.03); }
+}
+
+/* A single sharp jolt the moment a fault ticket's art first mounts — distinct
+ * from the continuous idle breathing above, and no longer a repeating tic.
+ * iteration-count 1 replays naturally on every fresh mount (a new job's art
+ * is always a new DOM node), never on a same-job re-render. */
+@keyframes machine-fault-jolt-once {
+  0%          { transform: translateX(0) rotate(0); }
+  15%         { transform: translateX(-2px) rotate(-0.6deg); }
+  30%         { transform: translateX(2.5px) rotate(0.7deg); }
+  45%         { transform: translateX(-1.3px) rotate(-0.3deg); }
+  60%, 100%   { transform: translateX(0) rotate(0); }
 }
 
 @keyframes machine-fault-pulse {
@@ -258,7 +297,7 @@ body {
 
 .machine-stage--fault .machine-art,
 .machine-stage--fault > svg {
-  animation: machine-fault-jolt 3.2s ease-in-out infinite;
+  animation: idle-breathe 4.5s ease-in-out infinite, machine-fault-jolt-once 0.6s ease-out 1;
 }
 
 .machine-stage--fault::after {
@@ -348,12 +387,80 @@ body {
   animation: ice-drop 2.6s ease-in infinite;
 }
 
+/* Drifting steam/frost atmosphere over the art slot (2026-07-05 game-feel
+ * session) — real DOM elements, not canvas (CLAUDE.md: DOM-first UI), kept
+ * cheap by animating only opacity/transform on four small fixed dots rather
+ * than a JS particle loop. Fixed per-dot position/timing (no inline style,
+ * per DESIGN.md) trades a little randomness for staying on-convention. */
+.art-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.art-particle {
+  position: absolute;
+  bottom: 22%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 55%, white);
+  opacity: 0;
+  filter: blur(1px);
+  animation: art-particle-drift 5s ease-in infinite;
+}
+
+.art-particle:nth-child(1) { left: 30%; animation-delay: 0s; }
+.art-particle:nth-child(2) { left: 48%; width: 4px; height: 4px; animation-delay: 1.6s; }
+.art-particle:nth-child(3) { left: 62%; animation-delay: 3.1s; }
+.art-particle:nth-child(4) { left: 40%; width: 3px; height: 3px; animation-delay: 2.2s; }
+
+@keyframes art-particle-drift {
+  0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+  15%  { opacity: 0.5; }
+  80%  { opacity: 0.15; }
+  100% { opacity: 0; transform: translateY(-46px) scale(1.15); }
+}
+
+/* One-shot brighten/glow beat on a correct fix (2026-07-05 game-feel session):
+ * a real DOM element (not a third pseudo-element — fault/working already use
+ * ::after/::before) rendered only by repairView's art slot, so it never
+ * touches the fault/open states shared by .machine-stage elsewhere. */
+@keyframes correct-fix-glow {
+  0%   { opacity: 0; }
+  30%  { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.repair-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--success) 65%, white) 0%, transparent 65%);
+  opacity: 0;
+  animation: correct-fix-glow 0.6s ease-out 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .machine-stage .machine-art,
   .machine-stage > svg,
   .machine-stage::before,
-  .machine-stage::after {
+  .machine-stage::after,
+  .receipt > *,
+  .receipt-line--rep span:last-child,
+  .celebration-card,
+  .streak-flame,
+  .art-particle,
+  .test-result,
+  .repair-glow {
     animation: none !important;
+  }
+  /* Keep the shared screen fade-in but drop the shake itself. */
+  .screen-shake {
+    animation: screen-in 0.15s ease-out !important;
   }
 }
 
@@ -803,6 +910,29 @@ body {
   font-size: var(--text-sm);
 }
 
+/* The ticket panel — client/machine header + the caller's reported symptoms,
+ * quoted like a work order. Rendered full-width, outside .job-cols, so the
+ * evidence is always the first thing after the status bar on every viewport
+ * (2026-07-05 game-feel session — it used to be buried below header/art). */
+.job-ticket {
+  gap: var(--space-sm);
+}
+
+.job-ticket-order {
+  margin: var(--space-xs) 0 0;
+  padding: var(--space-xs) 0 var(--space-xs) var(--space-sm);
+  border-left: 3px solid var(--accent);
+}
+
+.job-ticket-order .panel-label {
+  margin-bottom: var(--space-xs);
+}
+
+.job-ticket-order .symptoms {
+  font-style: italic;
+  color: var(--text);
+}
+
 .client-callout {
   display: grid;
   grid-template-columns: 4rem 1fr;
@@ -907,6 +1037,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Results stamp in like evidence hitting the page, not a generic pop-in
+ * (2026-07-05 game-feel session) — a touch of overshoot rotation settling flat. */
+@keyframes test-result-stamp {
+  0%   { opacity: 0; transform: scale(1.3) rotate(-3deg); }
+  60%  { opacity: 1; transform: scale(0.97) rotate(0.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
 .test-result {
   margin: 0.2rem 0 0;
   padding: var(--space-xs) 0.75rem;
@@ -914,6 +1052,7 @@ body {
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: var(--text-sm);
+  animation: test-result-stamp 0.22s ease-out;
 }
 
 .test-locked {
@@ -978,6 +1117,21 @@ body {
   align-items: center;
 }
 
+/* A wrong fix gets one hard shake as the receipt lands (2026-07-05 game-feel
+ * session) — layered onto the existing .screen fade-in, not replacing it.
+ * Placed after the .screen rule in source order so the shared class name tie
+ * resolves in this rule's favour. */
+@keyframes screen-hard-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+.screen-shake {
+  animation: screen-in 0.15s ease-out, screen-hard-shake 0.4s ease-in-out;
+}
+
 .receipt {
   width: 100%;
   max-width: 320px;
@@ -1013,10 +1167,90 @@ body {
 .receipt-outcome--bad  { color: #b83a2a; }
 
 .receipt-line {
+  position: relative; /* anchors the floating +$N badge (.receipt-float) */
   display: flex;
   justify-content: space-between;
   font-size: var(--text-sm);
   color: #444;
+}
+
+/* Settlement counts up rather than appearing fully-formed (2026-07-05 game-
+ * feel session); JS in job.js drives the tween, tabular-nums keeps digits
+ * from jittering the layout width as they change. */
+.receipt-count {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes receipt-float-up {
+  0%   { opacity: 0; transform: translateY(4px) scale(0.9); }
+  25%  { opacity: 1; transform: translateY(-2px) scale(1); }
+  100% { opacity: 0; transform: translateY(-22px) scale(1); }
+}
+
+.receipt-float {
+  position: absolute;
+  right: 0;
+  top: -0.2em;
+  color: #2a7a3a;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  pointer-events: none;
+  animation: receipt-float-up 0.9s ease-out forwards;
+}
+
+/* The receipt prints its lines in sequence, like a real machine, instead of
+ * all appearing at once. Fixed nth-child delays (no inline style, per
+ * DESIGN.md) cover a generous line count; anything past that just appears
+ * with the last delay, which is imperceptible. */
+@keyframes receipt-line-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.receipt > * {
+  animation: receipt-line-in 0.2s ease-out backwards;
+}
+
+.receipt > *:nth-child(1)  { animation-delay: 0.02s; }
+.receipt > *:nth-child(2)  { animation-delay: 0.08s; }
+.receipt > *:nth-child(3)  { animation-delay: 0.14s; }
+.receipt > *:nth-child(4)  { animation-delay: 0.20s; }
+.receipt > *:nth-child(5)  { animation-delay: 0.26s; }
+.receipt > *:nth-child(6)  { animation-delay: 0.32s; }
+.receipt > *:nth-child(7)  { animation-delay: 0.38s; }
+.receipt > *:nth-child(8)  { animation-delay: 0.44s; }
+.receipt > *:nth-child(9)  { animation-delay: 0.50s; }
+.receipt > *:nth-child(n+10) { animation-delay: 0.56s; }
+
+/* Half-second celebratory entrance (2026-07-05 game-feel session) for the two
+ * "big deal" moments: a tier unlock (.home-unlock) and a completed daily
+ * contract (.receipt-codex, only when just-completed — see contractLine in
+ * job.js). A punchy overshoot-then-settle, not an auto-dismissing popup — the
+ * content stays put afterward exactly like every other receipt/home line.
+ * Declared after .receipt > * so the tie in specificity resolves here for the
+ * contract-complete line, which is a direct child of .receipt too. */
+@keyframes celebration-in {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.celebration-card {
+  animation: celebration-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* Rep/streak lines pop in rather than just fade with the rest — they're the
+ * numbers that gate progression, worth one extra beat of emphasis. */
+@keyframes receipt-rep-pop {
+  0%   { transform: scale(0.85); }
+  55%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.receipt-line--rep span:last-child {
+  display: inline-block;
+  animation: receipt-rep-pop 0.35s ease-out backwards;
+  animation-delay: 0.3s;
 }
 
 .receipt-line--total {

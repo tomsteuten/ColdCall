@@ -15,3 +15,15 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/**
+ * True when the OS/browser requests reduced motion. CSS media queries already
+ * disable keyframe animation on their own, but JS-driven effects (count-up
+ * tweens, one-shot particle/float spawns) need this to skip themselves too.
+ * Always false in the node test environment (no `window`).
+ * @returns {boolean}
+ */
+export function prefersReducedMotion() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
