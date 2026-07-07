@@ -7,7 +7,7 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 28c done — "Codex" renamed to "Service Manual" for players; committed, NOT pushed)
+## Status (Session 28c done — "Codex" renamed to "Service Manual" for players; PUSHED 2026-07-07)
 
 **Session 28c (same day):** every player-facing "Codex" is now **"Service
 Manual"** — "Codex" was RPG-menu jargon that told a new player nothing before
@@ -23,8 +23,7 @@ sw.js **v27**. Verified live on a fresh port **8127** (`static-alt4` —
 8126 went stale exactly like 8124/8125 before it; the gotcha is now a
 pattern: assume ~one burned port per session): home button, screen, hint
 card, explainer, and the 1/51 receipt line all render renamed; zero console
-errors. NOT pushed — 28b was pushed earlier today; this commit awaits
-Tom's say-so.
+errors. Pushed to main on Tom's say-so, 2026-07-07.
 
 ---
 
