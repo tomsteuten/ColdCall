@@ -10,6 +10,7 @@ import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
 import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, stamp as sfxStamp, fanfare as sfxFanfare } from './audio.js';
+import { prefersReducedMotion } from './utils.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
 import * as motdScreen from './ui/motd.js';
@@ -405,7 +406,38 @@ const actions = {
   },
 };
 
+/**
+ * Identity of the view the next render will show — mirrors the routing in
+ * render() and jobScreen.render(). Screen-to-screen view transitions only run
+ * when this changes; intra-view re-renders (running a test, arming a confirm)
+ * stay instant so per-element juice (stamp-in, count-up) is never doubled.
+ */
+function viewKey() {
+  if (screen === 'motd') return 'motd';
+  if (screen === 'shop' && !state.jobs.active && !invoice) return 'shop';
+  if (screen === 'codex' && !state.jobs.active && !invoice) return 'codex';
+  if (repairBeat) return 'repair';
+  if (invoice) return 'invoice';
+  if (state.jobs.active) return 'job';
+  if (screen === 'callbacks') return 'callbacks';
+  return 'home';
+}
+
+let lastViewKey = null;
+
 function render() {
+  const key = viewKey();
+  // Animate whole-screen changes with the native View Transitions API where it
+  // exists (no dependency, no fallback cost: unsupported browsers and
+  // reduced-motion players get the plain instant swap they always had).
+  const animate = lastViewKey !== null && key !== lastViewKey
+    && typeof document.startViewTransition === 'function' && !prefersReducedMotion();
+  lastViewKey = key;
+  if (animate) document.startViewTransition(paint);
+  else paint();
+}
+
+function paint() {
   if (screen === 'motd') {
     motdScreen.render(app, { state, motdResult, actions });
   } else if (screen === 'shop' && !state.jobs.active && !invoice) {

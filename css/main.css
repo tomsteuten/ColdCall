@@ -92,6 +92,36 @@ body {
   animation: screen-in 0.15s ease-out;
 }
 
+/* ── View transitions (2026-07-07): screen-to-screen motion ──────
+   main.js wraps a *view change* (home → job → repair → invoice…) in
+   document.startViewTransition; intra-view re-renders stay instant. Named
+   groups: the status bar morphs in place (reads as a fixed HUD), the machine
+   art slot morphs continuously between the job and repair screens, and the
+   screen body slides. Browsers without the API just get the old instant swap. */
+.screen { view-transition-name: screen; }
+.status-bar { view-transition-name: status-bar; }
+.machine-stage { view-transition-name: machine-art; }
+
+::view-transition-old(screen) {
+  animation: vt-screen-out 0.16s ease-in both;
+}
+::view-transition-new(screen) {
+  animation: vt-screen-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+::view-transition-group(machine-art) {
+  animation-duration: 0.28s;
+}
+
+@keyframes vt-screen-out {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes vt-screen-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* The snapshot layers animate; don't ALSO run the mount fade underneath. */
+html:active-view-transition .screen { animation: none; }
+
 /* ── Status bar ──────────────────────────────────────────────── */
 .status-bar {
   display: grid;
@@ -455,12 +485,24 @@ body {
   .streak-flame,
   .art-particle,
   .test-result,
-  .repair-glow {
+  .repair-glow,
+  .callbacks-list > li,
+  .codex-list > li {
     animation: none !important;
   }
   /* Keep the shared screen fade-in but drop the shake itself. */
   .screen-shake {
     animation: screen-in 0.15s ease-out !important;
+  }
+  /* View transitions: main.js already skips startViewTransition under reduced
+     motion; this is the belt-and-braces for anything that slips through. */
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+  .btn {
+    transition: none;
   }
 }
 
@@ -539,6 +581,20 @@ body {
   cursor: pointer;
   text-align: left;
   line-height: 1.3;
+  transition: filter 0.12s ease-out, transform 0.08s ease-out;
+}
+
+/* Micro-interactions (2026-07-07): every button acknowledges the hand.
+   brightness() composes with each variant's own colours (accent fill, warn
+   border…) instead of overriding them; hover only where hover exists (no
+   sticky states on touch); press is a small physical give. */
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    filter: brightness(1.18);
+  }
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.995);
 }
 
 .btn:disabled {
@@ -1210,6 +1266,23 @@ body {
 .receipt > * {
   animation: receipt-line-in 0.2s ease-out backwards;
 }
+
+/* List entrances (2026-07-07): callbacks and codex cards deal in like the
+   receipt lines. Only render-once views get this — the shop re-renders on
+   every purchase and would visibly re-stagger. Capped at 8: deep lists (the
+   codex is 51 cards) settle together past the fold. */
+.callbacks-list > li,
+.codex-list > li {
+  animation: receipt-line-in 0.22s ease-out backwards;
+}
+.callbacks-list > li:nth-child(1), .codex-list > li:nth-child(1) { animation-delay: 0.03s; }
+.callbacks-list > li:nth-child(2), .codex-list > li:nth-child(2) { animation-delay: 0.07s; }
+.callbacks-list > li:nth-child(3), .codex-list > li:nth-child(3) { animation-delay: 0.11s; }
+.callbacks-list > li:nth-child(4), .codex-list > li:nth-child(4) { animation-delay: 0.15s; }
+.callbacks-list > li:nth-child(5), .codex-list > li:nth-child(5) { animation-delay: 0.19s; }
+.callbacks-list > li:nth-child(6), .codex-list > li:nth-child(6) { animation-delay: 0.23s; }
+.callbacks-list > li:nth-child(7), .codex-list > li:nth-child(7) { animation-delay: 0.27s; }
+.callbacks-list > li:nth-child(n+8), .codex-list > li:nth-child(n+8) { animation-delay: 0.31s; }
 
 .receipt > *:nth-child(1)  { animation-delay: 0.02s; }
 .receipt > *:nth-child(2)  { animation-delay: 0.08s; }

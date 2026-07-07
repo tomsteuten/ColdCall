@@ -7,7 +7,71 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 28 done — diagnosis information-design pass: evidence not verdicts; committed, NOT pushed)
+## Status (Session 28b done — motion pass: View Transitions + micro-interactions; committed, NOT pushed)
+
+**Session 28b (same day, after 28 was pushed on Tom's say-so) built the motion
+half of the visual-feel plan** — Tom's chosen path is: he generates 2–3 full
+visual *directions* in Claude Design (screenshots of home/job/invoice/codex →
+pick with human eyes), a later session ports the winner into `css/main.css`
+tokens; the motion system is direction-independent so it shipped first.
+`node tests/run.js` → **334 passing, 0 failed** (presentation-only, no new
+tests — same policy as session 27). sw.js cache **v26**. Schema v14 untouched.
+
+### What shipped
+
+- **Screen-to-screen View Transitions** (native API, no deps): `viewKey()` in
+  `js/main.js` mirrors the render routing (motd/shop/codex/repair/invoice/
+  job/callbacks/home); `render()` wraps the swap in
+  `document.startViewTransition` ONLY when the key changes, so intra-view
+  re-renders (running a test, arming a confirm) stay instant and session 27's
+  per-element juice never doubles. Feature-detected + gated on
+  `prefersReducedMotion()`; unsupported browsers keep the old instant swap.
+- **Named transition groups** (`css/main.css`): `.screen` slides out/in,
+  `.status-bar` morphs in place (reads as a fixed HUD), `.machine-stage`
+  morphs continuously between job and repair screens.
+  `html:active-view-transition .screen { animation: none }` prevents the
+  mount fade doubling under the snapshot. Uniqueness rule documented in
+  DESIGN.md §6 (one stage/status-bar per view or the transition throws).
+- **Button micro-interactions**: hover brighten via `filter: brightness(1.18)`
+  under `@media (hover: hover)`, 1px press give. brightness() composes with
+  variant colours — a generic background/border hover would flatten
+  `.btn-primary` (anti-pattern noted in DESIGN.md).
+- **List entrances**: callbacks + codex cards deal in with capped nth-child
+  stagger (receipt-line pattern). Deliberately NOT the shop — it re-renders
+  per purchase and would visibly re-stagger.
+- Reduced-motion block extended (`::view-transition-*` off-switch, list
+  stagger, .btn transition). DESIGN.md §6 documents all of it.
+
+### Verified (fresh port 8126, instrumented `startViewTransition`)
+
+- home→job = 1 VT call; running a test / arming first-fix confirm = 0 calls;
+  job→repair = 1; repair→invoice = 1. Reduced-motion (monkeypatched
+  matchMedia): invoice→job navigates with 0 VT calls; control with it off = 1.
+  Wrong-fix `screen-shake` composes with a VT entrance without breaking.
+  Codex stagger delays computed 0.03s/0.11s/…/0.31s cap over 51 cards. Zero
+  console errors. Dev save cleared after.
+- **NOT pushed** — awaiting Tom's say-so (28 itself was pushed earlier today).
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md, DESIGN.md §6 and the top of NOTES.md. Session 28b added the
+> motion system: native View Transitions between screens (viewKey() in
+> main.js — transitions ONLY on view change, never intra-view re-renders),
+> status-bar/machine-art named groups, button hover/press micro-interactions,
+> callbacks/codex list stagger. 334 tests green, schema v14, sw.js v26.
+> Commit may be unpushed — ask Tom. The likely next session: Tom brings
+> Claude Design output (2–3 visual directions as HTML/CSS) and you port the
+> chosen one into css/main.css tokens + DESIGN.md — token values first
+> (palette/type/spacing), then component polish; keep every DESIGN.md §6
+> motion rule and the reduced-motion block intact. Also open: Codex may be
+> renamed "Service Manual" (copy-only, state field keeps its name); two
+> missing client portraits (sanjay-kapoor, chloe-vance — prompts already
+> given to Tom for Google AI Studio; wire via clients.json when the webp
+> files exist). Don't push without Tom's say-so.
+
+---
+
+## Status (Session 28 done — diagnosis information-design pass: evidence not verdicts; committed, PUSHED 2026-07-07)
 
 **Session 28 worked candidate (1) from session 27's list: the inspect-beater
 dominance problem.** `node tests/run.js` → **334 passing, 0 failed** (+23:
@@ -75,7 +139,8 @@ construction).
   1280px (evaporator label, freeze-timeout/plate-cold/cube-sheet evidence,
   422px/422px grid intact). Zero console errors throughout. Dev save cleared
   after.
-- **NOT pushed** — awaiting Tom's say-so.
+- Pushed to main on Tom's say-so, 2026-07-07 (along with session 27, which
+  turned out to be already on origin).
 
 ### Cold-start prompt for the next session
 

@@ -146,6 +146,26 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - Screens fade+rise in via `@keyframes screen-in` (0.15s). Machine art has subtle
   state motion (jolt on fault, glow/drip on working) driven by `machine-stage--*`
   classes.
+- **View transitions (2026-07-07):** whole-screen changes (home → job → repair →
+  invoice…) animate through the native View Transitions API — `main.js` computes a
+  `viewKey()` per render and wraps the swap in `document.startViewTransition` only
+  when the key changes, so intra-view re-renders (running a test, arming a confirm)
+  stay instant and never double the per-element juice. Named groups in `main.css`:
+  `.screen` slides out/in (`vt-screen-out`/`vt-screen-in`), `.status-bar` morphs in
+  place so it reads as a fixed HUD, and `.machine-stage` morphs continuously between
+  the job and repair screens. `html:active-view-transition .screen { animation: none }`
+  stops the mount fade doubling under the snapshot. Unsupported browsers and
+  reduced-motion players get the plain instant swap (JS gate on
+  `prefersReducedMotion()` + a `::view-transition-*` off-switch in the reduced-motion
+  block). A named group must stay unique per view — one `.machine-stage`, one
+  `.status-bar` per screen, or the transition throws and skips.
+- **Micro-interactions (2026-07-07):** every `.btn` brightens on hover
+  (`filter: brightness(1.18)`, `@media (hover: hover)` only — no sticky states on
+  touch) and gives 1px on press. `brightness()` composes with each variant's own
+  colours; do NOT override `background`/`border-color` in a generic hover, it
+  flattens `.btn-primary`/warn/success variants. Callbacks and codex list items deal
+  in with capped `nth-child` stagger (same pattern as receipt lines) — render-once
+  views only; the shop re-renders per purchase and would visibly re-stagger.
 - **`prefers-reduced-motion: reduce` is fully honored and must stay that way** —
   it disables machine-art animation and internal keyframes. Any new animation
   ships with a reduced-motion off-switch in the same change. Motion is feedback
