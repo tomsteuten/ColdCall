@@ -17,31 +17,17 @@
       "symptoms": [
         "\"Nothing comes out and it beeped at me once.\"",
         "No alarms showing now."
-      ],
-      "tests": {
-        "error-log": "No faults. Cleaning cycle completed 10:37 pm. No restock event since.",
-        "temp-probe": "Barrel in spec, chilling a whole lot of nothing.",
-        "inspect-beater": "Immaculate and bone dry. Nobody put the mix back in."
-      }
+      ]
     },
     {
       "symptoms": [
         "\"It served three customers this morning, then gave up.\"",
         "Hopper lid slightly ajar."
-      ],
-      "tests": {
-        "error-log": "No faults. Clean cycle overnight; a hopper refill was never logged.",
-        "temp-probe": "Everything in spec. The machine is fine; the hopper is a void.",
-        "inspect-beater": "Lines held just enough mix for three cones. Hopper spotless and empty."
-      }
+      ]
     }
   ],
   "correctFix": "prime-machine-with-mix",
-  "wrongFixes": [
-    "replace-mix-pump",
-    "replace-dispense-door",
-    "replace-controller-board"
-  ],
+  "wrongFixes": ["replace-mix-pump", "replace-dispense-door", "replace-controller-board"],
   "payout": 100,
   "partsCost": 0,
   "flavour": "Filled it up. Invoice attached. No further questions.",

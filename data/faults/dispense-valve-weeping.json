@@ -1,6 +1,6 @@
 {
   "id": "dispense-valve-weeping",
-  "lesson": "Dripping between serves with no alarm and a torn valve piston seal originates higher up than a door O-ring. Inspect the valve body to tell the two leaks apart.",
+  "lesson": "Dripping from the spout between serves points at the valve piston seal above the door — a failing O-ring weeps at the door seam instead. Where the mix shows up is what separates the two.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [
@@ -9,9 +9,7 @@
     "No alarms."
   ],
   "tests": {
-    "error-log": "No faults. Normal operation logged.",
-    "inspect-beater": "Dispense valve piston seal is torn — valve not seating fully between portions.",
-    "temp-probe": "Barrel and hopper temps both in spec."
+    "inspect-beater": "Mix weeping around the dispense head — the seal faces are wet. The door casting itself sits true, no cracks."
   },
   "correctFix": "replace-dispense-valve-seal",
   "wrongFixes": ["replace-door-o-ring", "replace-dispense-door", "replace-barrel-seal"],

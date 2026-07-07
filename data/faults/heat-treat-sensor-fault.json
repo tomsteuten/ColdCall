@@ -9,9 +9,9 @@
     "Manager says this is the third morning in a row."
   ],
   "tests": {
-    "error-log": "Heat-treat aborted three nights running — mix temp never registered above 40 °C even with the heater on.",
-    "temp-probe": "Independent probe says the mix hits temperature fine. The machine's own sensor disagrees.",
-    "continuity-test": "Mix temp sensor goes open-circuit above 40 °C — it fails exactly when the cycle needs it most."
+    "error-log": "Heat-treat cycles repeatedly logged out of spec — the mix taking far longer than it should to register temperature.",
+    "temp-probe": "Your independent probe and the machine's own sensor tell two different stories — the product side measures in spec on your probe.",
+    "continuity-test": "Mix temp sensor reads in spec cold, then goes open-circuit as it warms past 40 °C."
   },
   "correctFix": "replace-mix-temp-sensor",
   "wrongFixes": ["rerun-heat-treat-cycle", "replace-heater-element", "replace-controller-board"],

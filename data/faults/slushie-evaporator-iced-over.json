@@ -9,38 +9,26 @@
     "Bowl barely cold to the touch."
   ],
   "tests": {
-    "error-log": "TEMP HIGH alarm active. Very high compressor run time.",
-    "temp-probe": "Bowl at 8 °C. Suction line unusually cold and sweating heavily.",
-    "inspect-beater": "Evaporator coils behind the bowl are solid with ice. Airflow completely blocked."
+    "error-log": "Refrigeration protection trips logged repeatedly — pressures and temps drifting out of range under load.",
+    "temp-probe": "Bowl at 8 °C. The suction line is frosted solid and sweating — cold is being made, it's just not reaching the bowl.",
+    "inspect-beater": "Frost creeping forward from the back of the bowl housing, and the panel behind it sweating."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "Slush turned to sweet soup by noon.",
         "Back panel sweating and dripping."
-      ],
-      "tests": {
-        "temp-probe": "Bowl at 9 °C. Suction line frosted solid.",
-        "inspect-beater": "Evaporator coils behind the bowl are a solid block of ice. No air moving at all."
-      }
+      ]
     },
     {
       "symptoms": [
         "Product runny and warm with a whistling noise from the vents.",
         "Compressor never stops."
-      ],
-      "tests": {
-        "temp-probe": "Bowl 8 °C. Airflow across the coil nearly nil — the whistle is air fighting through an ice tunnel.",
-        "inspect-beater": "Coils iced over completely. Filter behind them matted with dust and damp."
-      }
+      ]
     }
   ],
   "correctFix": "defrost-and-clean-evaporator",
-  "wrongFixes": [
-    "regas-refrigeration",
-    "replace-slushie-thermostat",
-    "replace-condenser-fan-motor"
-  ],
+  "wrongFixes": ["regas-refrigeration", "replace-slushie-thermostat", "replace-condenser-fan-motor"],
   "payout": 90,
   "partsCost": 0,
   "flavour": "The irony of a slushie machine dying from too much ice.",

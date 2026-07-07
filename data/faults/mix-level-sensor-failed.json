@@ -9,8 +9,8 @@
   ],
   "tests": {
     "error-log": "LOW MIX alarm came on overnight and never cleared, no matter what the staff topped up.",
-    "inspect-beater": "Mix line is clear and flowing freely. Nothing blocking the feed.",
-    "continuity-test": "Mix level sensor reads open-circuit regardless of level. It's dead."
+    "inspect-beater": "Mix line clear and flowing freely into the barrel. Hopper full.",
+    "continuity-test": "Mix level sensor reads open-circuit no matter the level."
   },
   "correctFix": "replace-mix-level-sensor",
   "wrongFixes": ["descale-mix-line", "replace-mix-pump"],

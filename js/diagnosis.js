@@ -11,7 +11,10 @@ import { DIAGNOSIS } from '../config/balance.js';
  * The test catalogue (GDD §2.1, SCHEMA.md "Test ids"). Faults may only reference
  * these ids. `generic` is what the player sees when a fault has nothing to say
  * for that test. `requiresMultimeterTier` gates the test behind a tool upgrade.
- * @type {Object<string, {label: string, generic: string, requiresMultimeterTier?: number}>}
+ * `machine` overrides label/generic per machine type — the same four probes read
+ * as the right physical action on each machine ("inspect the beater" makes no
+ * sense on an ice dispenser), and the generic names what you'd actually see.
+ * @type {Object<string, {label: string, generic: string, requiresMultimeterTier?: number, machine?: Object<string, {label?: string, generic?: string}>}>}
  */
 export const TESTS = {
   'error-log': {
@@ -25,6 +28,24 @@ export const TESTS = {
   'inspect-beater': {
     label: 'Pull and inspect beater assembly',
     generic: 'Beater, blades and seals all look healthy. Nothing unusual.',
+    machine: {
+      'slushie-machine': {
+        label: 'Pull the lid and inspect bowl and auger',
+        generic: 'Auger, bowl and seals all look healthy. Nothing unusual.',
+      },
+      'froyo-multihead': {
+        label: 'Pull and inspect the beater assemblies',
+        generic: 'All three beaters, blades and seals look healthy. Nothing unusual.',
+      },
+      'granita-slushie': {
+        label: 'Lift the bowls and inspect the augers',
+        generic: 'Augers, bowls and rear seals all look healthy. Nothing unusual.',
+      },
+      'commercial-ice-dispenser': {
+        label: 'Open the door and inspect the evaporator',
+        generic: 'Evaporator plate, curtain and water system all look normal. Nothing unusual.',
+      },
+    },
   },
   'continuity-test': {
     label: 'Continuity test on motor and sensors',
@@ -32,6 +53,32 @@ export const TESTS = {
     requiresMultimeterTier: 2,
   },
 };
+
+/**
+ * Player-facing label for a test on a given machine type: the machine override
+ * when one exists, else the test's default label.
+ * @param {string} testId
+ * @param {string} machineType machine type id from data/machines.json
+ * @returns {string}
+ */
+export function testLabel(testId, machineType) {
+  const t = TESTS[testId];
+  if (!t) throw new Error(`Unknown test id "${testId}"`);
+  return t.machine?.[machineType]?.label ?? t.label;
+}
+
+/**
+ * "Nothing unusual" result for a test on a given machine type — machine
+ * override when one exists, else the test's default generic.
+ * @param {string} testId
+ * @param {string} machineType
+ * @returns {string}
+ */
+export function testGeneric(testId, machineType) {
+  const t = TESTS[testId];
+  if (!t) throw new Error(`Unknown test id "${testId}"`);
+  return t.machine?.[machineType]?.generic ?? t.generic;
+}
 
 /**
  * Fisher-Yates shuffle (copy, not in place) driven by an injected PRNG,
@@ -154,7 +201,7 @@ export function testAvailability(state, testId) {
 export function testResult(job, testId, faults) {
   const fault = faults[job.faultId];
   const variant = faultVariant(fault, job.variant);
-  return variant?.tests?.[testId] ?? fault.tests[testId] ?? TESTS[testId].generic;
+  return variant?.tests?.[testId] ?? fault.tests[testId] ?? testGeneric(testId, job.machineType);
 }
 
 /**

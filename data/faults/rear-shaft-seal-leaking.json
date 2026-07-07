@@ -9,9 +9,7 @@
     "Product output otherwise normal."
   ],
   "tests": {
-    "error-log": "No faults logged.",
-    "inspect-beater": "Beater shaft seal at the rear of the barrel is torn. Mix is being flung out along the rotating shaft and landing on the motor housing.",
-    "temp-probe": "Barrel and hopper temps fine."
+    "inspect-beater": "A fine spray of dried mix around the rear of the barrel housing, trailing back along the beater shaft toward the motor."
   },
   "correctFix": "replace-beater-shaft-seal",
   "wrongFixes": ["replace-barrel-seal", "replace-beater-motor", "replace-dispense-valve-seal"],

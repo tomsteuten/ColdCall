@@ -7,32 +7,23 @@
     "Mix leaking from the dispense door."
   ],
   "tests": {
-    "inspect-beater": "Door O-ring is flattened and cracked. That'll do it."
+    "inspect-beater": "Mix weeping around the dispense head — the seal faces are wet. The door casting itself sits true, no cracks."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "Drip tray full of mix by lunchtime.",
         "Dispense handle sticky no matter how often it's wiped."
-      ],
-      "tests": {
-        "inspect-beater": "Door O-ring flattened to a ribbon and split. The door itself is true and undamaged."
-      }
+      ]
     },
     {
       "symptoms": [
         "Slow weep of mix from the door seam, worst right after each serve."
-      ],
-      "tests": {
-        "inspect-beater": "O-ring gone hard and cracked right around. Barrel seal bone dry — it's the door ring."
-      }
+      ]
     }
   ],
   "correctFix": "replace-door-o-ring",
-  "wrongFixes": [
-    "replace-dispense-door",
-    "replace-barrel-seal"
-  ],
+  "wrongFixes": ["replace-dispense-door", "replace-barrel-seal"],
   "payout": 90,
   "partsCost": 10,
   "flavour": "Sealed the deal for the price of a rubber band.",

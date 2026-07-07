@@ -9,9 +9,9 @@
     "Product tastes and pours fine."
   ],
   "tests": {
-    "error-log": "Recurring HOPPER TEMP HIGH alarm, several times a day for two weeks.",
-    "temp-probe": "Independent probe reads hopper at 3.2 °C — well in spec. Display still claims 9 °C.",
-    "continuity-test": "Thermistor resistance is way off the curve for its actual temperature. Sensor has drifted."
+    "error-log": "Recurring HOPPER TEMP HIGH events logged for the past two weeks. No refrigeration faults alongside.",
+    "temp-probe": "Your independent probe and the machine's own sensor tell two different stories — the product side measures in spec on your probe.",
+    "continuity-test": "Hopper thermistor resistance reads far off the published curve for its measured temperature."
   },
   "symptomVariants": [
     {
@@ -19,21 +19,13 @@
         "HOPPER TEMP alarm chirping every few hours.",
         "Staff swear the mix is cold every time they check.",
         "Compressor barely resting."
-      ],
-      "tests": {
-        "error-log": "HOPPER TEMP HIGH logged 41 times this week. Every one self-cleared.",
-        "temp-probe": "Hand probe puts the hopper at 3.5 °C — in spec. The display insists 8.9 °C."
-      }
+      ]
     },
     {
       "symptoms": [
         "Machine keeps dropping to standby claiming hopper over-temp.",
         "Product texture has been perfect all day."
-      ],
-      "tests": {
-        "error-log": "Repeated OVER TEMP standby events. No compressor or refrigeration faults logged.",
-        "temp-probe": "Independent probe reads the hopper at 3.0 °C. The controller is being lied to."
-      }
+      ]
     }
   ],
   "correctFix": "replace-hopper-thermistor",

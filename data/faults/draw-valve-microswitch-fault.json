@@ -9,9 +9,9 @@
     "Nothing dispensing."
   ],
   "tests": {
-    "error-log": "DRAW HANDLE OPEN fault logged continuously for 18 hours.",
-    "inspect-beater": "Draw handle fully closed. Microswitch actuator arm is bent, pressing the switch permanently.",
-    "continuity-test": "Microswitch reads closed-circuit (triggered) with handle at rest. It should read open."
+    "error-log": "An interlock fault latched since before open — the controller refuses to start until it clears.",
+    "inspect-beater": "The draw handle sits square and clicks home crisply — nothing bent or sloppy at the pivot.",
+    "continuity-test": "Draw microswitch reads closed — triggered — with the handle at rest."
   },
   "correctFix": "replace-draw-handle-microswitch",
   "wrongFixes": ["replace-dispense-door", "replace-controller-board", "replace-draw-handle"],

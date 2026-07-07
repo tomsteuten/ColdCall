@@ -9,37 +9,25 @@
     "MIX LOW alarm going off repeatedly."
   ],
   "tests": {
-    "error-log": "Repeated MIX LOW alarms at irregular intervals.",
-    "temp-probe": "Temps fine. Refrigeration working.",
-    "inspect-beater": "Drain valve at the base of the bowl is held open by a fragment of crystallised syrup. Product slowly bleeding out."
+    "error-log": "Repeated MIX LOW alarms — the timestamps are all outside opening hours.",
+    "inspect-beater": "Old crystallised syrup crusted through the wet side — around the spout tip, the drain seat and the float stem."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "Sticky trail from the machine to the floor drain.",
         "Level visibly lower every morning."
-      ],
-      "tests": {
-        "inspect-beater": "Drain valve seat wedged open by a shard of crystallised syrup. Slow bleed, all night, every night."
-      }
+      ]
     },
     {
       "symptoms": [
         "MIX LOW alarms at random hours.",
         "Cleaner mentions mopping syrup by the machine every morning."
-      ],
-      "tests": {
-        "error-log": "MIX LOW events at closed-hours timestamps. The machine loses product while nobody's serving.",
-        "inspect-beater": "A chip of old crystallised product holding the drain valve off its seat."
-      }
+      ]
     }
   ],
   "correctFix": "clean-and-reseat-drain-valve",
-  "wrongFixes": [
-    "replace-float-switch",
-    "replace-bowl-gasket",
-    "replace-mix-inlet-valve"
-  ],
+  "wrongFixes": ["replace-float-switch", "replace-bowl-gasket", "replace-mix-inlet-valve"],
   "payout": 85,
   "partsCost": 0,
   "flavour": "The machine wasn't losing its mind. Just its product.",

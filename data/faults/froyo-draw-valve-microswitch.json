@@ -9,10 +9,7 @@
     "Middle and right handles work fine."
   ],
   "tests": {
-    "error-log": "LOG EMPTY. Status: IDLE.",
-    "temp-probe": "Left barrel temp reads 18°F (-8°C). Product is cold but not being agitated.",
-    "inspect-beater": "Beater is clean and rotates freely by hand.",
-    "continuity-test": "Left draw handle microswitch reads infinite resistance (open circuit) even when the handle is fully pulled."
+    "continuity-test": "Left draw-handle microswitch reads open even with the handle fully pulled."
   },
   "correctFix": "replace-draw-handle-microswitch",
   "wrongFixes": ["replace-beater-motor", "replace-display-board", "replace-solenoid-valve"],

@@ -9,10 +9,7 @@
     "All bowls are cooling and turning properly."
   ],
   "tests": {
-    "error-log": "LOG EMPTY.",
-    "temp-probe": "Evaporator temps are in spec, hovering around 26°F (-3°C).",
-    "inspect-beater": "Augers and bowls look clean, no leaks from rear seals.",
-    "continuity-test": "No electrical faults detected on any motor or sensor."
+    "inspect-beater": "Bowls and rear seals bone dry. The water pooling underneath is clear condensate, not syrup."
   },
   "correctFix": "clear-condensate-drain-tube",
   "wrongFixes": ["replace-bowl-gasket", "replace-rear-shaft-seal", "replace-evaporator-fan"],

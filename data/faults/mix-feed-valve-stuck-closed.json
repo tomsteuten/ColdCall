@@ -9,9 +9,9 @@
     "Mix pump can be heard running."
   ],
   "tests": {
-    "error-log": "MIX LOW alarm active. Pump runtime logs normal.",
-    "temp-probe": "Barrel temp rising — no mix replenishment. Hopper full.",
-    "inspect-beater": "Mix feed solenoid valve from hopper to barrel actuates but won't open — debris lodged in the valve seat."
+    "error-log": "MIX LOW alarm active. Pump runtime logging normal — no pump fault recorded.",
+    "temp-probe": "Barrel trending warm — it's freezing what's left, but nothing new is coming in. Hopper cold and full.",
+    "inspect-beater": "Hopper full and cold, feed line clear — but the barrel side is dry, running on what's already in it."
   },
   "correctFix": "replace-mix-inlet-valve",
   "wrongFixes": ["replace-mix-pump", "replace-mix-level-sensor", "replace-mix-temp-sensor"],

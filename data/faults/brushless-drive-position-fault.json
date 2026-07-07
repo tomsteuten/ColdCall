@@ -9,9 +9,9 @@
     "Fault clears and immediately returns."
   ],
   "tests": {
-    "error-log": "BEATER POSITION FAULT — controller can't read rotor position. Logged since Wednesday.",
-    "inspect-beater": "Beater spins freely by hand. No ice, no seizure, nothing jammed.",
-    "continuity-test": "Motor windings healthy. Hall effect position sensor reads erratic — signal wire has a hairline break near the connector."
+    "error-log": "BEATER OVERCURRENT trips on every start attempt. Nothing else unusual in the log.",
+    "inspect-beater": "Beater turns freely by hand — no ice, no seizure, nothing jammed.",
+    "continuity-test": "Windings healthy. The rotor position signal drops out when you flex the harness near the connector."
   },
   "correctFix": "replace-beater-position-sensor",
   "wrongFixes": ["replace-beater-motor", "replace-run-capacitor", "replace-controller-board"],

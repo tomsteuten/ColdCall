@@ -1,6 +1,6 @@
 {
   "id": "slushie-condenser-clogged",
-  "lesson": "Warm slush, warm exhaust air and a dust-matted intake grille mean the condenser cannot reject heat. Clean it — the refrigerant was fine, so regassing is the expensive miss.",
+  "lesson": "Warm exhaust with the fan clearly running but almost no air getting through means the condenser is blinded by dust. Clean it — the refrigerant was never the problem, so regassing is the expensive miss.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [
@@ -9,38 +9,25 @@
     "Fan sounds like it's working overtime."
   ],
   "tests": {
-    "error-log": "HIGH PRESSURE warning logged daily for the past two weeks.",
-    "temp-probe": "Bowls sitting at 8 °C — nowhere near slush. Condenser inlet hot enough to fry an egg.",
-    "inspect-beater": "Augers and seals are fine. The condenser intake grille is a solid felt mat of dust."
+    "error-log": "Refrigeration protection trips logged repeatedly — pressures and temps drifting out of range under load.",
+    "temp-probe": "The condenser side is running very hot, and almost no air is moving through the back of the machine."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "Warm syrup in both bowls.",
         "Kick plate hot enough to notice through shoes."
-      ],
-      "tests": {
-        "temp-probe": "Bowls at 9 °C. Condenser discharge air barely moving and very hot.",
-        "inspect-beater": "Augers fine. Condenser intake grille is a felt mat of dust and fryer grease."
-      }
+      ]
     },
     {
       "symptoms": [
         "Machine cuts out on hot afternoons, limps back after an hour.",
         "Slush never sets properly any more."
-      ],
-      "tests": {
-        "error-log": "HIGH PRESSURE trip logged at 2–4 pm every warm day this fortnight.",
-        "inspect-beater": "Condenser fins packed solid with dust. It can't dump heat once the shop warms up."
-      }
+      ]
     }
   ],
   "correctFix": "clean-condenser-coil",
-  "wrongFixes": [
-    "regas-refrigeration",
-    "replace-compressor",
-    "replace-condenser-fan"
-  ],
+  "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-condenser-fan"],
   "payout": 95,
   "partsCost": 0,
   "flavour": "Cured a refrigeration failure with a stiff brush.",

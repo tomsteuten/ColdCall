@@ -8,7 +8,7 @@
     "Leak traced to the back of the left bowl."
   ],
   "tests": {
-    "inspect-beater": "Bowl rear gasket has a visible split. The auger shaft seal is fine."
+    "inspect-beater": "The rear of the left bowl is wet — a bead of syrup tracking down from the gasket line. The shaft seal above it is dry."
   },
   "correctFix": "replace-bowl-gasket",
   "wrongFixes": ["replace-bowl", "replace-auger-shaft-seal"],

@@ -10,8 +10,7 @@
   ],
   "tests": {
     "error-log": "No active faults. Overrun percentage in service menu reads 3% — should be 30–50%.",
-    "inspect-beater": "Barrel and scraper blades fine. Air injector port in the mix inlet completely blocked with calcified scale.",
-    "temp-probe": "Mix and barrel temps in spec."
+    "inspect-beater": "White mineral scale crusted through the mix path — anywhere hard water sits, it's furred up."
   },
   "correctFix": "descale-air-injector",
   "wrongFixes": ["replace-mix-pump", "replace-scraper-blades", "fit-inline-water-filter"],

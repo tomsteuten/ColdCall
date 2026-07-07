@@ -10,9 +10,8 @@
   ],
   "tests": {
     "error-log": "LONG HARVEST CYCLE warning.",
-    "temp-probe": "Evaporator plate temperature reads 10°F (-12°C) during freeze cycle.",
-    "inspect-beater": "N/A (no beater). Visual inspection shows water is only trickling down the right side of the evaporator plate; the left side is dry.",
-    "continuity-test": "Water inlet valve and purge pump solenoids show correct resistance (both ~1.2k ohms)."
+    "temp-probe": "Evaporator plate pulling down hard and holding well below freezing — the refrigeration side is doing its job.",
+    "inspect-beater": "Reservoir full, but water only trickles down one side of the plate — the other side runs dry."
   },
   "correctFix": "clean-water-distributor-tube",
   "wrongFixes": ["replace-water-inlet-valve", "replace-evaporator-plate", "replace-hot-gas-valve"],

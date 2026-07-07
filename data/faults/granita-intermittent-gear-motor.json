@@ -1,6 +1,6 @@
 {
   "id": "granita-intermittent-gear-motor",
-  "lesson": "A clicking sound and non-rotating auger in a single bowl points directly to stripped gears in the auger gearmotor. Replacing the auger spiral or fan motor won't fix the internal drive gears.",
+  "lesson": "An auger that looks healthy but slips and clicks under load points inside the gearmotor — stripped drive gears. The spiral and the fan motor have nothing to do with drive slip.",
   "machineType": "granita-slushie",
   "tier": 3,
   "symptoms": [
@@ -9,10 +9,9 @@
     "Other bowls are freezing and mixing perfectly."
   ],
   "tests": {
-    "error-log": "Bowl 2 Motor Fault - Torque limit exceeded (intermittent).",
-    "temp-probe": "Middle bowl temperature is 28°F (-2°C) but has no slush texture.",
-    "inspect-beater": "Middle bowl spiral auger is intact but doesn't turn under load. The internal gear teeth are stripped.",
-    "continuity-test": "Auger motor stator windings read 120 ohms (good), but motor current draws 2.1A (extremely high) when clicking occurs."
+    "error-log": "Bowl 2 Motor Fault — torque limit exceeded (intermittent).",
+    "inspect-beater": "A white sugar crust is building on the wetted metal — bowl skins and the cylinder flanks wear a matte film.",
+    "continuity-test": "Auger motor stator reads 120 Ω — in spec — but current draw spikes past 2 A whenever the clicking happens."
   },
   "correctFix": "replace-auger-gearbox-motor",
   "wrongFixes": ["replace-auger-spiral", "replace-bowl-gasket", "replace-condenser-fan-motor"],

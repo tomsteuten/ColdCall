@@ -9,10 +9,9 @@
     "Refrigeration system is running constantly."
   ],
   "tests": {
-    "error-log": "LOG EMPTY. System status: cooling active.",
-    "temp-probe": "Independent probe reads 42°F (5.5°C) in the middle barrel. The machine panel claims it is at 16°F (-9°C).",
-    "inspect-beater": "Beater assembly looks fine, scraper blades are sharp.",
-    "continuity-test": "Middle barrel thermistor resistance reads 5.2k ohms at 42°F (expected: ~15k ohms). Sensor has drifted out of calibration."
+    "temp-probe": "Independent probe reads the middle barrel in the mid-40s °F — while the panel claims it's holding 16 °F.",
+    "inspect-beater": "One barrel's product sits warm and liquid while its neighbours hold texture. Nothing binding in any of the beaters.",
+    "continuity-test": "Middle barrel thermistor reads 5.2 kΩ at an actual 42 °F — the curve says it should be near 15 kΩ."
   },
   "correctFix": "replace-barrel-thermistor",
   "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-display-board"],

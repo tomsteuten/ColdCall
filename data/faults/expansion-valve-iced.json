@@ -9,9 +9,8 @@
     "Machine running but struggling."
   ],
   "tests": {
-    "error-log": "Low suction pressure alarm, intermittent.",
-    "temp-probe": "Suction line at −20 °C — far too cold. Superheat reading near zero.",
-    "continuity-test": "Refrigeration electrical side all healthy. Expansion valve position sensor reads stuck closed."
+    "error-log": "Repeated refrigeration warnings — temperatures drifting out of range under load. No hard fault codes.",
+    "temp-probe": "Suction line at −20 °C — far colder than it should be — and superheat reading near zero."
   },
   "correctFix": "replace-expansion-valve",
   "wrongFixes": ["regas-refrigeration", "replace-compressor", "replace-barrel-seal"],

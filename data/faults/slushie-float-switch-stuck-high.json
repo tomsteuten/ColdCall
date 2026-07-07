@@ -1,6 +1,6 @@
 {
   "id": "slushie-float-switch-stuck-high",
-  "lesson": "A MIX LOW alarm with full stock and a float stuck in the raised position means the switch is lying about the level. Replace the float switch.",
+  "lesson": "MIX LOW with full stock and syrup crusted around the float stem means the float is sticking high and lying about the level. Swap the switch — the inlet valve and controller are fine.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [
@@ -9,8 +9,8 @@
     "Bowl looks low but stock is definitely there."
   ],
   "tests": {
-    "error-log": "MIX LOW alarm repeating despite restocks.",
-    "inspect-beater": "Float switch is stuck in the raised position — telling the machine the bowl is full when it isn't."
+    "error-log": "MIX LOW alarm re-arming within minutes of every restock.",
+    "inspect-beater": "Old crystallised syrup crusted through the wet side — around the spout tip, the drain seat and the float stem."
   },
   "correctFix": "replace-float-switch",
   "wrongFixes": ["replace-mix-inlet-valve", "replace-mix-level-sensor", "replace-controller-board"],

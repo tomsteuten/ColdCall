@@ -9,9 +9,8 @@
     "Manager insists nobody touched it."
   ],
   "tests": {
-    "error-log": "Heat-treat cycle aborted at 2:47 am — lid logged open mid-cycle, barrel never reached pasteurisation temp.",
-    "temp-probe": "Mix and barrel temps in spec right now. Heater gets warm when commanded.",
-    "continuity-test": "Heater element and mix temp sensor both read perfectly in spec."
+    "error-log": "Heat-treat cycle aborted overnight — a hopper lid-open event logged mid-cycle. Pasteurisation incomplete.",
+    "temp-probe": "Mix and barrel temps in spec right now. The heater gets warm when commanded."
   },
   "symptomVariants": [
     {
@@ -34,11 +33,7 @@
     }
   ],
   "correctFix": "rerun-heat-treat-cycle",
-  "wrongFixes": [
-    "replace-heater-element",
-    "replace-mix-temp-sensor",
-    "replace-controller-board"
-  ],
+  "wrongFixes": ["replace-heater-element", "replace-mix-temp-sensor", "replace-controller-board"],
   "payout": 120,
   "partsCost": 0,
   "flavour": "Turned it off and on again, professionally.",

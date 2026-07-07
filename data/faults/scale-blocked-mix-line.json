@@ -9,19 +9,14 @@
   ],
   "tests": {
     "error-log": "LOW MIX alarms increasing in frequency over the past month.",
-    "temp-probe": "All temperatures in spec.",
-    "inspect-beater": "Mix feed line is furred shut with white scale. Like a kettle, but load-bearing."
+    "inspect-beater": "White mineral scale crusted through the mix path — anywhere hard water sits, it's furred up."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "LOW MIX alarm — staff refilled the hopper twice today already.",
         "Flow into the barrel is a dribble."
-      ],
-      "tests": {
-        "error-log": "LOW MIX events roughly doubling week over week for a month.",
-        "inspect-beater": "Feed line furred with white scale, bore down to a drinking straw."
-      }
+      ]
     },
     {
       "symptoms": [
@@ -29,17 +24,12 @@
         "LOW MIX alarm only at peak hours."
       ],
       "tests": {
-        "error-log": "Every LOW MIX alarm this month timestamps inside the lunch rush.",
-        "inspect-beater": "Scale narrowing the mix line — enough flow at idle, nowhere near enough at full draw."
+        "error-log": "Every LOW MIX alarm this month timestamps inside the lunch rush."
       }
     }
   ],
   "correctFix": "descale-mix-line",
-  "wrongFixes": [
-    "replace-mix-level-sensor",
-    "replace-mix-pump",
-    "refill-hopper"
-  ],
+  "wrongFixes": ["replace-mix-level-sensor", "replace-mix-pump", "refill-hopper"],
   "payout": 110,
   "partsCost": 5,
   "flavour": "Hard water, soft serve, hardest part was not laughing.",

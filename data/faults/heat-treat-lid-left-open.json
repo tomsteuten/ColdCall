@@ -9,9 +9,9 @@
     "Night manager says everything was fine at close."
   ],
   "tests": {
-    "error-log": "Heat-treat cycle aborted 2:55 am — hopper lid-open event detected mid-cycle. Pasteurisation incomplete.",
-    "temp-probe": "Mix and barrel temps in spec now. Heater element working.",
-    "inspect-beater": "Barrel and beater clean and fine. Hopper lid latch is not fully clicked — left slightly ajar after the refill."
+    "error-log": "Heat-treat cycle aborted overnight — a hopper lid-open event logged mid-cycle. Pasteurisation incomplete.",
+    "temp-probe": "Mix and barrel temps in spec right now. The heater gets warm when commanded.",
+    "inspect-beater": "The hopper lid has seen better days — worn fittings, tired seal face. Hard to say if it's making clean contact all round."
   },
   "correctFix": "latch-hopper-lid-and-rerun-heat-treat",
   "wrongFixes": ["rerun-heat-treat-cycle", "replace-hopper-lid-magnet", "replace-heater-element"],

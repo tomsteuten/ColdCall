@@ -3,7 +3,7 @@
  * all mutations happen in the actions passed in from main.js.
  */
 
-import { TESTS, testAvailability, testResult, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
+import { TESTS, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/balance.js';
@@ -525,21 +525,21 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       if (job.testsRun.includes(id)) {
         return `
           <li class="test-row">
-            <span class="test-label">${TESTS[id].label}</span>
+            <span class="test-label">${testLabel(id, job.machineType)}</span>
             <p class="test-result">${testResult(job, id, faults)}</p>
           </li>`;
       }
       if (!available) {
         return `
           <li class="test-row">
-            <button class="btn btn-test" disabled>${TESTS[id].label}</button>
+            <button class="btn btn-test" disabled>${testLabel(id, job.machineType)}</button>
             <p class="test-meta">${testCostCopy(job, id)}</p>
             <p class="test-locked">${reason}</p>
           </li>`;
       }
       return `
         <li class="test-row">
-          <button class="btn btn-test" data-test="${id}">${TESTS[id].label}</button>
+          <button class="btn btn-test" data-test="${id}">${testLabel(id, job.machineType)}</button>
           <p class="test-meta">${testCostCopy(job, id)}</p>
         </li>`;
     })

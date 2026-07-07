@@ -9,9 +9,8 @@
     "Can't see any settings or access service menu."
   ],
   "tests": {
-    "error-log": "Can't access — display is dead.",
-    "temp-probe": "Barrel and hopper temps correct. Refrigeration working.",
-    "continuity-test": "Display board 12V supply rail present. Data bus to the display microcontroller reads dead — chip has failed."
+    "error-log": "Can't pull the log — the panel is dark.",
+    "continuity-test": "12 V rail present at the display board. The data bus into the display reads dead."
   },
   "correctFix": "replace-display-board",
   "wrongFixes": ["replace-controller-board", "replace-mix-temp-sensor", "run-defrost-cycle"],

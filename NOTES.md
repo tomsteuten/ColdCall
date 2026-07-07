@@ -7,6 +7,99 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
+## Status (Session 28 done — diagnosis information-design pass: evidence not verdicts; committed, NOT pushed)
+
+**Session 28 worked candidate (1) from session 27's list: the inspect-beater
+dominance problem.** `node tests/run.js` → **334 passing, 0 failed** (+23:
+20 per-machine/per-test uniqueness caps, a fairness guard, a label check, a
+verdict-phrase lint). sw.js cache **v25**. Schema stays **v14** — no state
+shape, `config/balance.js`, or `economy.js` changes (rule 5 untouched by
+construction).
+
+### What shipped
+
+- **Machine-specific test labels + generics** (`TESTS[...].machine` in
+  `js/diagnosis.js`, new `testLabel()`/`testGeneric()`, wired in
+  `js/ui/job.js`): inspect reads "Pull the lid and inspect bowl and auger" on
+  the slushie, "Open the door and inspect the evaporator" on the ice
+  dispenser, etc. The ice machine's "N/A (no beater)" hack is gone. The
+  generic "nothing unusual" line is machine-flavoured too. Default
+  label/generic still apply to unknown machine types (tested).
+- **All 51 fault files rewritten: results are observations, not verdicts.**
+  Each test now has a fixed observation scope (SCHEMA.md documents it):
+  inspect can't see the condenser/compressor/supply; the log reports codes and
+  timestamps, not narrative conclusions; continuity reports readings ("run
+  capacitor measures a fraction of its rated microfarads"), never "it's dead".
+  Evidence that lived in the wrong instrument moved (e.g. the seized condenser
+  fan is now a silent-grille temp-probe observation); evidence a test couldn't
+  honestly show was deleted so the generic speaks. The core mechanic:
+  **faults on the same machine that would present the same observation share
+  the exact same result string** (barrel-freeze-up + worn-scraper-blades both
+  show "Hard ice built up on the barrel wall…"; hopper-thermistor-drift +
+  heat-treat-sensor-fault share the probe-vs-panel disagreement line), so a
+  single result stays ambiguous and the answer lives in combining
+  symptoms + tests. Redundant variant test-overrides (re-flavoured verdicts)
+  were deleted — variant COUNTS are unchanged, so seeded draws, MotD
+  determinism and callback replays are unaffected. ~8 lessons updated where
+  they cited evidence that moved.
+- **Invariant test** (`tests/information-design.test.js`) over the real
+  library: per machine, a single ungated test may uniquely identify at most
+  ceil(30%) of the pool; the tier-2-gated continuity test gets ceil(60%) —
+  deliberately looser, the paid-for meter is SUPPOSED to be decisive (bounded
+  by the tool gate + time cost, not ambiguity). Plus: no two faults on a
+  machine may present identical symptoms AND identical full evidence
+  (unsolvable-job guard); every machine has a sensible inspect label; verdict
+  phrasing ("that'll do it", "replace the…", "N/A") anywhere in results fails
+  the suite. Soft-serve temp-probe and granita/froyo/ice ungated tests sit AT
+  their caps — adding a new fault with a unique result string there will fail
+  the suite and force sharing; that is working as intended.
+- **Known consequence, on purpose:** a few faults are now genuinely
+  undecidable without the Tier-2 meter (hopper-lid-magnet's
+  realign-vs-replace trap; froyo draw microswitch) — at most ~one per
+  machine, and it's the multimeter's sales pitch. GDD §2.1 decision of
+  record (2026-07-07) covers all of this; SCHEMA.md gained a "Writing test
+  results" authoring section and the example was updated to the new style.
+
+### Verified
+
+- 334 tests green. A patch script (scratchpad, not committed) applied the 51
+  rewrites from one reviewable table and self-checked the uniqueness caps
+  before the real test was written; one missed deletion
+  (scale-blocked-mix-line's base temp entry) was caught by the self-check.
+- Live on a **fresh port 8126** (`static-alt3` added to `.claude/launch.json`
+  per the session-27 cache rule — 8125 was assumed burned, not fought):
+  fresh save at 380px, full loop on a slushie ticket (machine-specific
+  inspect label, shared syrup-crust evidence string, deleted error-log entry
+  falling back to the generic, first-fix confirm → repair beat → invoice
+  $80+$6, Codex 1/51, contract 1/2); seeded tier-3 ice-dispenser job at
+  1280px (evaporator label, freeze-timeout/plate-cold/cube-sheet evidence,
+  422px/422px grid intact). Zero console errors throughout. Dev save cleared
+  after.
+- **NOT pushed** — awaiting Tom's say-so.
+
+### Cold-start prompt for the next session
+
+> Read CLAUDE.md and the top of NOTES.md. Session 28 was the diagnosis
+> information-design pass: test results are now evidence, not verdicts —
+> machine-specific test labels/generics (`testLabel` in js/diagnosis.js),
+> all 51 fault files rewritten with deliberately-shared evidence strings, and
+> `tests/information-design.test.js` enforcing per-test uniqueness caps
+> (~30% ungated / 60% for the tool-gated meter), an unsolvable-job guard and
+> a verdict-phrase lint. `node tests/run.js` should be 334 green, schema v14,
+> sw.js cache v25. Sessions 27 AND 28 are committed but unpushed — ask Tom.
+> Several ungated tests sit exactly at their caps; a new fault there must
+> share strings (SCHEMA.md "Writing test results" explains how). Open
+> candidates, in leverage order: (1) the tests-as-touches interactive machine
+> — all art states (probe/leads/ajar) ready since session 26, and the new
+> machine-specific test labels map naturally onto touch targets; (2) a real
+> playtest of the rewritten diagnosis (does shared evidence feel like
+> deduction or like guessing? — only measurable by playing, ideally Tom);
+> (3) the Burgertown narrative arc. If the dev server serves stale JS, add a
+> fresh port to `.claude/launch.json` (8126 is the latest); don't fight the
+> cache. Don't push without Tom's say-so.
+
+---
+
 ## Status (Session 27 done — game-feel pass: symptoms-first layout + juice; committed, NOT pushed)
 
 **Session 27 worked the "looks pretty mid" verdict from session 25/26 notes.**

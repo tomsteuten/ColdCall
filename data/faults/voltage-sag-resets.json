@@ -10,8 +10,7 @@
   ],
   "tests": {
     "error-log": "Power reset events logged at peak service times — 12:10, 12:43, 13:02 today.",
-    "temp-probe": "All temps fine between resets.",
-    "continuity-test": "Supply voltage at the machine terminal measures 196 V during a reset event — spec is 220–240 V. Supply cable run is undersized."
+    "continuity-test": "Supply at the terminal block measures 196 V during a reset event — spec is 220–240 V."
   },
   "correctFix": "upgrade-supply-cable",
   "wrongFixes": ["replace-controller-board", "replace-compressor", "replace-display-board"],

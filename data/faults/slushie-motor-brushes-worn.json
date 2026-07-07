@@ -10,8 +10,8 @@
   ],
   "tests": {
     "error-log": "AGITATOR FAULT trips logged every 30–40 minutes since Tuesday.",
-    "inspect-beater": "Drive motor brushes are worn down to stubs, making intermittent contact and arcing.",
-    "continuity-test": "Motor windings healthy. Carbon brushes measured at 2 mm — well below the 8 mm minimum."
+    "inspect-beater": "The drive side looks tired — belt glazed shiny, carbon dust around the motor vents. The motor spins; the auger doesn't always follow.",
+    "continuity-test": "Motor windings healthy. Carbon brushes measure 2 mm against an 8 mm minimum."
   },
   "correctFix": "replace-motor-brushes",
   "wrongFixes": ["replace-agitator-motor", "replace-agitator-belt", "replace-controller-board"],

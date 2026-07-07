@@ -9,9 +9,8 @@
     "Ambient temperature is normal."
   ],
   "tests": {
-    "error-log": "CONDENSER TEMP HIGH trips appearing over the past week, more frequent in busy periods.",
-    "temp-probe": "Condenser outlet hot — well above spec. Refrigerant head pressure high.",
-    "inspect-beater": "Barrel and mix side fine. Condenser fan at the rear is completely seized — won't turn by hand."
+    "error-log": "Repeated refrigeration warnings — temperatures drifting out of range under load. No hard fault codes.",
+    "temp-probe": "Condenser outlet very hot, head pressure high. The rear grille is silent — no airflow moving across the coil."
   },
   "correctFix": "replace-condenser-fan-motor",
   "wrongFixes": ["regas-refrigeration", "replace-compressor", "clean-condenser-coils"],

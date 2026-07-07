@@ -9,9 +9,7 @@
     "Staff say it's been slow for weeks."
   ],
   "tests": {
-    "error-log": "No faults recorded.",
-    "temp-probe": "All temps in spec.",
-    "inspect-beater": "Agitator and bowl fine. Dispense spout has a thick plug of crystallised syrup at the tip."
+    "inspect-beater": "Old crystallised syrup crusted through the wet side — around the spout tip, the drain seat and the float stem."
   },
   "correctFix": "clear-and-sanitise-spout",
   "wrongFixes": ["replace-mix-pump", "replace-slushie-thermostat", "replace-bowl-gasket"],

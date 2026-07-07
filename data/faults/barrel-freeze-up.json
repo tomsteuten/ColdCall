@@ -9,10 +9,9 @@
     "First start of the morning."
   ],
   "tests": {
-    "error-log": "BEATER OVERCURRENT trip on first start. Last night's shutdown skipped the standby cycle.",
+    "error-log": "BEATER OVERCURRENT trips on every start attempt. Nothing else unusual in the log.",
     "temp-probe": "Barrel at −15 °C. That's not soft serve, that's a glacier.",
-    "inspect-beater": "Barrel is frozen into a solid cylinder of ice around the beater.",
-    "continuity-test": "Motor windings and run capacitor all read healthy."
+    "inspect-beater": "Hard ice built up on the barrel wall, and the beater binds against it when you turn it by hand."
   },
   "correctFix": "run-defrost-cycle",
   "wrongFixes": ["replace-run-capacitor", "replace-beater-motor"],

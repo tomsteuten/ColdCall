@@ -10,9 +10,9 @@
   ],
   "tests": {
     "error-log": "ERROR: WATER FILL TIMEOUT.",
-    "temp-probe": "Evaporator plate is 72°F (22°C) (ambient temperature).",
-    "inspect-beater": "N/A. Reservoir is completely dry; water level float switch is sitting at the bottom.",
-    "continuity-test": "Water inlet valve solenoid coil shows normal resistance (1.1k ohms) but fails to open mechanically when energized (plunger sticking intermittently due to internal calcium scale)."
+    "temp-probe": "Evaporator plate sitting at ambient, bone dry.",
+    "inspect-beater": "The reservoir is bone dry, and the float sits at the bottom of its travel — moving freely on its pin.",
+    "continuity-test": "Inlet solenoid coil reads in spec, and you can hear the plunger click when energised — but no water follows."
   },
   "correctFix": "replace-water-inlet-valve",
   "wrongFixes": ["replace-float-switch", "replace-purge-pump", "descale-mix-line"],

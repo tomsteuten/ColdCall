@@ -15,7 +15,7 @@ can't list a directory, so that manifest is how the loader finds fault files.
 | `machineType` | string | yes | Machine type id from `data/machines.json` (e.g. `"soft-serve-commercial"`). |
 | `tier` | number | yes | Machine tier 1–5 this fault appears on. |
 | `symptoms` | string[] | yes | Shown free when the job starts. 1–4 short player-facing lines. |
-| `tests` | object | yes | Map of test id → result string the player sees when running that test on *this* fault. Only list tests that reveal something; unlisted tests show that test's generic "nothing unusual" result. |
+| `tests` | object | yes | Map of test id → result string the player sees when running that test on *this* fault. Only list tests that reveal something; unlisted tests show that test's generic "nothing unusual" result. **Results are evidence, not verdicts** — see "Writing test results" below. |
 | `correctFix` | string | yes | Fix id that resolves the fault for full payout. |
 | `wrongFixes` | string[] | yes | Plausible-but-wrong fix ids offered alongside the correct one (the traps). 1–4 entries, must not contain `correctFix`. |
 | `payout` | number | yes | Base payout in $ for a correct first-time fix. Stays within the tier's range in `config/balance.js`. |
@@ -27,12 +27,48 @@ can't list a directory, so that manifest is how the loader finds fault files.
 
 ## Test ids (launch set)
 
-Defined by the diagnosis engine; faults may only reference these:
+Defined by the diagnosis engine; faults may only reference these. Labels and
+generic results are machine-specific where it matters (`TESTS[...].machine` in
+`js/diagnosis.js` — e.g. inspect reads "Open the door and inspect the
+evaporator" on the ice dispenser). Each test has a fixed **observation scope**;
+a result may only report what that instrument or action could genuinely show:
 
-- `error-log` — cheap, vague
-- `temp-probe` — medium cost
-- `inspect-beater` — slow, very informative
-- `continuity-test` — requires Multimeter Tier 2
+- `error-log` — cheap, vague. What the controller logged: codes, timestamps,
+  event counts. No narrative conclusions.
+- `temp-probe` — medium cost. Temperatures, pressures, airflow you'd notice
+  while probing. Readings, not diagnoses.
+- `inspect-beater` — slow, hands-on look at the product side (beater/auger,
+  barrel/bowl, door and seals, hopper, mix path — or plate/curtain/reservoir on
+  the ice dispenser). It cannot see the condenser, compressor, supply wiring or
+  anything behind a service panel; faults out there just show the generic.
+- `continuity-test` — requires Multimeter Tier 2. Electrical readings on
+  motors, sensors, coils and supply. The paid-for decisive instrument: it may
+  pin a component, but phrase it as the reading ("run capacitor measures a
+  fraction of its rated microfarads"), never the conclusion ("it's dead").
+
+## Writing test results (2026-07-07, GDD §2.1)
+
+Results are **observations the player interprets, never verdicts**. "Door
+O-ring is flattened and cracked. That'll do it." names the fix; nobody deduces
+anything. Instead:
+
+- **Share evidence strings across faults.** When two faults on the same machine
+  would genuinely present the same observation, use the *exact same string*
+  (e.g. barrel-freeze-up and worn-scraper-blades both show "Hard ice built up
+  on the barrel wall…"). A shared result stays ambiguous on its own; the
+  discriminating information lives in the combination of symptoms and other
+  tests. Copy the string verbatim from an existing fault — the invariant test
+  matches strings exactly.
+- **Out-of-scope evidence moves or dies.** If the tell lives on the condenser,
+  it belongs in `temp-probe` (you'd feel the dead airflow) or `error-log`, not
+  in the inspection. If a test would honestly show nothing, delete the entry
+  and let the generic speak.
+- **Enforced caps** (`tests/information-design.test.js`): per machine, a single
+  ungated test may uniquely identify at most ~30% of that machine's fault pool
+  (~60% for the tool-gated continuity test), no two faults may share both
+  identical symptoms and identical full evidence, and verdict phrasing
+  ("that'll do it", "replace the…", "N/A") fails the suite. If your new fault
+  trips the cap, share a string or drop an entry.
 
 ## Validation rules
 
@@ -54,7 +90,7 @@ Defined by the diagnosis engine; faults may only reference these:
   "tier": 2,
   "symptoms": ["Mix leaking from the dispense door."],
   "tests": {
-    "inspect-beater": "Door O-ring is flattened and cracked. That'll do it."
+    "inspect-beater": "Mix weeping around the dispense head — the seal faces are wet. The door casting itself sits true, no cracks."
   },
   "correctFix": "replace-door-o-ring",
   "wrongFixes": ["replace-dispense-door", "replace-barrel-seal"],
@@ -65,3 +101,7 @@ Defined by the diagnosis engine; faults may only reference these:
   "authenticityNote": "Door O-rings are a routine wear item; leaks at the door are almost never anything else."
 }
 ```
+
+Note the inspect result is deliberately shared verbatim with
+`dispense-valve-weeping` — a door-area leak looks the same until you know
+*where* the mix shows up, which is what the symptoms tell you.

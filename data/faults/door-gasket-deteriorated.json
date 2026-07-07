@@ -9,9 +9,9 @@
     "Product fine; alarms only in the afternoon."
   ],
   "tests": {
-    "error-log": "Intermittent HOPPER TEMP HIGH warnings during afternoon service.",
-    "temp-probe": "Hopper runs 1–2 °C above spec on hot days.",
-    "inspect-beater": "Hopper access door gasket is cracked and no longer sealing. Warm ambient air infiltrating the hopper cavity."
+    "error-log": "Recurring HOPPER TEMP HIGH events logged for the past two weeks. No refrigeration faults alongside.",
+    "temp-probe": "Hopper running 1–2 °C above spec — worst through the warm afternoon.",
+    "inspect-beater": "The hopper lid has seen better days — worn fittings, tired seal face. Hard to say if it's making clean contact all round."
   },
   "correctFix": "replace-hopper-door-gasket",
   "wrongFixes": ["replace-hopper-thermistor", "replace-compressor", "regas-refrigeration"],

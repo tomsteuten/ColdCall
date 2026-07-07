@@ -8,9 +8,7 @@
     "Beater motor pulling high amps."
   ],
   "tests": {
-    "error-log": "No active errors. One historical high-torque warning, three days old.",
-    "temp-probe": "Barrel temp in spec. Hopper temp in spec.",
-    "inspect-beater": "Scraper blades are worn down to nubs. Ice is building up on the barrel wall."
+    "inspect-beater": "Hard ice built up on the barrel wall, and the beater binds against it when you turn it by hand."
   },
   "symptomVariants": [
     {
@@ -20,8 +18,7 @@
         "Manager says it's been creeping up for weeks."
       ],
       "tests": {
-        "error-log": "Intermittent BEATER TORQUE HIGH warnings, more frequent every week for a month.",
-        "inspect-beater": "Blade edges chamfered round — a rind of hard ice on the barrel wall they're no longer shaving."
+        "error-log": "Intermittent BEATER TORQUE HIGH warnings, more frequent every week for a month."
       }
     },
     {
@@ -30,8 +27,7 @@
         "Beater audibly labouring during every draw."
       ],
       "tests": {
-        "error-log": "No active errors. Motor current trend has drifted upward for six weeks straight.",
-        "inspect-beater": "Scraper blades worn to nubs. Ice build-up on the barrel wall dragging the beater."
+        "error-log": "No active errors. Motor current trend has drifted upward for six weeks straight."
       }
     }
   ],

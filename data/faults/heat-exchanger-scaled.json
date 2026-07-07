@@ -9,9 +9,9 @@
     "Product quality fine during service."
   ],
   "tests": {
-    "error-log": "HTR SLOW warnings logged for three weeks. Cycle completing but well outside spec time.",
-    "temp-probe": "Mix heats up but very slowly. Heater element draws correct current.",
-    "inspect-beater": "Internal heat exchanger surfaces visible through barrel access — coated in a 3–4 mm layer of white calcite scale."
+    "error-log": "Heat-treat cycles repeatedly logged out of spec — the mix taking far longer than it should to register temperature.",
+    "temp-probe": "Mix comes up to temperature, but far slower than the element's current draw says it should.",
+    "inspect-beater": "White mineral scale crusted through the mix path — anywhere hard water sits, it's furred up."
   },
   "correctFix": "descale-heat-exchanger",
   "wrongFixes": ["replace-heater-element", "replace-mix-temp-sensor", "fit-inline-water-filter"],

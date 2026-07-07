@@ -10,8 +10,8 @@
   ],
   "tests": {
     "error-log": "REFRIGERATION FAULT — compressor failed to start, 47 attempts logged.",
-    "temp-probe": "Barrel at ambient temperature. No refrigeration activity.",
-    "continuity-test": "Compressor windings read perfectly healthy. Start relay is open-circuit — no contact."
+    "temp-probe": "Barrel at ambient. No refrigeration activity at all.",
+    "continuity-test": "Compressor windings read healthy. The start relay contact reads open — no continuity."
   },
   "correctFix": "replace-compressor-start-relay",
   "wrongFixes": ["replace-compressor", "regas-refrigeration", "replace-controller-board"],

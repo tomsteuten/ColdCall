@@ -9,10 +9,10 @@
     "Machine is making a grinding noise as the ice sheet hits the thick ice on the plate."
   ],
   "tests": {
-    "error-log": "MAX FREEZE TIME EXCEEDED.",
-    "temp-probe": "Evaporator plate reads 5°F (-15°C).",
-    "inspect-beater": "N/A. Evaporator plate is completely encased in a thick, solid block of ice that has bridged across the grid.",
-    "continuity-test": "Harvest switch (curtain switch) reads closed circuit (0 ohms) regardless of whether the curtain is open or closed. The magnetic reed switch has failed closed."
+    "error-log": "MAX FREEZE TIME EXCEEDED — the freeze cycle keeps running past its limit without handing over to harvest.",
+    "temp-probe": "Evaporator plate pulling down hard and holding well below freezing — the refrigeration side is doing its job.",
+    "inspect-beater": "No clean cube grid on the plate — just a continuous sheet of ice where cubes should be forming and releasing. The curtain hangs undamaged.",
+    "continuity-test": "The curtain switch reads closed — 0 Ω — whether the curtain hangs open or shut."
   },
   "correctFix": "replace-harvest-curtain-switch",
   "wrongFixes": ["replace-hot-gas-valve", "replace-evaporator-plate", "replace-thermostat"],

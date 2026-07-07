@@ -1,6 +1,6 @@
 {
   "id": "overheat-cutout-tripped",
-  "lesson": "A dead machine in a hot, enclosed corner with a popped thermal cutout button just needs a reset — but fix the airflow or it trips again. It is not a compressor fault.",
+  "lesson": "A dead machine in a hot, enclosed corner with no continuity past the compressor’s thermal cutout just needs the cutout reset — but fix the airflow or it trips again. It is not a compressor fault.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [
@@ -9,9 +9,9 @@
     "Machine is in a warm, enclosed corner of the kitchen."
   ],
   "tests": {
-    "error-log": "Can't access — machine fully off.",
-    "temp-probe": "Rear of machine hot to touch. Compressor motor body very warm.",
-    "inspect-beater": "Thermal cutout button on the compressor motor has physically popped out. Reset it: machine powers straight back on."
+    "error-log": "Can't pull the log — the panel is dark.",
+    "temp-probe": "Rear of the machine hot to the touch; compressor body very warm.",
+    "continuity-test": "Supply live into the machine, but no continuity through the compressor circuit past the thermal cutout."
   },
   "correctFix": "reset-thermal-cutout",
   "wrongFixes": ["replace-compressor", "replace-controller-board", "replace-condenser-fan-motor"],

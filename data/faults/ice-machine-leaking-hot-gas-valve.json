@@ -9,10 +9,9 @@
     "Water is flowing, but only slush forms on the plate, never solid cubes."
   ],
   "tests": {
-    "error-log": "FREEZE CYCLE EXCEEDED MAX TIME.",
-    "temp-probe": "Evaporator plate temp only drops to 30°F (-1°C) after 20 minutes of cooling.",
-    "inspect-beater": "N/A. Evaporator has a thin layer of soft slush, no solid ice.",
-    "continuity-test": "Hot gas harvest valve solenoid coil shows 450 ohms (normal), but the valve body is hot to the touch during the freeze cycle, indicating it is leaking high-pressure gas back into the evaporator."
+    "error-log": "MAX FREEZE TIME EXCEEDED — the freeze cycle keeps running past its limit without handing over to harvest.",
+    "temp-probe": "Plate only pulls down to 30 °F after twenty minutes — and the hot-gas line into the evaporator stays warm right through the freeze cycle.",
+    "inspect-beater": "No clean cube grid on the plate — just a continuous sheet of ice where cubes should be forming and releasing. The curtain hangs undamaged."
   },
   "correctFix": "replace-hot-gas-bypass-valve",
   "wrongFixes": ["regas-refrigeration", "replace-compressor-start-relay", "replace-water-inlet-valve"],

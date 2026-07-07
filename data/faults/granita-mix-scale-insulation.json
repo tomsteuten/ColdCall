@@ -1,6 +1,6 @@
 {
   "id": "granita-mix-scale-insulation",
-  "lesson": "When the refrigerant line is freezing cold but the product stays warm, the evaporator cylinder is insulated. Check for a buildup of sugar scale on the cylinder and scrub it off.",
+  "lesson": "A freezing-cold refrigerant line with mix that stays warm means something is insulating the cylinder — on a granita machine that’s sugar scale. The temperature split is the tell; regassing changes nothing.",
   "machineType": "granita-slushie",
   "tier": 3,
   "symptoms": [
@@ -9,10 +9,8 @@
     "Bowls look full and augers are turning."
   ],
   "tests": {
-    "error-log": "MAX COOLING TIME EXCEEDED.",
-    "temp-probe": "Refrigerant line is 15°F (-9°C), but slush mix is stuck at 39°F (4°C).",
-    "inspect-beater": "Auger removed. The outer surface of the stainless steel evaporator cylinder is coated in a thick, crusty layer of white sugar scale, insulating the mix from the cold.",
-    "continuity-test": "Evaporator thermistor resistance matches actual temp. Compressor contactor has continuity."
+    "temp-probe": "The refrigerant line reads −9 °C, but the mix is stuck at 4 °C and barely moving down.",
+    "inspect-beater": "A white sugar crust is building on the wetted metal — bowl skins and the cylinder flanks wear a matte film."
   },
   "correctFix": "descale-evaporator-cylinder",
   "wrongFixes": ["regas-refrigeration", "replace-auger-spiral", "replace-thermostat"],

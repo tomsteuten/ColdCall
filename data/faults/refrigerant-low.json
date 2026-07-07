@@ -9,38 +9,25 @@
     "No specific error codes."
   ],
   "tests": {
-    "error-log": "No hard faults. Repeated PRODUCT TEMP HIGH warnings over the past month.",
-    "temp-probe": "Barrel at −2 °C — should be −6 to −8 °C. Suction pressure low.",
-    "continuity-test": "All electrical fine. Refrigerant pressures confirm undercharge — suction pressure well below spec."
+    "error-log": "Repeated refrigeration warnings — temperatures drifting out of range under load. No hard fault codes.",
+    "temp-probe": "Barrel at −2 °C — should be −6 to −8 °C. Suction pressure well below spec."
   },
   "symptomVariants": [
     {
       "symptoms": [
         "Soft serve more like thick shake since mid-morning.",
         "Compressor hasn't cycled off once."
-      ],
-      "tests": {
-        "temp-probe": "Barrel at −1.5 °C, should be −6 to −8 °C. Suction pressure well under spec.",
-        "continuity-test": "Electrics all in spec. Pressures say undercharge — slow leak somewhere."
-      }
+      ]
     },
     {
       "symptoms": [
         "Product fine at open, soft by 11, undrawable by the rush.",
         "No error codes at all."
-      ],
-      "tests": {
-        "error-log": "PRODUCT TEMP HIGH warnings clustering later in the day, every day this week.",
-        "temp-probe": "Barrel can't get below −2 °C under load. Suction pressure low."
-      }
+      ]
     }
   ],
   "correctFix": "regas-refrigeration",
-  "wrongFixes": [
-    "replace-compressor",
-    "replace-expansion-valve",
-    "replace-hopper-thermistor"
-  ],
+  "wrongFixes": ["replace-compressor", "replace-expansion-valve", "replace-hopper-thermistor"],
   "payout": 140,
   "partsCost": 50,
   "flavour": "More gas, less disappointment.",

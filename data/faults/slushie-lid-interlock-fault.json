@@ -10,8 +10,7 @@
   ],
   "tests": {
     "error-log": "LID OPEN fault since last night. Machine never ran.",
-    "inspect-beater": "Lid and bowl look fine. Magnetic reed switch on the lid frame has drifted out of alignment with the lid magnet.",
-    "continuity-test": "Reed switch reads open even with lid fully closed. Magnet is 5 mm off centre."
+    "continuity-test": "Reed switch reads open with the lid fully closed. The magnet sits 5 mm off the switch centreline."
   },
   "correctFix": "realign-lid-interlock-magnet",
   "wrongFixes": ["replace-controller-board", "replace-lid-assembly", "replace-float-switch"],

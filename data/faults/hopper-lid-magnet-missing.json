@@ -1,6 +1,6 @@
 {
   "id": "hopper-lid-magnet-missing",
-  "lesson": "A LID OPEN alarm with the lid shut and the hall sensor reading zero field means the lid retention magnet has fallen out — an $8 part, not the board.",
+  "lesson": "A LID OPEN alarm with the lid physically shut comes down to the interlock: if the hall sensor reads zero field, the lid magnet is gone entirely — realigning what isn't there won't help, and it's an $8 part, not the board.",
   "machineType": "soft-serve-commercial",
   "tier": 2,
   "symptoms": [
@@ -9,9 +9,9 @@
     "Hopper lid is definitely closed."
   ],
   "tests": {
-    "error-log": "LID OPEN fault every startup for two days.",
-    "inspect-beater": "Hopper lid and hinge look fine. The small retention magnet in the lid body has fallen out — hall sensor can't detect it.",
-    "continuity-test": "Hall effect sensor reads zero field. Magnet is missing."
+    "error-log": "An interlock fault latched since before open — the controller refuses to start until it clears.",
+    "inspect-beater": "The hopper lid has seen better days — worn fittings, tired seal face. Hard to say if it's making clean contact all round.",
+    "continuity-test": "The lid's hall-effect sensor reads zero field with the lid closed."
   },
   "correctFix": "replace-hopper-lid-magnet",
   "wrongFixes": ["replace-controller-board", "replace-hopper-lid", "realign-lid-interlock-magnet"],

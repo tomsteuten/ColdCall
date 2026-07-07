@@ -1,6 +1,6 @@
 {
   "id": "slushie-condenser-fan-failed",
-  "lesson": "Overtemp trips on a timer with a hot condenser outlet and a fan that will not spin means a seized fan motor. Look at the fan before reaching for the gauges.",
+  "lesson": "Overtemp trips on a timer with no air moving and no fan noise point at the fan motor itself. If the fan is silent, cleaning the coil won’t bring it back.",
   "machineType": "slushie-machine",
   "tier": 1,
   "symptoms": [
@@ -9,9 +9,9 @@
     "Resets fine but trips again after 20 minutes."
   ],
   "tests": {
-    "error-log": "COMPRESSOR OVERTEMP trip recurring every 15–25 minutes.",
-    "temp-probe": "Condenser outlet running very hot. Intake cool.",
-    "inspect-beater": "Bowl and agitator fine. Condenser fan at the rear not spinning — motor seized."
+    "error-log": "Refrigeration protection trips logged repeatedly — pressures and temps drifting out of range under load.",
+    "temp-probe": "The condenser side is running very hot, and almost no air is moving through the back of the machine.",
+    "continuity-test": "Condenser fan motor winding reads open-circuit."
   },
   "correctFix": "replace-condenser-fan-motor",
   "wrongFixes": ["clean-condenser-coil", "regas-refrigeration", "replace-compressor"],
