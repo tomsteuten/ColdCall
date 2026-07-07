@@ -7,7 +7,28 @@ lives) belong in each machine's own Claude memory, not here.
 
 ---
 
-## Status (Session 28b done — motion pass: View Transitions + micro-interactions; committed, NOT pushed)
+## Status (Session 28c done — "Codex" renamed to "Service Manual" for players; committed, NOT pushed)
+
+**Session 28c (same day):** every player-facing "Codex" is now **"Service
+Manual"** — "Codex" was RPG-menu jargon that told a new player nothing before
+they clicked. Copy-only: the internal name stays `codex` everywhere
+(state field, actions, css classes, filenames) so there is NO migration.
+Home button "Service Manual — N/51 logged"; screen title + "faults logged" +
+a new one-line `.codex-explainer` ("…logged here for good — the manual is
+yours even if you sell the business"); receipt "★ Logged in your service
+manual — N/M" and "Service manual 25% complete: +$X"; prestige keep-list says
+"your service manual". GDD §5 decision of record (2026-07-07). One test pin
+updated (ui-markup prestige card). `node tests/run.js` → **334 passing**.
+sw.js **v27**. Verified live on a fresh port **8127** (`static-alt4` —
+8126 went stale exactly like 8124/8125 before it; the gotcha is now a
+pattern: assume ~one burned port per session): home button, screen, hint
+card, explainer, and the 1/51 receipt line all render renamed; zero console
+errors. NOT pushed — 28b was pushed earlier today; this commit awaits
+Tom's say-so.
+
+---
+
+## Status (Session 28b done — motion pass: View Transitions + micro-interactions; committed, PUSHED 2026-07-07)
 
 **Session 28b (same day, after 28 was pushed on Tom's say-so) built the motion
 half of the visual-feel plan** — Tom's chosen path is: he generates 2–3 full
@@ -50,7 +71,7 @@ tests — same policy as session 27). sw.js cache **v26**. Schema v14 untouched.
   Wrong-fix `screen-shake` composes with a VT entrance without breaking.
   Codex stagger delays computed 0.03s/0.11s/…/0.31s cap over 51 cards. Zero
   console errors. Dev save cleared after.
-- **NOT pushed** — awaiting Tom's say-so (28 itself was pushed earlier today).
+- Pushed to main on Tom's say-so, 2026-07-07.
 
 ### Cold-start prompt for the next session
 

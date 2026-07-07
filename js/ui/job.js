@@ -328,7 +328,7 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
              <li class="home-offline-tech">Reputation value: <strong>+${(prestigeBonusGained * 100).toFixed(0)}%</strong></li>
              <li class="home-offline-tech">New Founder Bonus: <strong>${(nextFounderBonus * 100).toFixed(0)}%</strong></li>
            </ul>
-           <p class="prestige-keep">You keep: the Founder Bonus, the Fault Codex, your Machine of the Day streak, and lifetime stats.</p>
+           <p class="prestige-keep">You keep: the Founder Bonus, your service manual, your Machine of the Day streak, and lifetime stats.</p>
            <p class="prestige-lose">The new owners keep: your cash (you restart with $${STARTING.cash.toLocaleString('en-US')}), reputation and tier, tools, van racking, techs and their training, contract routes, workshop machines, and queued callbacks.</p>
            ${prestigeConfirm
              ? `<div class="prestige-confirm" role="alert">
@@ -440,7 +440,7 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
       ${contractSection}
       ${prestigeSection}
       ${workshopSection}
-      <button class="btn" data-action="open-codex">Codex — ${codexMastered}/${codexTotal} mastered</button>
+      <button class="btn" data-action="open-codex">Service Manual — ${codexMastered}/${codexTotal} logged</button>
       <button class="btn" data-action="open-shop">Upgrades shop</button>
       <button class="btn" data-action="open-settings">Settings</button>
 
@@ -872,10 +872,10 @@ export function invoiceView({ state, invoice }) {
   const codexLines = codexInfo
     ? [
         codexInfo.isNew
-          ? `<p class="receipt-codex">★ New Codex entry — ${codexInfo.mastered}/${codexInfo.total} mastered</p>`
+          ? `<p class="receipt-codex">★ Logged in your service manual — ${codexInfo.mastered}/${codexInfo.total}</p>`
           : '',
         ...codexInfo.milestonesPaid.map(
-          (m) => `<p class="receipt-codex">Codex ${m.pct}% milestone: +$${m.bonus.toLocaleString('en-US')}</p>`
+          (m) => `<p class="receipt-codex">Service manual ${m.pct}% complete: +$${m.bonus.toLocaleString('en-US')}</p>`
         ),
       ].join('')
     : '';

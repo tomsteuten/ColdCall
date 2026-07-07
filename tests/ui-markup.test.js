@@ -551,7 +551,7 @@ test('prestige card states what is kept and lost, and never sells in one tap (20
 
   const html = homeView({ state, faults: {} });
   assert(html.includes('You keep:'), 'card must list what survives the sale');
-  assert(html.includes('Fault Codex'), 'codex survival must be stated');
+  assert(html.includes('service manual'), 'codex (player name: service manual) survival must be stated');
   assert(html.includes('The new owners keep:'), 'card must list what is wiped');
   assert(html.includes('tools, van racking, techs'), 'wiped purchases must be named');
   assert(html.includes('restart with $500'), 'cash reset must be explicit');

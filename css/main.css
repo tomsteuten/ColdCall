@@ -1374,6 +1374,11 @@ html:active-view-transition .screen { animation: none; }
   margin: 0;
   font-size: var(--text-base);
 }
+.codex-explainer {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
 .codex-next-milestone {
   margin: 0 0 var(--space-sm);
   color: var(--text-dim);

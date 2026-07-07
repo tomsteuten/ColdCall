@@ -1,4 +1,7 @@
-/** @file Fault Codex screen (GDD §5, 2026-07-04): the long-horizon collection.
+/** @file Service Manual screen (GDD §5, 2026-07-04): the long-horizon collection.
+ * Player-facing name is "Service Manual" (2026-07-07 — "Codex" read as RPG-menu
+ * jargon and told a new player nothing); the internal name stays codex
+ * everywhere (state.codex, actions, files) so no save migration is needed.
  * Render-from-state: entries are derived from the fault library at render time;
  * only state.codex.fixes (times fixed per fault) is persisted.
  */
@@ -73,8 +76,9 @@ export function render(root, ctx) {
   root.innerHTML = `
     ${statusBar(state)}
     <section class="screen screen-codex">
-      <h2 class="section-title">Fault Codex</h2>
-      <p class="codex-progress"><strong>${mastered}/${total}</strong> faults mastered</p>
+      <h2 class="section-title">Service Manual</h2>
+      <p class="codex-progress"><strong>${mastered}/${total}</strong> faults logged</p>
+      <p class="codex-explainer">Every fault you diagnose correctly gets logged here for good — the manual is yours even if you sell the business.</p>
       ${
         next
           ? `<p class="codex-next-milestone">${next.pct}% milestone pays <strong>$${next.bonus.toLocaleString('en-US')}</strong>${next.needed > 0 ? ` — ${next.needed} more to go` : ''}</p>`

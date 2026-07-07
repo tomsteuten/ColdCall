@@ -165,6 +165,15 @@ After correct diagnosis, repair is a quick satisfying interaction (hold-to-tight
   at render, retired fault ids neither count toward mastery nor claw back paid
   milestones, and the codex **survives prestige** — it's the player's knowledge,
   not the business's assets.
+  **Renamed for players (2026-07-07): the UI says "Service Manual", never
+  "Codex".** "Codex" is RPG-menu jargon that told a new player nothing before
+  they clicked; a repair tech filling in a dog-eared service manual explains
+  itself in one word and matches the game's voice. Copy-only change — the
+  internal name stays `codex` (state field, actions, css classes, filenames),
+  so no migration. Button reads "Service Manual — N/M logged", the receipt line
+  "★ Logged in your service manual — N/M" teaches the mechanic at the moment it
+  first fires, and the screen carries a one-line explainer including that the
+  manual survives selling the business.
 
 - **Daily comeback hooks** (decision of record 2026-07-04, shipped session 24 —
   completing the retention brief's Phase 5):

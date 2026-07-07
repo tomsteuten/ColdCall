@@ -24,6 +24,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8126"],
       "port": 8126
+    },
+    {
+      "name": "static-alt4",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8127"],
+      "port": 8127
     }
   ]
 }
