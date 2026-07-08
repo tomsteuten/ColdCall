@@ -26,9 +26,13 @@ test('unknown machines return null for the text fallback path', () => {
 });
 
 test('every catalogued machine has a generated raster asset for every art state', () => {
+  // The three base states plus the three tests-as-touches interaction states
+  // (2026-07-08) — the raster set is now complete, so the graphics toggle can
+  // go and rendered can be the only real lane.
+  const allStates = [...STATES, 'probe', 'leads', 'ajar'];
   const catalogue = JSON.parse(readFileSync(join(rootDir, 'data/machines.json'), 'utf8')).machines;
   for (const machine of catalogue) {
-    for (const state of STATES) {
+    for (const state of allStates) {
       const path = join(rootDir, 'assets', 'generated', `${machine.id}-${state}.webp`);
       assert(existsSync(path), `${machine.id}/${state} should have generated raster art`);
     }

@@ -40,6 +40,55 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-08 — Claude Code — Session 29b: raster interaction-state art + pick-the-lane
+
+- **Files touched:** `assets/generated/*-{probe,leads,ajar}.webp` (15 new,
+  Tom-generated triptychs split/scaled here), `assets/triptichs/*.jpg` (5 raw
+  sources, kept as regeneration source — deletable), `js/machine-art.js`
+  (`GENERATED_MACHINES` now built from a state list incl. probe/leads/ajar;
+  `machineImageSrc` drops the graphicsMode arg, always returns the render),
+  `js/ui/job.js` (`artSlotHtml` drops the graphicsMode param + both call
+  sites), `js/ui/settings.js` (Graphics Mode toggle removed),
+  `js/main.js` (`toggleGraphics` action removed), `sw.js` (v28→v29 + 15 new
+  webps in APP_SHELL), `tests/machine-art.test.js` (asset catalogue now
+  covers all six states), `assets/generated/PROMPTS.md`, `GDD.md` §2.1/§7.
+- **Contract:** rendered raster is now the SOLE art lane.
+  `machineImageSrc(machineId, state)` (2-arg now — the graphicsMode 3rd arg is
+  GONE; any caller still passing it just has an ignored extra arg, but update
+  them) returns the webp for all six states, or null → SVG fallback only in
+  the test env (`globalThis.test`) or for a machine with no render.
+  `artSlotHtml(machineType, artState, opts)` likewise dropped its graphicsMode
+  param. `state.settings.graphicsMode` is now a **vestigial, unread** save
+  field — deliberately NOT migrated away (saves are sacred); its v11→v12
+  migration + validateState check stay green and untouched. The SVG code
+  (`machineSvg`, `js/machine-art.js` bodies, `machine-css-preview.html`)
+  is retained as the fallback/authoring path, not deleted.
+- **Scale-matching (the important part):** the interaction renders were NOT
+  naively thumbnail-fit — each machine got ONE measured scale factor (cabinet
+  width in a tool-free mid-band, min across panels ÷ the old fault render's
+  body width) applied to all three of its panels, then pasted onto 640×640
+  with the old fault render's bg colour at the fault render's centre-x/base-y.
+  This keeps fault→probe→leads→ajar from jumping in size. Full method in
+  PROMPTS.md's new "Interaction-state set" section. Verified via per-machine
+  fault|probe|leads|ajar comparison sheets before wiring — all five align.
+- **Graphics mode:** rendered (only). SVG fallback path exercised only by tests.
+- **sw.js cache bumped?** yes v28→v29 (15 new app-shell webps + js/css changes).
+- **prefers-reduced-motion honored?** yes/n-a — no new motion; the wrapper
+  motion that already ran on the raster `<img>` is unchanged.
+- **Schema change?** none — no save-shape change (graphicsMode field kept as-is).
+- **Tests:** `node tests/run.js` → **338 passing, 0 failed** (asset catalogue
+  test widened to six states; no count change since it's one test looping more
+  states).
+- **Open / unverified:** screenshots timed out this session (compositor busy
+  with the continuous CSS animations), so visual QA of the IN-GAME swap was via
+  DOM assertions (img src + machine-stage class flip on each hotspot tap, zero
+  console errors) plus the pre-wire comparison sheets — not a live screenshot.
+  A next session with working screenshots should eyeball the fault→probe→leads
+  →ajar swap in-game on a couple of machines at 380px + desktop, and confirm
+  soft-serve's slightly different fault-render colour grade doesn't read as a
+  jump against its new interaction states (it was the least-clean scale match).
+  `assets/triptichs/` can be deleted once Tom's happy with the committed webps.
+
 ### 2026-07-08 — Claude Code — Session 29: tests-as-touches diagnosis hotspots
 
 - **Files touched:** `js/machine-art.js` (new `HOTSPOTS` export),

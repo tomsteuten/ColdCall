@@ -364,11 +364,6 @@ const actions = {
     save(state);
     render();
   },
-  toggleGraphics() {
-    state.settings.graphicsMode = state.settings.graphicsMode === 'vector' ? 'rendered' : 'vector';
-    save(state);
-    render();
-  },
   resetProgress() {
     if (confirm("Are you sure you want to reset all game progress? This cannot be undone.")) {
       localStorage.removeItem(SAVE_KEY);

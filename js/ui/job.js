@@ -138,8 +138,7 @@ function artHotspotsHtml(state, job, machineType) {
  * art for the given machine+state and wraps it with the shared motion/
  * particle layer so both views stay visually identical.
  * @param {string} machineType
- * @param {string} artState 'fault' | 'open' | 'working'
- * @param {string} graphicsMode state.settings.graphicsMode
+ * @param {string} artState 'fault' | 'open' | 'working' | 'probe' | 'leads' | 'ajar'
  * @param {{fallback?: string, glow?: boolean, hotspotsHtml?: string}} [opts]
  *   fallback text for an unknown machine; glow adds the one-shot correct-fix
  *   flash (repair view only); hotspotsHtml adds tappable test hotspots (job
@@ -147,9 +146,9 @@ function artHotspotsHtml(state, job, machineType) {
  *   itself is no longer `aria-hidden` (it now contains focusable controls);
  *   the decorative art/particles/glow stay individually hidden as before.
  */
-function artSlotHtml(machineType, artState, graphicsMode, opts = {}) {
+function artSlotHtml(machineType, artState, opts = {}) {
   const { fallback = '', glow = false, hotspotsHtml = '' } = opts;
-  const imageSrc = machineImageSrc(machineType, artState, graphicsMode);
+  const imageSrc = machineImageSrc(machineType, artState);
   const svg = imageSrc ? null : machineSvg(machineType, artState);
   const machineClass = String(machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
   const hasArt = Boolean(imageSrc || svg);
@@ -639,7 +638,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const artState = lastTestId
     ? (TEST_INTERACTION_STATE[lastTestId] ?? 'open')
     : 'fault';
-  const artSlot = artSlotHtml(job.machineType, artState, state.settings.graphicsMode, {
+  const artSlot = artSlotHtml(job.machineType, artState, {
     fallback: `[ ${safeMachineName} ]`,
     hotspotsHtml: artHotspotsHtml(state, job, job.machineType),
   });
@@ -762,7 +761,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
  * @returns {string}
  */
 export function repairView({ state, repairBeat }) {
-  const artSlot = artSlotHtml(repairBeat.machineType, 'working', state.settings.graphicsMode, {
+  const artSlot = artSlotHtml(repairBeat.machineType, 'working', {
     fallback: '[ repaired ]',
     glow: true, // the one-shot brighten/glow beat (GDD §7 game-feel pass, 2026-07-05)
   });

@@ -62,17 +62,15 @@ A deduction puzzle. Each machine has a hidden fault drawn from its fault tree. T
 - **Test results are evidence, not verdicts** (2026-07-07): before this, one test (inspect) had crept into a look-at-everything verdict table that named the culprit on 40 of 51 faults, collapsing the deduction into "run inspect, read the answer". Now every test has a fixed observation scope (the inspection can't see the condenser; the log can't editorialise), labels/generics are machine-specific ("Open the door and inspect the evaporator" on the ice dispenser), and faults on the same machine that would genuinely present the same observation share the *exact same result string*, so a single result stays ambiguous and the answer lives in combining symptoms + tests. Enforced by `tests/information-design.test.js`: a single ungated test may uniquely identify ≤ ~30% of a machine's fault pool; the tier-2-gated continuity test gets ≤ 60% on purpose — the meter is the paid-for decisive instrument, bounded by its tool gate and time cost rather than by ambiguity (it still reports readings, never conclusions). A handful of faults (e.g. the missing lid magnet vs. realign-the-magnet trap) are now genuinely undecidable without the meter — that's the tool's sales pitch, one per machine at most. Authoring rules in `data/faults/SCHEMA.md`.
 
 **Decision of record (2026-07-08) — tests-as-touches.** The three "interaction
-states" authored into the vector machine art in session 26 (`'probe'`/`'leads'`/
-`'ajar'`) are now wired into gameplay: tapping a hotspot over the art runs the
-matching test (`temp-probe`/`continuity-test`/`inspect-beater`), and the art
-swaps to show it happening. `error-log` has no physical gesture and stays
-button-only, matching its "cheap and vague" design intent. The existing test
-button list is unchanged and never removed — it's the accessible fallback and,
-in **raster graphics mode** (the default; no matching interaction-state photos
-exist yet), the only place the visual payoff currently shows at all: raster-mode
-hotspots still run the test correctly, but the photo doesn't change. Generating
-the 15 missing raster renders (3 states × 5 machines) is a separate future
-asset-pipeline session.
+states" (`'probe'`/`'leads'`/`'ajar'`) are wired into gameplay: tapping a hotspot
+over the art runs the matching test (`temp-probe`/`continuity-test`/
+`inspect-beater`) and the art swaps to show it happening. `error-log` has no
+physical gesture and stays button-only, matching its "cheap and vague" design
+intent. The existing test button list is unchanged and never removed — it's the
+accessible fallback (native `<button>` hotspots share its exact `data-test`
+wiring). The raster interaction-state renders were generated the same day (see
+§7 and `assets/generated/PROMPTS.md`), so the visual payoff now shows in the
+shipped raster art, not just the fallback SVG.
 
 **Difficulty levers:** number of plausible faults per machine, ambiguous/overlapping symptoms, intermittent faults (symptom only appears on a re-test), red herrings ("operator error — the staff just didn't run the cleaning cycle," a free fix and a joke that doubles as the meme payoff).
 
@@ -238,8 +236,8 @@ All numbers are first guesses; balance via config, never hard-coded.
 
 ## 7. Art & Audio Direction
 
-- **Rendered raster machines by default, animated SVG as the alternate mode.** (Session 22 decision, superseding the SVG-first plan below.) All five machines have generated 640×640 webp renders for every state (fault/open/working — pipeline documented in `assets/generated/PROMPTS.md`); new games start on `'rendered'`, and the Settings toggle switches to the blocky animated SVGs. Both modes share the CSS machine-state motion (jolt on fault, glow on working).
-- **Blocky inline SVG illustrations with a limited palette** remain the fully-supported vector mode: crisp at every size, state variants without asset files, editable in the dependency-free codebase. Characters use simple illustrated portraits in ticket dialogs — cheap to produce, big personality return.
+- **Rendered raster machines are the one art lane (2026-07-08 — superseding the dual-mode plan).** Tom's call: separate SVG and raster options was a bad split — the SVGs are easier to animate but don't look anywhere near as good, so the game commits to raster. All five machines now have generated 640×640 webp renders for **all six** states (fault/open/working + the probe/leads/ajar interaction states — pipeline in `assets/generated/PROMPTS.md`). The Settings "Graphics Mode" toggle was removed; `machineImageSrc()` always returns the render. The CSS machine-state motion (jolt on fault, glow on working, breathing) runs on the raster `<img>` via the `.machine-stage` wrapper, so raster is not "static" — only its per-frame internals (auger spin, LED blink) are gone, which was charm, not feedback.
+- **Blocky inline SVG illustrations survive only as a fallback** — the test environment (webp paths don't resolve headless) and any machine without a render. `machineSvg` and `machine-css-preview.html` are kept for that and for future authoring, not shipped as a player-facing mode. `state.settings.graphicsMode` remains a vestigial, unread save field (kept, not migrated away — saves are sacred). Characters use simple illustrated portraits in ticket dialogs — cheap to produce, big personality return.
 - **Decision of record (2026-07-04) — SVG art rebuilt as an independent stylized set, plus interaction states.** Tom judged the original flat SVGs placeholder-grade next to the renders. The vector set was rebuilt in `js/machine-art.js` as its own rich flat-illustration style (not a trace of the renders): consistent top-left lighting, three-tone stainless/trim/glass materials via per-instance gradient defs, real commercial-equipment silhouettes (tapered granita bowls, spiral augers, bolted dispense doors, louvred bins), ground shadows, and state storytelling (drips and tide-marks on fault, lids/panels physically set aside mid-teardown on open, product swirls and tumbling cubes on working). Every machine also ships three **interaction states** — `'probe'` (lid off, thermometer in the product), `'leads'` (access cover off, meter clips on terminals), `'ajar'` (service panel cracked, screwdriver out) — authored ahead of the planned tests-as-touches diagnosis UI; not yet wired into gameplay. `machine-css-preview.html` shows the full 5×6 grid.
 - UI is clean DOM/CSS, not pixel-rendered — readable on mobile, fast to build.
 - Audio: light, shipped in session 22 as generated WebAudio (button blip, correct-fix jingle, wrong-fix thunk — no assets, gated on the Settings toggle). A chiptune loop remains a someday item.

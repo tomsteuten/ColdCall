@@ -14,3 +14,8 @@ npm-debug.log*
 
 # Local scratch
 *.local.*
+
+# Raw art-generation source triptychs — intermediate input, not shipped assets.
+# Split into assets/generated/*.webp; kept locally as regeneration reference
+# (see assets/generated/PROMPTS.md).
+assets/triptichs/

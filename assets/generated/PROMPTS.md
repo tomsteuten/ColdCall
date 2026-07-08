@@ -7,9 +7,11 @@ the open integration questions.)
 
 ## What's here
 
-Machine renders — `<machineId>-{fault,open,working}.webp`, one trio per machine in
-`data/machines.json`. A catalogue test (`tests/machine-art.test.js`) fails if any
-machine is missing a state, so keep all three per machine.
+Machine renders — `<machineId>-{fault,open,working,probe,leads,ajar}.webp`, one set
+of **six** per machine in `data/machines.json`. A catalogue test
+(`tests/machine-art.test.js`) fails if any machine is missing a state, so keep all
+six per machine. The last three are the tests-as-touches **interaction states**
+(2026-07-08): probe = temp-probe test, leads = continuity test, ajar = inspect test.
 
 - `slushie-machine-*` · `soft-serve-commercial-*` (Tier 1/2)
 - `froyo-multihead-*` · `granita-slushie-*` · `commercial-ice-dispenser-*` (Tier 3)
@@ -89,9 +91,42 @@ for i, state in enumerate(("fault", "open", "working")):
 > Codex's built-in tool and is non-deterministic — exact pixels can't be reproduced,
 > only the style/spec above. Record the tool + date here when you regenerate.
 
-## Open integration issues (see GRAPHICS_REVIEW.md)
+## Interaction-state set (probe/leads/ajar) — 2026-07-08
 
-- Renders are **640×640 square** but the art slot is **16:7** → they show small/
-  letterboxed. A raster-specific slot shape is still wanted.
-- Default `settings.graphicsMode` is `'vector'` (animated SVG); raster is opt-in via
-  Settings. Flipping the default well depends on the slot reshape above.
+Generated the same way but as a SEPARATE triptych per machine (a fresh generation
+from the fault render as a reference image, in Google AI Studio / Gemini image
+edit — see the per-machine prompts recorded in the session HANDOFF / NOTES). The
+raw triptychs were dropped in `assets/triptichs/*.jpg` (1792×592, three panels:
+probe | leads | ajar).
+
+**Scale-matching is the trick here** (the interaction render must not jump in size
+when the in-game art swaps fault→probe): each panel was NOT naively thumbnail-fit
+like the base set. Instead a per-machine transform was measured and applied:
+
+1. Detect the machine cabinet width in a tool-free mid band (40–52% of panel
+   height) for each of the three panels; take the **min** across panels (tools/
+   props only add width, so the min ≈ the true body) → new body width.
+2. `scale = old_fault_body_width / new_body_width` (bodies measured the same way
+   on the existing `<machine>-fault.webp`).
+3. Measure the machine base-Y from the clean probe/ajar panels (the leads panel's
+   hanging clips are excluded).
+4. Scale each panel by that one factor, then paste onto a 640×640 canvas filled
+   with the **old fault render's** background colour, positioned so the machine's
+   centre-x and base-y land where the fault render's do. One factor per triptych
+   keeps the three interaction states mutually consistent AND matched to the base
+   set. (Script was in the session scratchpad, not checked in — re-derive from
+   this spec; the measurement approach is the reproducible part.)
+
+The `assets/triptichs/` source jpgs can be deleted once you're happy with the
+committed webps — they're kept only as regeneration source.
+
+## Resolved: the art lane (2026-07-08)
+
+Rendered raster is now the **only** art lane. With all six states present for every
+machine, the Settings "Graphics Mode" toggle was removed and `machineImageSrc()`
+always returns the render; the inline SVG (`machineSvg`) survives only as the
+fallback for the test env (webp paths don't resolve headless) and any machine with
+no render. `state.settings.graphicsMode` remains a vestigial (unread) save field —
+kept, not migrated away, because saves are sacred. The old square-in-16:7 slot
+concern was already resolved (session 22, `.machine-stage--raster` gives squares a
+1:1 slot capped at 300px).

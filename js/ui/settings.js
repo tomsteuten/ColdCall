@@ -14,7 +14,6 @@ import { escapeHtml } from '../utils.js';
 export function renderModal(state, feedback = {}) {
   const exportBlob = exportSave(state);
   const audioEnabled = !!state.settings.audio;
-  const graphicsMode = state.settings.graphicsMode || 'vector';
   const { exportMessage, importError } = feedback;
 
   return `
@@ -30,12 +29,6 @@ export function renderModal(state, feedback = {}) {
             <span class="settings-label">Sound FX</span>
             <button class="btn-toggle ${audioEnabled ? 'active' : ''}" data-action="toggle-audio">
               ${audioEnabled ? 'ON' : 'OFF'}
-            </button>
-          </div>
-          <div class="settings-row">
-            <span class="settings-label">Graphics Mode</span>
-            <button class="btn-toggle ${graphicsMode === 'vector' ? 'active' : ''}" data-action="toggle-graphics">
-              ${graphicsMode === 'vector' ? 'VECTOR (ANIMATED)' : 'RENDERED (STATIC)'}
             </button>
           </div>
         </div>
@@ -80,8 +73,7 @@ export function renderModal(state, feedback = {}) {
 export function wire(modalEl, actions) {
   modalEl.querySelector('[data-action="close-settings"]')?.addEventListener('click', actions.closeSettings);
   modalEl.querySelector('[data-action="toggle-audio"]')?.addEventListener('click', actions.toggleAudio);
-  modalEl.querySelector('[data-action="toggle-graphics"]')?.addEventListener('click', actions.toggleGraphics);
-  
+
   const copyBtn = modalEl.querySelector('[data-action="copy-settings-save"]');
   const exportInput = modalEl.querySelector('.settings-export-input');
   if (copyBtn && exportInput) {

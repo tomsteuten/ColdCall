@@ -137,45 +137,28 @@ function miniSwirl(cx, baseY, colour = '#f0e6d2') {
   </g>`;
 }
 
-const GENERATED_MACHINES = {
-  'slushie-machine': {
-    fault: 'assets/generated/slushie-machine-fault.webp',
-    open: 'assets/generated/slushie-machine-open.webp',
-    working: 'assets/generated/slushie-machine-working.webp',
-  },
-  'soft-serve-commercial': {
-    fault: 'assets/generated/soft-serve-commercial-fault.webp',
-    open: 'assets/generated/soft-serve-commercial-open.webp',
-    working: 'assets/generated/soft-serve-commercial-working.webp',
-  },
-  'froyo-multihead': {
-    fault: 'assets/generated/froyo-multihead-fault.webp',
-    open: 'assets/generated/froyo-multihead-open.webp',
-    working: 'assets/generated/froyo-multihead-working.webp',
-  },
-  'granita-slushie': {
-    fault: 'assets/generated/granita-slushie-fault.webp',
-    open: 'assets/generated/granita-slushie-open.webp',
-    working: 'assets/generated/granita-slushie-working.webp',
-  },
-  'commercial-ice-dispenser': {
-    fault: 'assets/generated/commercial-ice-dispenser-fault.webp',
-    open: 'assets/generated/commercial-ice-dispenser-open.webp',
-    working: 'assets/generated/commercial-ice-dispenser-working.webp',
-  },
-};
+// Each machine has three base states (fault/open/working) plus the three
+// interaction states (probe/leads/ajar, 2026-07-08) the tests-as-touches UI
+// swaps to — all scale-/camera-matched to the fault render so the swap never
+// jumps (see assets/generated/PROMPTS.md for how the interaction set was made).
+const RENDER_STATES = ['fault', 'open', 'working', 'probe', 'leads', 'ajar'];
+const GENERATED_MACHINES = Object.fromEntries(
+  ['slushie-machine', 'soft-serve-commercial', 'froyo-multihead', 'granita-slushie', 'commercial-ice-dispenser']
+    .map((id) => [id, Object.fromEntries(RENDER_STATES.map((s) => [s, `assets/generated/${id}-${s}.webp`]))])
+);
 
 /**
- * Returns the generated image source for a machine type and visual state.
+ * Returns the generated raster render for a machine type and visual state, or
+ * null to fall back to the inline SVG (`machineSvg`). Rendered raster is the
+ * one art lane now that every machine has all six states (2026-07-08); the SVG
+ * survives only as the fallback for the test environment (globalThis.test —
+ * webp paths don't resolve headless) and any machine without a render.
  * @param {string} machineId
- * @param {'fault'|'open'|'working'} state
+ * @param {'fault'|'open'|'working'|'probe'|'leads'|'ajar'} state
  * @returns {string|null}
  */
-export function machineImageSrc(machineId, state, graphicsMode = 'vector') {
+export function machineImageSrc(machineId, state) {
   if (typeof globalThis !== 'undefined' && globalThis.test) {
-    return null;
-  }
-  if (graphicsMode === 'vector') {
     return null;
   }
   return GENERATED_MACHINES[machineId]?.[state] ?? null;
