@@ -183,6 +183,44 @@ export function machineImageSrc(machineId, state, graphicsMode = 'vector') {
 
 
 /**
+ * Tap-target coordinates for the tests-as-touches diagnosis UI (2026-07-08):
+ * where the temp probe / meter leads / screwdriver land on each machine's
+ * 'probe' / 'leads' / 'ajar' interaction state, in the shared
+ * `viewBox="0 0 160 70"` coordinate space. These are the exact (x, y) values
+ * already passed to `tempProbe()`/`meterLeads()`/the ajar screwdriver rect
+ * below for each machine — kept in sync by hand since the SVG functions
+ * build markup from template strings, not from this table.
+ * @type {Object<string, {probe: {x:number,y:number}, leads: {x:number,y:number}, ajar: {x:number,y:number}}>}
+ */
+export const HOTSPOTS = {
+  'slushie-machine': {
+    probe: { x: 50, y: 34 },
+    leads: { x: 66, y: 53 },
+    ajar: { x: 104, y: 57 },
+  },
+  'soft-serve-commercial': {
+    probe: { x: 64, y: 12 },
+    leads: { x: 87, y: 55 },
+    ajar: { x: 84, y: 52 },
+  },
+  'froyo-multihead': {
+    probe: { x: 76, y: 10 },
+    leads: { x: 61, y: 56.5 },
+    ajar: { x: 46, y: 51.7 },
+  },
+  'granita-slushie': {
+    probe: { x: 42, y: 30 },
+    leads: { x: 103, y: 44 },
+    ajar: { x: 96, y: 53.4 },
+  },
+  'commercial-ice-dispenser': {
+    probe: { x: 66, y: 12 },
+    leads: { x: 63, y: 58.5 },
+    ajar: { x: 86, y: 52.4 },
+  },
+};
+
+/**
  * Returns inline SVG markup for a machine in the given display state.
  * @param {string} machineId  matches the id field in machines.json
  * @param {'fault'|'open'|'working'} state

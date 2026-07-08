@@ -40,6 +40,73 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-08 — Claude Code — Session 29: tests-as-touches diagnosis hotspots
+
+- **Files touched:** `js/machine-art.js` (new `HOTSPOTS` export),
+  `js/diagnosis.js` (new `TEST_INTERACTION_STATE` export), `js/ui/job.js`
+  (`artHotspotsHtml`, `artSlotHtml` opts, job art-state derivation),
+  `css/main.css` (`.art-hotspot`), `sw.js` (v27→v28), `tests/ui-markup.test.js`,
+  `tests/machine-art.test.js`, `.claude/launch.json` (added `static-alt5`
+  on port 8128), `GDD.md`, `DESIGN.md`.
+- **Contract:** `HOTSPOTS[machineType][interactionState]` gives `{x, y}` in
+  the shared `viewBox="0 0 160 70"` space — kept hand-in-sync with the
+  coordinates already passed to `tempProbe()`/`meterLeads()`/the ajar
+  screwdriver rect inside each machine's SVG function; if a machine's art is
+  ever redrawn with different tool placement, update `HOTSPOTS` in the same
+  change or the hotspot ring drifts off the visual. `TEST_INTERACTION_STATE`
+  maps a test id to the art state it plays out as (`temp-probe`→`'probe'`,
+  `continuity-test`→`'leads'`, `inspect-beater`→`'ajar'`; `error-log` is
+  intentionally absent). `jobView`'s art state is now derived from the
+  **last** test run via this map (falls back to `'open'` when the last test
+  has no matching gesture, or `'fault'` before any test) — this changed the
+  meaning of "art state" from "any test run → open" to "last test run →
+  its state", but the one existing test asserting `error-log` → `'open'`
+  still holds since `error-log` isn't in the map. `artSlotHtml()` gained an
+  `opts.hotspotsHtml` param (job view only, never passed on the repair
+  screen) — when present, the slot's own `aria-hidden="true"` is dropped
+  (it now contains focusable controls) while the decorative art/particles/
+  glow stay individually hidden as before, and `.art-slot > svg`/`.machine-art`
+  stay direct children (unchanged) so the existing CSS motion selectors
+  keep matching. Hotspots reuse the exact same `data-test` attribute/wiring
+  as the button list (`wire()`'s `querySelectorAll('[data-test]')`) — zero
+  new dispatch code — and are native `<button>` elements, so keyboard focus
+  works for free without a hand-rolled `tabindex`/`keydown` handler. A
+  gated hotspot (`continuity-test`) only renders when
+  `testAvailability()` says available, same gate the button list uses; no
+  duplicate "Requires Multimeter Tier 2" copy on the art.
+- **Graphics mode:** both, by design (confirmed with Tom before implementing).
+  Vector mode gets the full payoff — the SVG swaps to the matching
+  `probe`/`leads`/`ajar` illustration. Raster mode (the default) has no
+  interaction-state photos, so hotspots still run the test correctly but the
+  `<img>` doesn't change — an explicit, documented interim state (GDD §2.1
+  decision of record), not an oversight.
+- **sw.js cache bumped?** yes v27→v28 (js/machine-art.js, js/diagnosis.js,
+  js/ui/job.js, css/main.css all changed; no new app-shell files).
+- **prefers-reduced-motion honored?** yes/n-a — no new keyframe animation was
+  added; `.art-hotspot`'s hover/press transitions reuse `.btn`'s existing
+  motion language, which itself isn't gated (only real keyframes are, per
+  the existing reduced-motion block) — nothing new to add there.
+- **Schema change?** none — pure render/interaction feature, no `state.*`
+  shape touched.
+- **Tests:** `node tests/run.js` → **338 passing, 0 failed** (+4: hotspot
+  markup/gating, art-state-follows-last-test, raster-mode hotspot presence,
+  a `HOTSPOTS` coverage test mirroring the existing webp-coverage pattern).
+- **Open / unverified:** the raster-mode visual gap (no probe/leads/ajar
+  photos) is the explicit next step for a future asset-pipeline session —
+  15 renders (3 states × 5 machines) following `assets/generated/PROMPTS.md`'s
+  process, then wire them into `GENERATED_MACHINES` in machine-art.js.
+  Verified live at 8128/vector+raster/380px width: hotspots render and align
+  visually over both raster photos and vector SVGs for the slushie machine
+  (temp-probe left-bowl ring, inspect-beater service-bay ring); tapping a
+  hotspot updates `testsRun`, shows the correct result text, and flips the
+  art to the matching state exactly like the equivalent button click;
+  continuity-test hotspot is absent pre-Multimeter-Tier-2 and appears after;
+  keyboard focus works on a bare `<button>` with no extra wiring; zero
+  console errors throughout. Did not visually check the other 4 machine
+  types or desktop width this session — coordinates were sourced from the
+  same values the SVG functions already use, so they're expected to line up,
+  but a next session doing more visual polish should spot-check them.
+
 ### 2026-07-04 — Claude Code — Session 24: Phase 5 daily comeback hooks (brief complete)
 
 - **Files touched:** `js/contract.js` (new), `js/motd.js`, `js/economy.js`,

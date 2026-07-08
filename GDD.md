@@ -61,6 +61,19 @@ A deduction puzzle. Each machine has a hidden fault drawn from its fault tree. T
 - Economy invariant: informed diagnosis (a few targeted tests, correct fix) must beat both blind guessing and exhaustive testing in expected $/min.
 - **Test results are evidence, not verdicts** (2026-07-07): before this, one test (inspect) had crept into a look-at-everything verdict table that named the culprit on 40 of 51 faults, collapsing the deduction into "run inspect, read the answer". Now every test has a fixed observation scope (the inspection can't see the condenser; the log can't editorialise), labels/generics are machine-specific ("Open the door and inspect the evaporator" on the ice dispenser), and faults on the same machine that would genuinely present the same observation share the *exact same result string*, so a single result stays ambiguous and the answer lives in combining symptoms + tests. Enforced by `tests/information-design.test.js`: a single ungated test may uniquely identify ≤ ~30% of a machine's fault pool; the tier-2-gated continuity test gets ≤ 60% on purpose — the meter is the paid-for decisive instrument, bounded by its tool gate and time cost rather than by ambiguity (it still reports readings, never conclusions). A handful of faults (e.g. the missing lid magnet vs. realign-the-magnet trap) are now genuinely undecidable without the meter — that's the tool's sales pitch, one per machine at most. Authoring rules in `data/faults/SCHEMA.md`.
 
+**Decision of record (2026-07-08) — tests-as-touches.** The three "interaction
+states" authored into the vector machine art in session 26 (`'probe'`/`'leads'`/
+`'ajar'`) are now wired into gameplay: tapping a hotspot over the art runs the
+matching test (`temp-probe`/`continuity-test`/`inspect-beater`), and the art
+swaps to show it happening. `error-log` has no physical gesture and stays
+button-only, matching its "cheap and vague" design intent. The existing test
+button list is unchanged and never removed — it's the accessible fallback and,
+in **raster graphics mode** (the default; no matching interaction-state photos
+exist yet), the only place the visual payoff currently shows at all: raster-mode
+hotspots still run the test correctly, but the photo doesn't change. Generating
+the 15 missing raster renders (3 states × 5 machines) is a separate future
+asset-pipeline session.
+
 **Difficulty levers:** number of plausible faults per machine, ambiguous/overlapping symptoms, intermittent faults (symptom only appears on a re-test), red herrings ("operator error — the staff just didn't run the cleaning cycle," a free fix and a joke that doubles as the meme payoff).
 
 ### 2.2 Fault Library (launch content)

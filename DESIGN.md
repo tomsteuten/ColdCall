@@ -136,6 +136,16 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
   unlock, completed daily contract) for a half-second bouncy entrance. Not an
   auto-dismissing popup; the element stays put afterward like any other line.
+- **`.art-hotspot`** (2026-07-08) — a tappable circle over the machine art
+  (job screen only) that runs the matching test, at the coordinates where
+  that test's tool appears in the SVG's `'probe'`/`'leads'`/`'ajar'`
+  interaction state (`HOTSPOTS` in `js/machine-art.js`). Reuses `.btn`'s
+  hover/press motion language rather than a new keyframe. Real `<button>`
+  elements (native keyboard focus, no hand-rolled `tabindex`), same
+  `data-test` wiring as the test button list, so a tap is functionally
+  identical to a click — the button list is never removed, it's the
+  accessible fallback and (in raster graphics mode, which has no matching
+  photos yet) the only place the visual state actually changes.
 
 **No emoji as UI chrome.** ✅⚠️🔥📋❌ were removed in favour of badges/dots
 (2026-07-04). Emoji live **only** in flavour text and the MotD share-card grid

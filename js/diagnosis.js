@@ -55,6 +55,20 @@ export const TESTS = {
 };
 
 /**
+ * Maps a test id to the machine-art "interaction state" it visually plays out
+ * as, for the tests-as-touches diagnosis UI (2026-07-08): tapping the art's
+ * probe/leads/ajar hotspot runs the matching test and the art swaps to show
+ * it happening. `error-log` has no physical gesture (it's a controller
+ * readout) and is intentionally absent — it stays button-only.
+ * @type {Object<string, 'probe'|'leads'|'ajar'>}
+ */
+export const TEST_INTERACTION_STATE = {
+  'temp-probe': 'probe',
+  'continuity-test': 'leads',
+  'inspect-beater': 'ajar',
+};
+
+/**
  * Player-facing label for a test on a given machine type: the machine override
  * when one exists, else the test's default label.
  * @param {string} testId

@@ -121,6 +121,42 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
   assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
 });
 
+test('tests-as-touches: job art exposes tappable hotspots for probe/leads/ajar tests (2026-07-08)', () => {
+  const state = onboardingState();
+  state.settings.graphicsMode = 'vector';
+  const html = jobView({ state, faults, machines, clients });
+  assert(html.includes('class="art-hotspot" data-test="temp-probe"'), 'temp-probe hotspot should render');
+  assert(html.includes('class="art-hotspot" data-test="inspect-beater"'), 'inspect-beater hotspot should render');
+  assert(!html.includes('class="art-hotspot" data-test="error-log"'), 'error-log has no matching interaction state and stays button-only');
+  assert(!html.includes('class="art-hotspot" data-test="continuity-test"'), 'continuity-test hotspot should be absent below Multimeter Tier 2');
+
+  state.tools.multimeterTier = 2;
+  const upgradedHtml = jobView({ state, faults, machines, clients });
+  assert(upgradedHtml.includes('class="art-hotspot" data-test="continuity-test"'), 'continuity-test hotspot should appear once Multimeter Tier 2 is owned');
+});
+
+test('tests-as-touches: art state follows the last test run, not just "any test"', () => {
+  const state = onboardingState();
+  state.jobs.active.testsRun.push('temp-probe');
+  const probeHtml = jobView({ state, faults, machines, clients });
+  assert(probeHtml.includes('machine-stage--probe'), 'temp-probe should show the probe interaction state');
+
+  state.jobs.active.testsRun.push('error-log');
+  const backToOpenHtml = jobView({ state, faults, machines, clients });
+  assert(backToOpenHtml.includes('machine-stage--open'), 'error-log has no matching state and falls back to open');
+});
+
+test('tests-as-touches: raster mode still renders hotspots (functional, no matching photo yet)', () => {
+  // machineImageSrc() is a node-safe no-op in the test env (always null,
+  // regardless of graphicsMode — see js/machine-art.js), so this can't assert
+  // on the <img> tag itself; it confirms the hotspot layer doesn't depend on
+  // graphicsMode at all, which is the actual contract that matters here.
+  const state = onboardingState();
+  state.settings.graphicsMode = 'rendered';
+  const html = jobView({ state, faults, machines, clients });
+  assert(html.includes('class="art-hotspot" data-test="temp-probe"'), 'raster mode should still expose the hotspot for the click to work');
+});
+
 test('workshop machine ids from a save are escaped inside HTML attributes', () => {
   const state = defaultState();
   state.player.tierUnlocked = 2; // workshop panel is hidden until Tier 2

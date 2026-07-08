@@ -266,6 +266,41 @@ html:active-view-transition .screen { animation: none; }
   object-fit: contain;
 }
 
+/* Tests-as-touches hotspot (2026-07-08): a tappable region over the art
+   matching where the probe/leads/screwdriver appears in that interaction
+   state (js/machine-art.js HOTSPOTS). Positioned via inline left/top percent
+   (per-instance coordinates, not a fixed set of tokens — the anti-pattern
+   this violates is hardcoded hex/px, not per-element position). The hit box
+   is deliberately larger than the visual ring so it stays tappable at 380px
+   even though the underlying art is tiny. Reuses .btn's hover/press motion
+   language (DESIGN.md §6) rather than a new keyframe. */
+.art-hotspot {
+  position: absolute;
+  z-index: 4;
+  width: 2rem;
+  height: 2rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 0;
+  cursor: pointer;
+  transition: filter 0.12s ease-out, transform 0.08s ease-out, background 0.12s ease-out;
+}
+@media (hover: hover) {
+  .art-hotspot:hover {
+    filter: brightness(1.3);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+}
+.art-hotspot:active {
+  transform: translate(-50%, -50%) translateY(1px) scale(0.96);
+}
+.art-hotspot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Machine motion is applied to the fixed artwork, never regenerated frames.
    This keeps every state perfectly aligned while adding enough movement to
    distinguish fault, inspection, and successful operation at a glance. */

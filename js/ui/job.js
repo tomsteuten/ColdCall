@@ -3,14 +3,14 @@
  * all mutations happen in the actions passed in from main.js.
  */
 
-import { TESTS, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
+import { TESTS, TEST_INTERACTION_STATE, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
-import { machineImageSrc, machineSvg } from '../machine-art.js';
+import { machineImageSrc, machineSvg, HOTSPOTS } from '../machine-art.js';
 import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
 
 /** Player-facing label for a callback's source (GDD §3.1). */
@@ -102,17 +102,53 @@ function artParticlesHtml() {
 }
 
 /**
+ * Tests-as-touches hotspot overlay (2026-07-08): one tappable, keyboard-focusable
+ * button per test that has a matching machine-art interaction state
+ * (`TEST_INTERACTION_STATE`), positioned over the art at that state's tool
+ * coordinates (`HOTSPOTS`, shared `viewBox="0 0 160 70"` space converted to a
+ * percentage — lands inside the raster slot too, just not pixel-precise
+ * against photo content there since no raster interaction-state renders exist
+ * yet). Skips tests already gated unavailable (tool tier) — the button list
+ * still explains why; no duplicate copy on the art. Reuses the exact same
+ * `data-test` wiring as the button list (job.js `wire()`), so a tap runs
+ * `actions.runTest` with zero new dispatch code.
+ * @param {object} state
+ * @param {object} job state.jobs.active
+ * @param {string} machineType
+ * @returns {string}
+ */
+function artHotspotsHtml(state, job, machineType) {
+  const coords = HOTSPOTS[machineType];
+  if (!coords) return '';
+  return Object.entries(TEST_INTERACTION_STATE)
+    .map(([testId, interactionState]) => {
+      const point = coords[interactionState];
+      if (!point) return '';
+      const { available } = testAvailability(state, testId);
+      if (!available) return '';
+      const left = (point.x / 160 * 100).toFixed(2);
+      const top = (point.y / 70 * 100).toFixed(2);
+      return `<button type="button" class="art-hotspot" data-test="${testId}" aria-label="${testLabel(testId, machineType)}" style="left:${left}%;top:${top}%"></button>`;
+    })
+    .join('');
+}
+
+/**
  * Shared art-slot markup for the job and repair views: picks raster or SVG
  * art for the given machine+state and wraps it with the shared motion/
  * particle layer so both views stay visually identical.
  * @param {string} machineType
  * @param {string} artState 'fault' | 'open' | 'working'
  * @param {string} graphicsMode state.settings.graphicsMode
- * @param {{fallback?: string, glow?: boolean}} [opts] fallback text for an
- *   unknown machine; glow adds the one-shot correct-fix flash (repair view only)
+ * @param {{fallback?: string, glow?: boolean, hotspotsHtml?: string}} [opts]
+ *   fallback text for an unknown machine; glow adds the one-shot correct-fix
+ *   flash (repair view only); hotspotsHtml adds tappable test hotspots (job
+ *   view only — see `artHotspotsHtml`). When hotspots are present the slot
+ *   itself is no longer `aria-hidden` (it now contains focusable controls);
+ *   the decorative art/particles/glow stay individually hidden as before.
  */
 function artSlotHtml(machineType, artState, graphicsMode, opts = {}) {
-  const { fallback = '', glow = false } = opts;
+  const { fallback = '', glow = false, hotspotsHtml = '' } = opts;
   const imageSrc = machineImageSrc(machineType, artState, graphicsMode);
   const svg = imageSrc ? null : machineSvg(machineType, artState);
   const machineClass = String(machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -123,10 +159,12 @@ function artSlotHtml(machineType, artState, graphicsMode, opts = {}) {
   const content = imageSrc
     ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
     : (svg ?? fallback);
-  return `<div class="${artSlotClass}" aria-hidden="true">
+  const ariaHidden = hotspotsHtml ? '' : ' aria-hidden="true"';
+  return `<div class="${artSlotClass}"${ariaHidden}>
     ${content}
     ${hasArt ? artParticlesHtml() : ''}
     ${glow ? '<span class="repair-glow" aria-hidden="true"></span>' : ''}
+    ${hotspotsHtml}
   </div>`;
 }
 
@@ -592,11 +630,18 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       </div>`
     : '';
 
-  // Art state: 'open' once the player has run at least one test (machine is being
-  // inspected); 'fault' before that (machine showing symptoms, panel closed).
-  const artState = job.testsRun.length > 0 ? 'open' : 'fault';
+  // Art state (2026-07-08, tests-as-touches): show the interaction state
+  // matching the LAST test run (probe/leads/ajar — the player just tapped or
+  // clicked their way to it), falling back to the generic 'open' teardown
+  // state when the last test has no matching gesture (error-log) or none has
+  // run yet ('fault', panel closed).
+  const lastTestId = job.testsRun[job.testsRun.length - 1];
+  const artState = lastTestId
+    ? (TEST_INTERACTION_STATE[lastTestId] ?? 'open')
+    : 'fault';
   const artSlot = artSlotHtml(job.machineType, artState, state.settings.graphicsMode, {
     fallback: `[ ${safeMachineName} ]`,
+    hotspotsHtml: artHotspotsHtml(state, job, job.machineType),
   });
 
   // Symptoms are the caller's complaint — the ticket itself — so they render
