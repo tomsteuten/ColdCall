@@ -68,7 +68,7 @@ function resultView(state, result) {
     : `<p class="motd-note">The correct fix was: <strong>${fault.correctFix.replace(/-/g, ' ')}</strong></p>`;
 
   return `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-motd-result ${solved ? 'motd-good' : 'motd-bad'}">
       <div class="motd-card">
         <p class="motd-label">Machine of the Day · Day ${dayNumber}</p>

@@ -40,6 +40,89 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-08 — Claude Code — Session 30: playtest-feedback pass (nav, density, repetition)
+
+- **Files touched:** `js/main.js` (routing, goHome/resumeJob actions, guards,
+  delegated go-home listener, boot resume), `js/ui/job.js` (statusBar opts +
+  `.status-bar--nav`, render routing, homeView Resume/disabled-MotD, callbacks
+  guard, compact caller markup), `js/ui/shop.js`/`codex.js`/`motd.js`
+  (statusBar home:true), `js/tickets.js` (anti-repeat draw +
+  `recordRecentFault`/`RECENT_FAULT_WINDOW`), `js/state.js` (schema v15,
+  migration, validateState), `js/economy.js` (prestige clears the window),
+  `css/main.css` (.status-home, .callback-blocked, density: raster 190px
+  mobile/300px desktop, compact .client-callout, job-client lg, tighter gaps,
+  compact .btn-test), `data/clients.json` (Lakeview Pool Kiosk, T1),
+  `data/faults/slushie-killed-by-wall-timer.json` (new) + `index.json`,
+  6 slushie fault files (+2 symptom variants each), `sw.js` (v29→v30 + new
+  fault JSON), tests (state fixture, tickets ×3, character-art fixture fix),
+  `GDD.md` §2.1, `DESIGN.md` §5.
+- **Contract (routing — the big one):** explicit navigation now WINS over an
+  active job. `viewKey()`/`paint()` precedence: motd > repair > invoice >
+  shop > codex > callbacks > job-if-active-AND-screen-not-'home' > home.
+  Every job start sets `screen = 'job'` (nextTicket, takeCallback,
+  repairWorkshopMachine, startMotd) and boot sets it when a save holds an
+  active job. `actions.goHome()` clears transient invoice/repairBeat/
+  pendingFirstFixId and sets screen='home' — the ACTIVE JOB IS KEPT (pause);
+  homeView renders "Resume job — <client>" as primary via
+  `data-action="resume-job"`. Anything that would call startJob while a job
+  exists is guarded (it throws otherwise): nextTicket/takeCallback/
+  repairWorkshopMachine return early, callbacks view disables Take with
+  `.callback-blocked` note, home's unplayed MotD button renders disabled.
+  A test-harness gotcha from this: `jobScreen.render` with an active job and
+  `screen: 'home'` now renders HOME — fixtures that want the job screen must
+  pass `screen: 'job'` (character-art.test.js was fixed for this).
+- **Contract (statusBar):** `statusBar(state, { home: true })` adds the
+  Home button + `.status-bar--nav` (4-column grid). Home view passes no opts.
+  The button is wired by a DELEGATED listener in main.js on
+  `[data-action="go-home"]` — do NOT also wire it per-screen or it fires
+  twice. Van right-align moved from `:last-child` to `:nth-child(3)`.
+- **Contract (anti-repeat):** `pickTicket(faults, clients, tier, next,
+  recentFaultIds)` excludes recent ids, falling back to the full pool rather
+  than throwing when exclusion empties it. `state.jobs.recentFaultIds`
+  (schema v15) holds the last `RECENT_FAULT_WINDOW` (3) fresh-ticket draws,
+  updated ONLY in nextTicket via `recordRecentFault` — callbacks/MotD/
+  workshop replay by design and must never touch it. Prestige clears it.
+- **Content:** T1 now has 2 clients (new `lakeview-pool-kiosk` uses the SVG
+  portrait fallback — no webp; add to the portrait backlog with sanjay/chloe),
+  13 slushie faults (new red herring `slushie-killed-by-wall-timer`, free
+  fix, T1), and every original T1 fault has symptomVariants. The red
+  herring's error-log entry was DELETED on purpose — slushie error-log is at
+  its info-design uniqueness cap (the suite caught it); temp-probe carries
+  its tell. Symptom lines must NOT contain literal quote marks — the
+  renderer wraps them in curly quotes already (staff-didnt-prime-it
+  predates this rule and still has them; cosmetic, T2).
+- **Graphics mode:** n/a (no art changes; raster cap resize only).
+- **sw.js cache bumped?** yes v29→v30 (js/css + new fault JSON in APP_SHELL).
+- **prefers-reduced-motion honored?** yes — no new animation;
+  .status-home reuses the .btn hover/press transition pattern.
+- **Schema change?** v14→v15: `jobs.recentFaultIds: []` + migration +
+  fixture test (state.test.js) + live-verified round trip.
+- **Tests:** `node tests/run.js` → **342 passing, 0 failed** (+4: v15
+  fixture, anti-repeat window, tiny-pool fallback, FIFO cap).
+- **Desktop fold fix (same session, after Tom's live screenshot):** at 150%
+  Windows browser zoom the effective viewport is ~1280×640 CSS px and the
+  old desktop job layout (full-width ticket stacked ABOVE the two columns)
+  ran ~996px tall. New desktop layout: `.screen-job` is itself a 2-column
+  grid — ticket + art left, diagnostics + commit right — via
+  `.job-cols { display: contents }`; desktop raster cap 300→240px. Mobile
+  (<601px) flex layout untouched (verified). Measured after: a standard job
+  fits EXACTLY at 1280×640 (page 640, commit bottom 620); the first job
+  (onboarding guide) still needs ~56px of scroll — accepted, it's one job.
+  CONTRACT: `.job-col-right` spans `grid-row: 1 / span 2` — anything added
+  as a third direct child of `.screen-job` lands in column 1 below the art;
+  keep the one-`.machine-stage`-per-view rule (view transitions).
+- **Open / unverified:** deeper repetition levers deliberately not built
+  (intermittent-fault engine, multi-fault jobs, Tier 3 variants — GDD §2.1
+  note). Density verified at 375×812 (ticket fully above the fold incl. the
+  first-job guide) and 1280×640/desktop — but not on a real phone or Tom's
+  actual monitor; Tom should sanity-check on-device. The paused-job home
+  screen still shows shop/codex buttons that work (by design) but Restock
+  inside the job screen was not re-tested this session. Lakeview portrait
+  is SVG-only until a webp is generated. Port 8128 burned mid-session
+  (stale css/main.css despite SW+cache clearing — the known python
+  http.server heuristic-cache gotcha); static-alt6 (8129) added and is the
+  latest known-good port.
+
 ### 2026-07-08 — Claude Code — Session 29b: raster interaction-state art + pick-the-lane
 
 - **Files touched:** `assets/generated/*-{probe,leads,ajar}.webp` (15 new,

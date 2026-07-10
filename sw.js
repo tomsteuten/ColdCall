@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v29';
+const CACHE = 'coldcall-v30';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).
@@ -101,6 +101,7 @@ const APP_SHELL = [
   'data/faults/slushie-drain-valve-stuck-open.json',
   'data/faults/slushie-evaporator-iced-over.json',
   'data/faults/slushie-float-switch-stuck-high.json',
+  'data/faults/slushie-killed-by-wall-timer.json',
   'data/faults/slushie-lid-interlock-fault.json',
   'data/faults/slushie-mix-too-weak.json',
   'data/faults/slushie-motor-brushes-worn.json',

@@ -5,7 +5,7 @@ import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
 import { buyLadderItem, claimCallback, expireCallbacks, restockVan, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
-import { pickTicket } from './tickets.js';
+import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
@@ -113,16 +113,37 @@ function commitSelectedFix(fixId) {
 
 const actions = {
   nextTicket() {
+    if (state.jobs.active) return; // a paused job must be resumed, not replaced
     justUnlockedTier = null;
     // A session can cross UTC midnight: refresh yesterday's contract before the
     // job starts so its progress lands on the right day's objective.
     ensureContract(state, machines);
     // Fresh tickets only — callbacks are never auto-claimed (GDD §3.1); the
-    // player chooses them from the Callbacks list via takeCallback().
+    // player chooses them from the Callbacks list via takeCallback(). The
+    // anti-repeat window (v15) keeps the last few faults out of the draw;
+    // callbacks/MotD/workshop never touch it — they replay by design.
     const next = mulberry32(Date.now());
-    const { fault, client } = pickTicket(faults, clients, state.player.tierUnlocked, next);
+    const { fault, client } = pickTicket(faults, clients, state.player.tierUnlocked, next, state.jobs.recentFaultIds);
     startJob(state, fault, client.id, next);
+    recordRecentFault(state.jobs.recentFaultIds, fault.id);
+    screen = 'job';
     save(state);
+    render();
+  },
+  goHome() {
+    // The always-there status-bar Home (2026-07-08 playtest fix). An active
+    // job simply pauses — it lives in state.jobs.active and home offers
+    // Resume. A transient invoice/repair beat is dismissed (money already
+    // settled at commit, so nothing is lost).
+    invoice = null;
+    repairBeat = null;
+    pendingFirstFixId = null;
+    screen = 'home';
+    render();
+  },
+  resumeJob() {
+    if (!state.jobs.active) return;
+    screen = 'job';
     render();
   },
   openCallbacks() {
@@ -135,6 +156,7 @@ const actions = {
     render();
   },
   takeCallback(index) {
+    if (state.jobs.active) return; // paused job blocks a claim (startJob would throw)
     const cb = claimCallback(state, faults, Number(index));
     if (cb) {
       const next = mulberry32(Date.now());
@@ -146,7 +168,7 @@ const actions = {
         evidence: cb.evidence ?? null,
         variant: cb.variant ?? 0,
       });
-      screen = 'home';
+      screen = 'job';
       save(state);
     }
     // A failed claim (stale/removed entry) just re-renders the updated list.
@@ -262,6 +284,7 @@ const actions = {
     render();
   },
   repairWorkshopMachine(machineId) {
+    if (state.jobs.active) return; // paused job must be resumed first
     const machine = state.workshop.machines.find(m => m.id === machineId);
     if (!machine || machine.status !== 'broken') return;
     const fault = faults[machine.faultId];
@@ -269,6 +292,7 @@ const actions = {
 
     const next = mulberry32(Date.now());
     startJob(state, fault, 'workshop-' + machine.id, next);
+    screen = 'job';
     save(state);
     render();
   },
@@ -295,6 +319,7 @@ const actions = {
     // puzzleDateStr stored on the job so settlement uses the start-day date
     // even if the player crosses UTC midnight before committing a fix.
     startJob(state, fault, 'motd', prng, null, true, todayStr);
+    screen = 'job';
     save(state);
     render();
   },
@@ -408,13 +433,17 @@ const actions = {
  * stay instant so per-element juice (stamp-in, count-up) is never doubled.
  */
 function viewKey() {
+  // Explicit navigation wins over an active job (2026-07-08 pause-and-resume):
+  // the shop/codex/callbacks/home gates no longer require !state.jobs.active —
+  // a mid-job visit pauses the job (it persists; home offers Resume). Repair
+  // beat and invoice still take precedence: they're transient settlement UI.
   if (screen === 'motd') return 'motd';
-  if (screen === 'shop' && !state.jobs.active && !invoice) return 'shop';
-  if (screen === 'codex' && !state.jobs.active && !invoice) return 'codex';
   if (repairBeat) return 'repair';
   if (invoice) return 'invoice';
-  if (state.jobs.active) return 'job';
+  if (screen === 'shop') return 'shop';
+  if (screen === 'codex') return 'codex';
   if (screen === 'callbacks') return 'callbacks';
+  if (state.jobs.active && screen !== 'home') return 'job';
   return 'home';
 }
 
@@ -433,11 +462,12 @@ function render() {
 }
 
 function paint() {
+  // Mirrors viewKey() above — keep the two in sync or transitions misfire.
   if (screen === 'motd') {
     motdScreen.render(app, { state, motdResult, actions });
-  } else if (screen === 'shop' && !state.jobs.active && !invoice) {
+  } else if (screen === 'shop' && !repairBeat && !invoice) {
     shopScreen.render(app, { state, actions, exportMessage, importError });
-  } else if (screen === 'codex' && !state.jobs.active && !invoice) {
+  } else if (screen === 'codex' && !repairBeat && !invoice) {
     codexScreen.render(app, { state, faults, machines, actions });
   } else {
     jobScreen.render(app, {
@@ -479,12 +509,23 @@ app.addEventListener('click', (e) => {
   if (e.target.closest('button')) sfxClick(state.settings.audio);
 });
 
+// The status-bar Home button renders on every screen (statusBar in job.js),
+// including shop/codex/motd which have their own wire() functions — one
+// delegated listener here covers them all instead of five copies.
+app.addEventListener('click', (e) => {
+  if (e.target.closest('[data-action="go-home"]')) actions.goHome();
+});
+
 // A save can hold an active job whose fault was since renamed/removed from the
 // library. Don't strand the player: drop the job (no money moved), keep the save.
 if (state.jobs.active && !faults[state.jobs.active.faultId]) {
   console.error(`Cold Call: active job references unknown fault "${state.jobs.active.faultId}"; abandoning the job.`);
   state.jobs.active = null;
 }
+
+// A save with a live job resumes straight into it — same behaviour as before
+// pause-and-resume made 'home' possible alongside an active job.
+if (state.jobs.active) screen = 'job';
 
 // Expire stale callbacks and simulate offline progress before first render, so
 // both reports are visible on home. Expire first: a callback can only fall off

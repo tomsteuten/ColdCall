@@ -12,6 +12,20 @@
     "error-log": "LID OPEN fault since last night. Machine never ran.",
     "continuity-test": "Reed switch reads open with the lid fully closed. The magnet sits 5 mm off the switch centreline."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Runs only if someone presses down on the lid.",
+        "LID OPEN alarm the moment they let go."
+      ]
+    },
+    {
+      "symptoms": [
+        "Stopped working right after the weekly deep clean.",
+        "LID OPEN on the display; staff swear the lid is on properly."
+      ]
+    }
+  ],
   "correctFix": "realign-lid-interlock-magnet",
   "wrongFixes": ["replace-controller-board", "replace-lid-assembly", "replace-float-switch"],
   "payout": 80,

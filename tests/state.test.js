@@ -713,6 +713,20 @@ test('v13 save migrates to v14: empty codex and null contract added', () => {
   assertEqual(migrated.player.cash, 7777);
 });
 
+test('v14 save migrates to v15: empty anti-repeat window added', () => {
+  const v14Fixture = defaultState();
+  v14Fixture.schemaVersion = 14;
+  delete v14Fixture.jobs.recentFaultIds;
+  v14Fixture.player.cash = 4242; // progress that must survive untouched
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v14Fixture)));
+
+  assertEqual(migrated.schemaVersion, SCHEMA_VERSION);
+  assertEqual(migrated.jobs.recentFaultIds, [],
+    'old saves start with an empty window — their draw history was never recorded');
+  assertEqual(migrated.player.cash, 4242);
+});
+
 test('validateState rejects a save with a non-numeric codex fix count', () => {
   const s = defaultState();
   s.codex.fixes['some-fault'] = '<img onerror=x>';

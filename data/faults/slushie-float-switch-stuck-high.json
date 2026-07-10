@@ -12,6 +12,20 @@
     "error-log": "MIX LOW alarm re-arming within minutes of every restock.",
     "inspect-beater": "Old crystallised syrup crusted through the wet side — around the spout tip, the drain seat and the float stem."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Bowl runs itself nearly empty before anyone notices.",
+        "MIX LOW pops up only at the very end, then won't clear."
+      ]
+    },
+    {
+      "symptoms": [
+        "It keeps saying it's out of mix. It is not out of mix.",
+        "Staff have taken to slapping the side, which they say helps."
+      ]
+    }
+  ],
   "correctFix": "replace-float-switch",
   "wrongFixes": ["replace-mix-inlet-valve", "replace-mix-level-sensor", "replace-controller-board"],
   "payout": 80,

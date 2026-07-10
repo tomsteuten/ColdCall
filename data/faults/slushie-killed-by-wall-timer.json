@@ -1,0 +1,27 @@
+{
+  "id": "slushie-killed-by-wall-timer",
+  "lesson": "A machine that's completely dead, with nothing in the log and everything at room temperature, isn't broken — something upstream cut the power. Check the wall before you check the machine.",
+  "machineType": "slushie-machine",
+  "tier": 1,
+  "symptoms": [
+    "It's completely dead. Won't even turn on.",
+    "No display, no lights, no hum."
+  ],
+  "tests": {
+    "temp-probe": "Bowl at room temperature throughout. Nothing in the machine has been cold for hours."
+  },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Dead as a doornail since we opened.",
+        "The drinks fridge on the same bench is also off."
+      ]
+    }
+  ],
+  "correctFix": "flick-the-wall-timer-back-on",
+  "wrongFixes": ["replace-controller-board", "replace-power-supply", "replace-slushie-thermostat"],
+  "payout": 90,
+  "partsCost": 0,
+  "flavour": "The cleaner's plug-in timer strikes again. Invoice includes a small fee for keeping a straight face.",
+  "authenticityNote": "The GDD §2.1 red-herring class made Tier 1: shops put cleaning equipment on plug-in wall timers and the machine ends up on the switched socket. Techs genuinely get called to machines that are just switched off at the wall — a log ending abruptly with no shutdown event is the classic tell."
+}

@@ -10,6 +10,20 @@
   "tests": {
     "inspect-beater": "The rear of the left bowl is wet — a bead of syrup tracking down from the gasket line. The shaft seal above it is dry."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Staff put a takeaway tub under the left bowl. It fills daily.",
+        "The drip is coming from behind the bowl, not the tap."
+      ]
+    },
+    {
+      "symptoms": [
+        "Blue raspberry stain spreading across the counter overnight.",
+        "Level in the left bowl drops even with the tap unused."
+      ]
+    }
+  ],
   "correctFix": "replace-bowl-gasket",
   "wrongFixes": ["replace-bowl", "replace-auger-shaft-seal"],
   "payout": 80,

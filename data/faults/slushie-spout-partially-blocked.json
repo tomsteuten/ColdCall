@@ -11,6 +11,20 @@
   "tests": {
     "inspect-beater": "Old crystallised syrup crusted through the wet side — around the spout tip, the drain seat and the float stem."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Pour starts as a dribble, occasionally spits.",
+        "Machine otherwise running perfectly."
+      ]
+    },
+    {
+      "symptoms": [
+        "You have to hold the cup there for a full minute now.",
+        "Queue forming; product itself looks fine."
+      ]
+    }
+  ],
   "correctFix": "clear-and-sanitise-spout",
   "wrongFixes": ["replace-mix-pump", "replace-slushie-thermostat", "replace-bowl-gasket"],
   "payout": 80,

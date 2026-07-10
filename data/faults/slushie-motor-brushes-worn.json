@@ -13,6 +13,20 @@
     "inspect-beater": "The drive side looks tired — belt glazed shiny, carbon dust around the motor vents. The motor spins; the auger doesn't always follow.",
     "continuity-test": "Motor windings healthy. Carbon brushes measure 2 mm against an 8 mm minimum."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "A hot electrical smell near the machine by mid-morning.",
+        "Auger stops under load, restarts after a rest."
+      ]
+    },
+    {
+      "symptoms": [
+        "It crackles. Machines shouldn't crackle.",
+        "Slush separating because the auger keeps stopping."
+      ]
+    }
+  ],
   "correctFix": "replace-motor-brushes",
   "wrongFixes": ["replace-agitator-motor", "replace-agitator-belt", "replace-controller-board"],
   "payout": 90,

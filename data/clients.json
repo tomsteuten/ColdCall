@@ -26,6 +26,30 @@
       }
     },
     {
+      "id": "lakeview-pool-kiosk",
+      "name": "Lakeview Pool Kiosk",
+      "tier": 1,
+      "contact": {
+        "name": "Barry Cutler",
+        "role": "Kiosk manager, lifeguard emeritus",
+        "flavour": "Forty kids in wet togs are asking me questions I can't answer.",
+        "flavourLines": {
+          "default": [
+            "Forty kids in wet togs are asking me questions I can't answer.",
+            "The swim club gets out at four. I need good news before four.",
+            "It survived three summers and two floods. Now THIS."
+          ]
+        }
+      },
+      "portrait": {
+        "skin": "#e0b48a",
+        "hair": "#c9c2b4",
+        "shirt": "#3a7a5e",
+        "accent": "#f0b84a",
+        "expression": "stern"
+      }
+    },
+    {
       "id": "burgertown-high-st",
       "name": "Burgertown — High Street",
       "tier": 2,

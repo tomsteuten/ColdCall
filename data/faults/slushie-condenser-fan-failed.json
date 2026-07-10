@@ -13,6 +13,20 @@
     "temp-probe": "The condenser side is running very hot, and almost no air is moving through the back of the machine.",
     "continuity-test": "Condenser fan motor winding reads open-circuit."
   },
+  "symptomVariants": [
+    {
+      "symptoms": [
+        "Cuts out mid-afternoon on warm days, fine in the morning.",
+        "Back of the machine hot enough to notice from a step away."
+      ]
+    },
+    {
+      "symptoms": [
+        "It just switches itself off, then comes good.",
+        "Machine noticeably quieter than the identical unit next to it."
+      ]
+    }
+  ],
   "correctFix": "replace-condenser-fan-motor",
   "wrongFixes": ["clean-condenser-coil", "regas-refrigeration", "replace-compressor"],
   "payout": 95,

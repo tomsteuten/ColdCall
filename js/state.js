@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 14;
+export const SCHEMA_VERSION = 15;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -46,6 +46,10 @@ export function defaultState() {
       // evidence is the tests the player ran before the wrong fix (null when none),
       // restored on the return visit so a callback continues the investigation.
       callbacks: [],
+      // Anti-repeat window (v15, 2026-07-08): the last few fresh-ticket fault
+      // ids, excluded from the next draw (tickets.js). Callbacks/MotD/workshop
+      // never touch it — they replay by design.
+      recentFaultIds: [],
     },
 
     workshop: {
@@ -272,6 +276,17 @@ export const MIGRATIONS = {
     old.schemaVersion = 14;
     return old;
   },
+  // v14 -> v15: anti-repeat ticket draw (2026-07-08 playtest fix). The last
+  // few drawn fault ids are excluded from the next fresh-ticket draw so the
+  // same fault can't come up twice in quick succession. Empty for old saves —
+  // their history was never recorded.
+  14: (old) => {
+    if (!Array.isArray(old.jobs?.recentFaultIds)) {
+      old.jobs.recentFaultIds = [];
+    }
+    old.schemaVersion = 15;
+    return old;
+  },
 };
 
 /**
@@ -344,7 +359,7 @@ export function validateState(s) {
     ['tools', 'object'], ['tools.multimeterTier', 'number'],
     ['van', 'object'], ['van.slots', 'number'], ['van.stock', 'object'],
     ['techs', 'array'], ['routes', 'array'],
-    ['jobs', 'object'], ['jobs.callbacks', 'array'],
+    ['jobs', 'object'], ['jobs.callbacks', 'array'], ['jobs.recentFaultIds', 'array'],
     ['workshop', 'object'], ['workshop.machines', 'array'],
     ['codex', 'object'], ['codex.fixes', 'object'], ['codex.milestonesPaid', 'array'],
     ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],

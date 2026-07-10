@@ -45,7 +45,9 @@ function renderJob(client) {
     machines: [],
     clients: [client],
     invoice: null,
-    screen: 'home',
+    // 'job', not 'home': since pause-and-resume (2026-07-08) an active job
+    // with screen 'home' renders the home screen (paused job), not the job.
+    screen: 'job',
     actions: {},
   });
   return root.innerHTML;

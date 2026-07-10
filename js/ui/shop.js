@@ -50,7 +50,7 @@ export function render(root, ctx) {
   const staffSection = staffHTML(state);
 
   root.innerHTML = `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-shop">
       <h2 class="section-title">Upgrades</h2>
       <ul class="shop-list">${ladderRows}</ul>

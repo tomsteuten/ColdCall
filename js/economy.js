@@ -654,9 +654,11 @@ export function prestige(state) {
   state.techs = [];
   state.routes = [];
 
-  // Reset active and queued jobs
+  // Reset active and queued jobs (incl. the anti-repeat window — the new
+  // region's first draws start unconstrained)
   state.jobs.active = null;
   state.jobs.callbacks = [];
+  state.jobs.recentFaultIds = [];
 
   // Reset workshop machines
   state.workshop = { machines: [] };

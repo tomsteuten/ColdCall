@@ -74,7 +74,7 @@ export function render(root, ctx) {
     .join('');
 
   root.innerHTML = `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-codex">
       <h2 class="section-title">Service Manual</h2>
       <p class="codex-progress"><strong>${mastered}/${total}</strong> faults logged</p>

@@ -72,6 +72,37 @@ wiring). The raster interaction-state renders were generated the same day (see
 §7 and `assets/generated/PROMPTS.md`), so the visual payoff now shows in the
 shipped raster art, not just the fallback SVG.
 
+**Decision of record (2026-07-08) — first playtest feedback pass.** Three
+findings from the first external playtest, and their fixes:
+- *"Unclear how to get home"* → an always-there **Home button in the status
+  bar** on every screen except home itself (top of screen, never below the
+  fold), and **jobs are pausable**: navigating away mid-diagnosis keeps the
+  job in `state.jobs.active` and home's primary button becomes "Resume job —
+  <client>", so it's impossible to lose. Pausing is free by design — the job
+  clock is simulated minutes (§2.1), which is precisely why interruptions
+  never punish. Starting anything new (ticket, callback, MotD, workshop) is
+  blocked with a visible reason while a job is paused.
+- *"Doesn't fit on one screen"* → density pass: raster art capped at 190px on
+  mobile (240px desktop), compact caller block, tighter ticket panel. On
+  desktop the ticket no longer spans full width above the columns — it joins
+  the art in the LEFT column with diagnostics/commit on the right, so the
+  whole job fits even a zoomed ~640px-tall desktop viewport (Tom's live
+  screenshot showed ~350px of the job below the fold at 150% browser
+  scaling). The evidence still reads first: top-left, above the controls.
+  Verified: a standard job fits exactly at 1280×640; the full ticket + art
+  fit above the fold at 375×812.
+- *"Feels too repetitive"* → three-part fix: (1) the fresh-ticket draw now
+  **excludes the last 3 drawn faults** (`state.jobs.recentFaultIds`, schema
+  v15; callbacks/MotD/workshop replay by design and never touch it; the
+  window resets on prestige); (2) a **second Tier 1 client** (Lakeview Pool
+  Kiosk, Barry Cutler) so the first 15 minutes isn't a single face; (3) all
+  12 original Tier 1 faults now have symptom variants (the 6 that lacked
+  them gained 2 each), plus a **Tier 1 red-herring comedy fault**
+  (`slushie-killed-by-wall-timer` — the machine is fine, the cleaner's wall
+  timer cut it off; free fix, the §2.2 joke class finally reaching the
+  tutorial tier). Deeper levers (intermittent-fault engine support,
+  multi-fault jobs, Tier 3 variants) remain open follow-ups.
+
 **Difficulty levers:** number of plausible faults per machine, ambiguous/overlapping symptoms, intermittent faults (symptom only appears on a re-test), red herrings ("operator error — the staff just didn't run the cleaning cycle," a free fix and a joke that doubles as the meme payoff).
 
 ### 2.2 Fault Library (launch content)

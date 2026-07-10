@@ -100,6 +100,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   (home, callbacks, shop, codex, MotD, invoice) stay a centred ~480px column** —
   only the two-column job/repair screens use the full width. Keep new screens in
   that rule: a list of buttons stretched to 900px reads badly.
+- **Desktop job screen is a two-column grid on `.screen-job` itself**
+  (2026-07-08): the ticket panel + machine art form the left column and the
+  diagnostics/commit panels the right (`.job-cols { display: contents }`
+  lifts its children into the grid). This is a height budget, not
+  decoration — Windows browsers at 125–150% zoom leave only ~640 CSS px of
+  height, and a standard job must fit it without scrolling. The evidence
+  still renders first (top-left, above the controls) per the §7
+  anti-pattern. Mobile (<601px) keeps the plain stacked column.
 
 ## 5. Components (reuse these — don't hand-roll)
 
@@ -136,6 +144,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
   unlock, completed daily contract) for a half-second bouncy entrance. Not an
   auto-dismissing popup; the element stays put afterward like any other line.
+- **`.status-home`** (2026-07-08) — the always-there Home affordance: a small
+  accent-outlined button (house glyph + "Home") in the status bar's 4th grid
+  column (`.status-bar--nav` modifier) on every screen except home itself.
+  Wired by ONE delegated listener in main.js (`[data-action="go-home"]`), not
+  per-screen wire() functions. Navigating home mid-job pauses the job (it
+  persists in state; home's primary button becomes "Resume job"). Playtest
+  fix: bottom-of-screen "Back" buttons were below the fold; the status bar is
+  the one surface that's always visible.
 - **`.art-hotspot`** (2026-07-08) — a tappable circle over the machine art
   (job screen only) that runs the matching test, at the coordinates where
   that test's tool appears in the SVG's `'probe'`/`'leads'`/`'ajar'`

@@ -21,6 +21,7 @@
   "slushie-motor-brushes-worn.json",
   "slushie-drain-valve-stuck-open.json",
   "slushie-lid-interlock-fault.json",
+  "slushie-killed-by-wall-timer.json",
   "dispense-valve-weeping.json",
   "mix-pump-failed.json",
   "condenser-fan-seized.json",

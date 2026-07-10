@@ -1,7 +1,7 @@
 /** @file Ticket picker invariants: fault and client always share a tier, tier gating holds, unlocked tiers reachable. */
 
 import { mulberry32 } from '../js/rng.js';
-import { pickTicket } from '../js/tickets.js';
+import { pickTicket, recordRecentFault, RECENT_FAULT_WINDOW } from '../js/tickets.js';
 
 const FAULTS = {
   'slushie-fault': { id: 'slushie-fault', tier: 1 },
@@ -61,4 +61,38 @@ test('throws when no fault can be paired within the unlocked tiers', () => {
     threw = true;
   }
   assert(threw, 'expected pickTicket to throw with no pairable fault');
+});
+
+test('anti-repeat: recent faults are excluded from the draw when the pool allows (2026-07-08)', () => {
+  // A big-enough pool: draw N times maintaining the window like main.js does,
+  // and no fault may repeat within RECENT_FAULT_WINDOW consecutive draws.
+  const bigPool = {};
+  for (let i = 0; i < 8; i++) bigPool[`fault-${i}`] = { id: `fault-${i}`, tier: 1 };
+  const next = mulberry32('anti-repeat');
+  const recent = [];
+  const drawn = [];
+  for (let i = 0; i < 200; i++) {
+    const { fault } = pickTicket(bigPool, CLIENTS, 1, next, recent);
+    for (const prev of drawn.slice(-RECENT_FAULT_WINDOW)) {
+      assert(fault.id !== prev, `draw ${i}: ${fault.id} repeated within a ${RECENT_FAULT_WINDOW}-draw window`);
+    }
+    drawn.push(fault.id);
+    recordRecentFault(recent, fault.id);
+  }
+});
+
+test('anti-repeat: falls back to the full pool instead of throwing when everything is recent', () => {
+  // A pool smaller than the window: exclusion would empty it — a repeat is
+  // returned rather than an error.
+  const tinyPool = { 'only-fault': { id: 'only-fault', tier: 1 } };
+  const { fault } = pickTicket(tinyPool, CLIENTS, 1, mulberry32(7), ['only-fault']);
+  assertEqual(fault.id, 'only-fault', 'the sole fault must still be drawable');
+});
+
+test('recordRecentFault keeps a FIFO window of RECENT_FAULT_WINDOW ids', () => {
+  const recent = [];
+  for (const id of ['a', 'b', 'c', 'd', 'e']) recordRecentFault(recent, id);
+  assertEqual(recent, ['c', 'd', 'e'].slice(-RECENT_FAULT_WINDOW),
+    'oldest entries fall off the front');
+  assertEqual(recent.length, RECENT_FAULT_WINDOW);
 });

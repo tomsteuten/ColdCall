@@ -201,10 +201,12 @@ export function render(root, ctx) {
   } else if (invoice) {
     root.innerHTML = invoiceView(ctx);
     wireInvoiceJuice(root);
-  } else if (state.jobs.active) {
-    root.innerHTML = jobView(ctx);
   } else if (screen === 'callbacks') {
+    // Explicit navigation wins over an active job (2026-07-08 pause-and-resume):
+    // the job persists in state and home offers "Resume job".
     root.innerHTML = callbacksView(ctx);
+  } else if (state.jobs.active && screen !== 'home') {
+    root.innerHTML = jobView(ctx);
   } else {
     root.innerHTML = homeView(ctx);
   }
@@ -212,8 +214,16 @@ export function render(root, ctx) {
 }
 
 
-/** Cash/reputation/van header shown on every view (shop.js imports it too). */
-export function statusBar(state) {
+/**
+ * Cash/reputation/van header shown on every view (shop.js imports it too).
+ * Pass `{ home: true }` to render the always-there Home affordance on the
+ * right (2026-07-08 playtest fix: every screen except home itself gets one,
+ * top of screen, never below the fold). Wired by a delegated listener in
+ * main.js so screens with their own wire() don't each need to hook it.
+ * @param {object} state
+ * @param {{home?: boolean}} [opts]
+ */
+export function statusBar(state, opts = {}) {
   const parts = state.van.stock['generic-parts'] ?? 0;
   const slots = state.van.slots;
   const vanDim = parts === 0 ? ' stat-warn' : ' stat-dim';
@@ -226,15 +236,22 @@ export function statusBar(state) {
     threshold !== undefined
       ? `Rep ${rep} · ${Math.max(0, threshold - rep)} to Tier ${nextTier}`
       : `Rep ${rep}`;
+  const homeBtn = opts.home
+    ? `<button class="status-home" data-action="go-home" aria-label="Back to home">
+        <svg viewBox="0 0 14 13" width="13" height="12" aria-hidden="true"><path d="M7 0 0 6h2v7h4V9h2v4h4V6h2Z" fill="currentColor"/></svg>
+        Home
+      </button>`
+    : '';
   return `
-    <header class="status-bar">
+    <header class="status-bar${opts.home ? ' status-bar--nav' : ''}">
       <span class="stat">$${state.player.cash.toLocaleString('en-US')}</span>
       <span class="stat stat-dim">${repLabel}</span>
       <span class="stat${vanDim}">Van ${parts}/${slots}</span>
+      ${homeBtn}
     </header>`;
 }
 
-export function homeView({ state, faults, machines = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm }) {
+export function homeView({ state, faults, machines = [], clients = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const due = dueCallbacks(state).length;
@@ -254,6 +271,22 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
         ? `<p class="home-unlock celebration-card">Tier ${justUnlockedTier} clients unlocked.</p>`
         : '';
 
+  // A paused job (2026-07-08 pause-and-resume): the player navigated home
+  // mid-diagnosis. The job lives in state.jobs.active and the simulated clock
+  // means pausing never costs anything — but it must be impossible to lose,
+  // so it replaces "Next ticket" as the one primary action.
+  const paused = state.jobs.active;
+  const pausedLabel = paused
+    ? paused.motd
+      ? 'Machine of the Day'
+      : paused.clientId?.startsWith('workshop-')
+        ? 'workshop repair'
+        : (clients.find((c) => c.id === paused.clientId)?.name ?? paused.clientId)
+    : null;
+  const primaryAction = paused
+    ? `<button class="btn btn-primary" data-action="resume-job">Resume job — ${escapeHtml(pausedLabel)}</button>`
+    : `<button class="btn btn-primary" data-action="next-ticket">Next ticket</button>`;
+
   const motdPlayed = !canPlayToday(state);
   const motdResult = state.motd.lastResult;
   // Emoji are share-card flavour, not UI (2026-07-04): played state uses the
@@ -268,9 +301,10 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
          ${state.motd.streak > 1 ? `<span class="badge">Streak ${state.motd.streak}</span>` : ''}
          <span class="btn-subtext">New puzzle in ${nextPuzzleCountdown()}</span>
        </button>`
-    : `<button class="btn btn-motd" data-action="start-motd">
+    : `<button class="btn btn-motd" data-action="start-motd" ${paused ? 'disabled' : ''}>
          Machine of the Day
          ${atRisk > 0 ? `<span class="badge badge--warn">${atRisk}-day streak at risk</span>` : ''}
+         ${paused && !paused.motd ? `<span class="btn-subtext">Finish your current job first</span>` : ''}
        </button>`;
 
   // Today's contract (GDD §5): the second daily hook, right under MotD. State
@@ -471,7 +505,7 @@ export function homeView({ state, faults, machines = [], justUnlockedTier, offli
       ${expiryBanner}
       ${offlineBanner}
 
-      <button class="btn btn-primary" data-action="next-ticket">Next ticket</button>
+      ${primaryAction}
       ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
       ${contractSection}
@@ -528,19 +562,26 @@ export function callbacksView({ state, faults, clients }) {
         ? 'Optional rescue — expires with no penalty.'
         : `You owe this client — let it expire and lose ${REPUTATION.expiredCallbackRepPenalty} rep.`;
 
+      // A paused job blocks taking a callback (startJob would throw): show why
+      // instead of a dead button (2026-07-08 pause-and-resume).
+      const takeBtn = state.jobs.active
+        ? `<button class="btn btn-callback-take" disabled>Take callback</button>
+           <p class="callback-blocked">Finish or resume your current job first.</p>`
+        : `<button class="btn btn-callback-take" data-take="${index}">Take callback</button>`;
+
       return `
         <li class="callback-card">
           <p class="callback-client">${clientName}</p>
           <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceLabel(cb))} · pays ${callbackRatePct(cb.source)}% of net</p>
           <p class="callback-timing">${timing}</p>
           <p class="callback-consequence">${consequence}</p>
-          <button class="btn btn-callback-take" data-take="${index}">Take callback</button>
+          ${takeBtn}
         </li>`;
     })
     .join('');
 
   return `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-callbacks">
       <h2 class="section-title">Callbacks</h2>
       <p class="callbacks-intro">Machines back on the board. A <strong>tech miss</strong> pays near full and expires for free — it's bonus pay. <strong>Your own miss</strong> pays the reduced rate and costs reputation if you abandon it.</p>
@@ -622,8 +663,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     ? `<div class="client-callout${portrait ? '' : ' client-callout--text-only'}">
         ${portrait ? `<div class="client-portrait">${portrait}</div>` : ''}
         <div class="client-copy">
-          <p class="client-contact">${contactName}</p>
-          ${contactRole ? `<p class="client-role">${contactRole}</p>` : ''}
+          <p class="client-contact">${contactName}${contactRole ? ` <span class="client-role">· ${contactRole}</span>` : ''}</p>
           ${contactFlavour ? `<p class="client-flavour">"${contactFlavour}"</p>` : ''}
         </div>
       </div>`
@@ -650,7 +690,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   // diagnostics buttons; job-cols only holds the art and the controls that
   // act on the evidence above it.
   return `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-job">
 
       <div class="panel job-ticket">
@@ -939,7 +979,7 @@ export function invoiceView({ state, invoice }) {
   const shakeClass = !isWorkshop && !correct ? ' screen-shake' : '';
 
   return `
-    ${statusBar(state)}
+    ${statusBar(state, { home: true })}
     <section class="screen screen-invoice${shakeClass}">
       <div class="receipt">
         <div class="receipt-header">— COLD CALL SERVICES —</div>
@@ -967,6 +1007,9 @@ export function invoiceView({ state, invoice }) {
 function wire(root, actions) {
   root.querySelectorAll('[data-action="next-ticket"]').forEach((el) =>
     el.addEventListener('click', actions.nextTicket)
+  );
+  root.querySelectorAll('[data-action="resume-job"]').forEach((el) =>
+    el.addEventListener('click', actions.resumeJob)
   );
   root.querySelectorAll('[data-action="dismiss-invoice"]').forEach((el) =>
     el.addEventListener('click', actions.dismissInvoice)
