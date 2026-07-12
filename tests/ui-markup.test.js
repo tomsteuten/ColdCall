@@ -146,8 +146,19 @@ test('returning players do not receive first-job guidance or confirmation fricti
   assert(!isFirstJobOnboarding(state), 'completed players are returning players');
   const html = jobView({ state, faults, machines, clients });
   assert(!html.includes('diagnosis-guide'), 'returning job should omit onboarding');
+  assert(html.includes('class="diagnosis-steps"'), 'returning jobs should retain compact loop guidance');
+  assert(html.includes('aria-current="step">Symptoms'), 'symptoms should be the initial active step');
   assert(!html.includes('Your first selection gets one confirmation.'), 'returning fix should commit directly');
   assert(html.includes('data-fix="right-fix"'), 'normal fix buttons should remain available');
+});
+
+test('diagnosis step indicator advances from symptoms to measured evidence', () => {
+  const state = onboardingState();
+  state.stats.jobsCompleted = 1;
+  state.jobs.active.testsRun.push('temp-probe');
+  const html = jobView({ state, faults, machines, clients });
+  assert(html.includes('is-complete">Symptoms'), 'symptoms should complete after the first test');
+  assert(html.includes('is-active" aria-current="step">Evidence'), 'evidence should become the active step');
 });
 
 test('machine art exposes stable machine and state hooks for CSS motion', () => {
@@ -553,6 +564,38 @@ test('home screen order: ticket loop first, then daily, then business panels, th
     assert(at > last, `${marker} out of order`);
     last = at;
   }
+});
+
+test('home shift brief recommends the most urgent existing action', () => {
+  const state = defaultState();
+  const today = new Date(Date.now()).toISOString().slice(0, 10);
+  state.player.reputation = 7;
+  state.jobs.callbacks.push({
+    faultId: 'f', clientId: 'c', dueDay: today, expiryDay: today,
+    misses: 1, source: 'player', evidence: null, variant: 0,
+  });
+  state.contract = {
+    date: today, machineType: 'slushie-machine', count: 3, reward: 120, progress: 1, paid: false,
+  };
+  const html = homeView({
+    state,
+    machines: [{ id: 'slushie-machine', name: 'Polar Twister', tier: 1 }],
+  });
+  assert(html.includes('Shift brief'), 'home should label the recommendation');
+  assert(html.includes('Clear 1 callback obligation'), 'an expiring player obligation should outrank contract work');
+  assert(html.includes('3 Rep to Tier 2'), 'the same brief should retain next-unlock context');
+  assert(html.includes('class="btn btn-primary" data-action="open-callbacks"'), 'the recommended obligation should own the primary CTA');
+  assert(html.includes('Take a fresh ticket instead'), 'players should retain a secondary fresh-ticket choice');
+  assert(html.indexOf('home-shift-brief') < html.indexOf('data-action="next-ticket"'), 'guidance should appear before the primary action');
+});
+
+test('home shift brief prioritises a safely paused diagnosis', () => {
+  const state = onboardingState();
+  state.stats.jobsCompleted = 2;
+  const html = homeView({ state, clients });
+  assert(html.includes('Resume Kwik Stop'), 'paused client should be named in the recommendation');
+  assert(html.includes('simulated time is paused'), 'brief should reassure players that navigation did not cost time');
+  assert(html.includes('data-action="resume-job"'), 'existing resume wiring should remain the primary action');
 });
 
 test('brand block shrinks once any job has been completed', () => {

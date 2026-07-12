@@ -8,6 +8,10 @@
     "Clicking sound from the compressor bay every few seconds.",
     "Compressor never actually runs."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Cooling never returned after a brief power interruption.", "A relay clicks repeatedly behind the lower panel.", "The compressor stays silent between attempts."] },
+    { "symptoms": ["Both hoppers are cold but the barrel remains liquid.", "Machine retries refrigeration every few seconds.", "Each attempt ends with a single click and no compressor sound."] }
+  ],
   "tests": {
     "error-log": "REFRIGERATION FAULT — compressor failed to start, 47 attempts logged.",
     "temp-probe": "Barrel at ambient. No refrigeration activity at all.",

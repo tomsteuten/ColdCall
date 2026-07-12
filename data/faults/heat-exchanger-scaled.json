@@ -8,6 +8,10 @@
     "HTR SLOW alarm at the end of the cycle.",
     "Product quality fine during service."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Overnight sanitation eventually completes, but opening is delayed every morning.", "The machine reaches temperature much more slowly than it used to.", "Daytime freezing and serving are normal."] },
+    { "symptoms": ["Heat-treat misses its time target but gets hot in the end.", "HTR SLOW has appeared on four consecutive cycles.", "There are no complaints during normal service."] }
+  ],
   "tests": {
     "error-log": "Heat-treat cycles repeatedly logged out of spec — the mix taking far longer than it should to register temperature.",
     "temp-probe": "Mix comes up to temperature, but far slower than the element's current draw says it should.",

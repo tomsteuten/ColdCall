@@ -7,6 +7,10 @@
     "LOW MIX alarm blaring.",
     "Hopper is visibly full."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Staff filled the hopper twice, but the empty warning never cleared.", "The alarm appeared suddenly before opening.", "Product is still visible above the fill line."] },
+    { "symptoms": ["Controller insists the machine has no mix.", "Hopper is full and the lid has not been disturbed.", "Topping it up changes nothing on the display."] }
+  ],
   "tests": {
     "error-log": "LOW MIX alarm came on overnight and never cleared, no matter what the staff topped up.",
     "inspect-beater": "Mix line clear and flowing freely into the barrel. Hopper full.",

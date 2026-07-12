@@ -8,6 +8,10 @@
     "Machine running — cold barrel, product dispensing fine.",
     "Can't see any settings or access service menu."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Control panel is black, but the machine still freezes and serves.", "Buttons beep when pressed even though nothing appears.", "Staff cannot read temperatures or menus."] },
+    { "symptoms": ["Display flickered for a week and is now completely dark.", "Refrigeration and the draw handle still operate normally.", "No settings are visible."] }
+  ],
   "tests": {
     "error-log": "Can't pull the log — the panel is dark.",
     "continuity-test": "12 V rail present at the display board. The data bus into the display reads dead."

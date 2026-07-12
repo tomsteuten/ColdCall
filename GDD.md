@@ -106,6 +106,19 @@ and lock condition, but the first unlocked unowned purchase is marked **Next
 goal**, preventing the actionable rung from disappearing among owned and future
 items. Neither treatment changes progression or purchase rules.
 
+**Decision of record (2026-07-12) — enjoyability clarity and variety slice.**
+Home now opens each shift with one compact **Shift brief** that recommends the
+most urgent action already available: resume a paused diagnosis, clear a
+player callback, claim an optional rescue, advance today's contract, or take a
+fresh ticket. Reputation-to-tier progress stays beside that recommendation so
+the immediate action and longer goal read together. Returning players get a
+compact **Symptoms / Evidence / Repair** indicator on job tickets; the detailed
+three-paragraph tutorial remains exclusive to the first job. This adds no new
+actions or event hooks. For presentation variety, Moonlight Cinema joins the
+Tier 2 caller pool with four rotating call lines, and 12 frequently repeated
+Tier 2 faults each gain two alternate symptom presentations. Fault answers,
+evidence tables, payouts, callbacks, and save shape are unchanged.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

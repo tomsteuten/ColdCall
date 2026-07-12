@@ -8,6 +8,10 @@
     "Display says HTR FAIL 12 and nothing else.",
     "Manager says this is the third morning in a row."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Heat-treat reaches the final stage, then fails before release.", "Staff have rerun it twice with the same result.", "The product feels properly hot when the fault appears."] },
+    { "symptoms": ["HTR FAIL returns near the end of every overnight cycle.", "A manual rerun did not clear the morning lockout.", "This started three nights ago and is now consistent."] }
+  ],
   "tests": {
     "error-log": "Heat-treat cycles repeatedly logged out of spec — the mix taking far longer than it should to register temperature.",
     "temp-probe": "Your independent probe and the machine's own sensor tell two different stories — the product side measures in spec on your probe.",

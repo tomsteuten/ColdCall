@@ -152,16 +152,18 @@ everywhere rather than defining a dozen near-duplicate tokens.
   persists in state; home's primary button becomes "Resume job"). Playtest
   fix: bottom-of-screen "Back" buttons were below the fold; the status bar is
   the one surface that's always visible.
-- **`.art-hotspot`** (2026-07-08) — a tappable circle over the machine art
-  (job screen only) that runs the matching test, at the coordinates where
-  that test's tool appears in the SVG's `'probe'`/`'leads'`/`'ajar'`
-  interaction state (`HOTSPOTS` in `js/machine-art.js`). Reuses `.btn`'s
-  hover/press motion language rather than a new keyframe. Real `<button>`
-  elements (native keyboard focus, no hand-rolled `tabindex`), same
-  `data-test` wiring as the test button list, so a tap is functionally
-  identical to a click — the button list is never removed, it's the
-  accessible fallback and (in raster graphics mode, which has no matching
-  photos yet) the only place the visual state actually changes.
+- **`.home-shift-brief`** (2026-07-12) — compact read-only recommendation above
+  Home's primary action. It summarizes the most urgent existing queue,
+  contract, paused-job, or unlock state; it never introduces a duplicate
+  action or event hook. Keep it to one action line plus one short reason.
+- **`.diagnosis-steps`** (2026-07-12) — the compact three-stage
+  Symptoms / Evidence / Repair path shown to returning players. The active
+  step uses `aria-current="step"`; completed steps use success colour. It is
+  orientation only, never a hint about the correct test or fix.
+- **Image hotspots are retired** (2026-07-11). Generated raster compositions
+  move their tools and panels between states, so percentage hit regions were
+  unreliable across machines and viewports. Labelled `.btn-test` controls are
+  the single interaction path; machine art reflects the last completed test.
 
 **No emoji as UI chrome.** ✅⚠️🔥📋❌ were removed in favour of badges/dots
 (2026-07-04). Emoji live **only** in flavour text and the MotD share-card grid

@@ -11,6 +11,14 @@ import { defaultState } from '../js/state.js';
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const clients = JSON.parse(readFileSync(join(rootDir, 'data/clients.json'), 'utf8')).clients;
 
+test('Tier 2 has more than one rotating caller', () => {
+  const tier2 = clients.filter((client) => client.tier === 2);
+  assert(tier2.length >= 2, `expected at least two Tier 2 callers, found ${tier2.length}`);
+  const cinema = tier2.find((client) => client.id === 'moonlight-cinema-concessions');
+  assert(cinema, 'Moonlight Cinema should remain in the Tier 2 caller pool');
+  assert((cinema.contact?.flavourLines?.default?.length ?? 0) >= 4, 'cinema caller should rotate several lines');
+});
+
 function fakeRoot() {
   return {
     innerHTML: '',

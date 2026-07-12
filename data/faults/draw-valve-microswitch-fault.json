@@ -8,6 +8,10 @@
     "Handle hasn't been touched — staff are adamant.",
     "Nothing dispensing."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Display says the draw handle is open while it is fully at rest.", "The alarm appeared immediately after cleaning.", "Machine refuses to enable dispensing."] },
+    { "symptoms": ["Handle clicks shut normally, but the interlock remains active.", "Controller will not start the serving cycle.", "Staff cannot clear DRAW OPEN from the screen."] }
+  ],
   "tests": {
     "error-log": "An interlock fault latched since before open — the controller refuses to start until it clears.",
     "inspect-beater": "The draw handle sits square and clicks home crisply — nothing bent or sloppy at the pivot.",

@@ -50,6 +50,31 @@
       }
     },
     {
+      "id": "moonlight-cinema-concessions",
+      "name": "Moonlight Cinema Concessions",
+      "tier": 2,
+      "contact": {
+        "name": "Eli Mercer",
+        "role": "Concessions manager, projector whisperer",
+        "flavour": "The trailers are loud enough to hide the compressor noise. The queue is not.",
+        "flavourLines": {
+          "default": [
+            "The trailers are loud enough to hide the compressor noise. The queue is not.",
+            "Screen four just sold out. Apparently everyone ordered dessert at once.",
+            "I can pause a projector. I cannot pause two hundred people in the foyer.",
+            "The late session starts in twenty minutes. This is now a thriller."
+          ]
+        }
+      },
+      "portrait": {
+        "skin": "#8d5f46",
+        "hair": "#1c2028",
+        "shirt": "#553b72",
+        "accent": "#76d6ee",
+        "expression": "bright"
+      }
+    },
+    {
       "id": "burgertown-high-st",
       "name": "Burgertown — High Street",
       "tier": 2,

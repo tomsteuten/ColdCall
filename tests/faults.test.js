@@ -230,3 +230,16 @@ test('at least 15 tier 1-2 faults ship symptom variants (the memorisation fix)',
   }
   assert(withVariants >= 15, `expected >= 15 tier 1-2 faults with 2+ variants, found ${withVariants}`);
 });
+
+test('the Tier 2 variety pass keeps two alternate presentations on its frequent faults', () => {
+  const ids = [
+    'barrel-freeze-up', 'heat-treat-sensor-fault', 'mix-level-sensor-failed',
+    'dispense-valve-weeping', 'condenser-fan-seized', 'draw-valve-microswitch-fault',
+    'air-injector-blocked', 'rear-shaft-seal-leaking', 'compressor-start-relay-failed',
+    'expansion-valve-iced', 'heat-exchanger-scaled', 'display-controller-failed',
+  ];
+  for (const id of ids) {
+    const fault = JSON.parse(readFileSync(join(root, 'data/faults', `${id}.json`), 'utf8'));
+    assertEqual(fault.symptomVariants?.length, 2, `${id} should retain two alternative presentations`);
+  }
+});

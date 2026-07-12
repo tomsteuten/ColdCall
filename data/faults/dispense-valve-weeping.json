@@ -8,6 +8,10 @@
     "Puddle forms on the drip tray within minutes.",
     "No alarms."
   ],
+  "symptomVariants": [
+    { "symptoms": ["A slow drip continues after the draw handle closes.", "The leak comes directly from the serving spout.", "Machine freezes and dispenses normally otherwise."] },
+    { "symptoms": ["Every portion finishes with another portion's worth in the drip tray.", "The door seam stays dry, but the spout keeps weeping.", "No controller warnings."] }
+  ],
   "tests": {
     "inspect-beater": "Mix weeping around the dispense head — the seal faces are wet. The door casting itself sits true, no cracks."
   },

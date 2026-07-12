@@ -207,7 +207,9 @@ export function statusBar(state, opts = {}) {
 export function homeView({ state, faults, machines = [], clients = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
-  const due = dueCallbacks(state).length;
+  const readyCallbacks = dueCallbacks(state);
+  const due = readyCallbacks.length;
+  const dueObligations = readyCallbacks.filter((cb) => cb.source !== 'tech');
   const pending = total - due; // queued but not yet returned (e.g. tonight's tech misses)
   // Distinguish ready-to-take from not-yet-due so a freshly-queued callback the
   // offline report just announced is visibly "returning soon", not vanished.
@@ -236,9 +238,15 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
         ? 'workshop repair'
         : (clients.find((c) => c.id === paused.clientId)?.name ?? paused.clientId)
     : null;
+  const callbackIsPrimary = !paused && dueObligations.length > 0;
   const primaryAction = paused
     ? `<button class="btn btn-primary" data-action="resume-job">Resume job — ${escapeHtml(pausedLabel)}</button>`
-    : `<button class="btn btn-primary" data-action="next-ticket">Next ticket</button>`;
+    : callbackIsPrimary
+      ? `<button class="btn btn-primary" data-action="open-callbacks">Open callbacks — ${dueObligations.length} obligation${dueObligations.length === 1 ? '' : 's'}</button>`
+      : `<button class="btn btn-primary" data-action="next-ticket">Next ticket</button>`;
+  const alternateTicketAction = callbackIsPrimary
+    ? `<button class="btn" data-action="next-ticket">Take a fresh ticket instead</button>`
+    : '';
 
   const motdPlayed = !canPlayToday(state);
   const motdResult = state.motd.lastResult;
@@ -279,6 +287,47 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
          </p>
        </div>`
     : '';
+
+  // One compact recommendation gathers the scattered queue/contract/unlock
+  // signals into a shift-sized answer to "what should I do next?". It never
+  // invents a new action: the existing primary and navigation buttons below
+  // remain the only event hooks.
+  const contractRemaining = contractIsToday && !contract.paid
+    ? Math.max(0, contract.count - contract.progress)
+    : 0;
+  const nextTier = state.player.tierUnlocked + 1;
+  const nextTierThreshold = REPUTATION.tierThresholds[nextTier];
+  const repRemaining = typeof nextTierThreshold === 'number'
+    ? Math.max(0, nextTierThreshold - state.player.reputation)
+    : null;
+  let shiftRecommendation;
+  let shiftReason;
+  if (paused) {
+    shiftRecommendation = `Resume ${pausedLabel}`;
+    shiftReason = 'Your diagnosis is saved and simulated time is paused.';
+  } else if (dueObligations.length > 0) {
+    shiftRecommendation = `Clear ${dueObligations.length} callback obligation${dueObligations.length === 1 ? '' : 's'}`;
+    shiftReason = 'These clients cost reputation if they expire.';
+  } else if (contractRemaining > 0) {
+    shiftRecommendation = `Advance today's ${contractMachine} contract`;
+    shiftReason = `${contractRemaining} correct fix${contractRemaining === 1 ? '' : 'es'} remaining for +$${contract.reward.toLocaleString('en-US')}.`;
+  } else {
+    shiftRecommendation = 'Take the next ticket';
+    shiftReason = due > 0
+      ? `${due} optional technician rescue${due === 1 ? ' is' : 's are'} also waiting in Callbacks.`
+      : repRemaining === null
+        ? 'Keep earning cash, filling the service manual, and building your streak.'
+        : `${repRemaining} Rep to unlock Tier ${nextTier} clients.`;
+  }
+  const shiftProgress = repRemaining !== null && !shiftReason.includes(`Tier ${nextTier}`)
+    ? `<span class="home-shift-progress">${repRemaining} Rep to Tier ${nextTier}</span>`
+    : '';
+  const shiftBrief = `
+    <aside class="home-shift-brief" aria-label="Recommended next action">
+      <p class="home-shift-label">Shift brief</p>
+      <p class="home-shift-action">${escapeHtml(shiftRecommendation)}</p>
+      <p class="home-shift-reason">${escapeHtml(shiftReason)} ${shiftProgress}</p>
+    </aside>`;
 
   const offlineBanner = offlineReport
     ? (() => {
@@ -458,8 +507,10 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       ${expiryBanner}
       ${offlineBanner}
 
+      ${shiftBrief}
       ${primaryAction}
-      ${total > 0 ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
+      ${alternateTicketAction}
+      ${total > 0 && !callbackIsPrimary ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
       ${motdSection}
       ${contractSection}
       ${prestigeSection}
@@ -644,6 +695,15 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       </div>`
     : '';
 
+  const diagnosisStep = pendingFirstFixId ? 3 : job.testsRun.length > 0 ? 2 : 1;
+  const diagnosisStepper = !firstJob
+    ? `<ol class="diagnosis-steps" aria-label="Diagnosis steps">
+        <li class="diagnosis-step${diagnosisStep === 1 ? ' is-active' : ' is-complete'}"${diagnosisStep === 1 ? ' aria-current="step"' : ''}>Symptoms</li>
+        <li class="diagnosis-step${diagnosisStep === 2 ? ' is-active' : diagnosisStep > 2 ? ' is-complete' : ''}"${diagnosisStep === 2 ? ' aria-current="step"' : ''}>Evidence</li>
+        <li class="diagnosis-step${diagnosisStep === 3 ? ' is-active' : ''}"${diagnosisStep === 3 ? ' aria-current="step"' : ''}>Repair</li>
+      </ol>`
+    : '';
+
   // Art feedback: show the interaction state
   // matching the LAST test run (probe/leads/ajar — the player just tapped or
   // clicked their way to it), falling back to the generic 'open' teardown
@@ -676,6 +736,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
         <h2 class="job-client">${clientName}</h2>
 
         <p class="job-machine">${safeMachineName}</p>
+
+        ${diagnosisStepper}
 
         <blockquote class="job-ticket-order">
 

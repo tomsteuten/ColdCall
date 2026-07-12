@@ -19,11 +19,14 @@
   </script>
   <script type="module">
     globalThis.test = false;
+    const params = new URLSearchParams(location.search);
+    const requestedFault = params.get('fault') ?? 'mix-feed-valve-stuck-closed';
+    const faultFile = /^[a-z0-9-]+$/.test(requestedFault) ? requestedFault : 'mix-feed-valve-stuck-closed';
     const [{ defaultState }, { startJob }, { jobView }, fault, machineData, clientData] = await Promise.all([
       import('../js/state.js'),
       import('../js/diagnosis.js'),
       import('../js/ui/job.js'),
-      fetch('../data/faults/mix-feed-valve-stuck-closed.json').then((r) => r.json()),
+      fetch(`../data/faults/${faultFile}.json`).then((r) => r.json()),
       fetch('../data/machines.json').then((r) => r.json()),
       fetch('../data/clients.json').then((r) => r.json()),
     ]);
@@ -34,9 +37,15 @@
     state.player.tierUnlocked = 2;
     state.van.stock['generic-parts'] = 2;
     state.stats.jobsCompleted = 8;
-    startJob(state, fault, 'burgertown-high-st', () => 0.31);
+    const clientId = params.get('client') ?? 'burgertown-high-st';
+    startJob(state, fault, clientId, () => 0.31);
 
-    if (new URLSearchParams(location.search).has('tested')) {
+    const requestedVariant = Number(params.get('variant'));
+    if (Number.isInteger(requestedVariant) && requestedVariant >= 0 && requestedVariant <= (fault.symptomVariants?.length ?? 0)) {
+      state.jobs.active.variant = requestedVariant;
+    }
+
+    if (params.has('tested')) {
       state.jobs.active.testsRun.push('temp-probe');
       state.jobs.active.minutesSpent = 5;
     }

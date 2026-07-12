@@ -8,6 +8,10 @@
     "Faint burning smell during busy periods.",
     "Product output otherwise normal."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Dried mix keeps appearing beneath the rear access panel.", "A hot dairy smell develops after several consecutive serves.", "The front door and spout remain dry."] },
+    { "symptoms": ["Sticky spray has collected around the motor bay.", "Machine still freezes and dispenses normally.", "Staff notice the smell only when it has been running hard."] }
+  ],
   "tests": {
     "inspect-beater": "A fine spray of dried mix around the rear of the barrel housing, trailing back along the beater shaft toward the motor."
   },

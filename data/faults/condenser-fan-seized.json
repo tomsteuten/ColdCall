@@ -8,6 +8,10 @@
     "Compressor overtemp fault after extended use.",
     "Ambient temperature is normal."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Machine serves acceptably when quiet, then goes soft during a rush.", "Rear cabinet becomes extremely hot.", "The compressor eventually cuts out on temperature."] },
+    { "symptoms": ["Cooling fades through the afternoon even though the room is cool.", "No air can be felt leaving the rear grille.", "An overtemperature warning appears after long runs."] }
+  ],
   "tests": {
     "error-log": "Repeated refrigeration warnings — temperatures drifting out of range under load. No hard fault codes.",
     "temp-probe": "Condenser outlet very hot, head pressure high. The rear grille is silent — no airflow moving across the coil."

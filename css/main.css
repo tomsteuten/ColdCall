@@ -857,6 +857,48 @@ html:active-view-transition .screen { animation: none; }
   margin: var(--space-xs) 0 0;
 }
 
+.home-shift-brief {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.1rem var(--space-sm);
+  align-items: baseline;
+  padding: 0.45rem var(--space);
+  border: var(--border-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  text-align: left;
+}
+
+.home-shift-label,
+.home-shift-action,
+.home-shift-reason { margin: 0; }
+
+.home-shift-label {
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-shift-action {
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.home-shift-reason {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+}
+
+.home-shift-progress {
+  color: var(--accent-hi);
+  white-space: nowrap;
+}
+
 /* Returning players get the loop above the fold: the brand shrinks to a
  * one-line wordmark once anything has been fixed (2026-07-04). */
 .game-brand--compact {
@@ -1135,6 +1177,38 @@ html:active-view-transition .screen { animation: none; }
   margin: 0;
   color: var(--text-dim);
   font-size: var(--text-sm);
+}
+
+.diagnosis-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--steel);
+}
+
+.diagnosis-step {
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  background: var(--surface-low);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+}
+
+.diagnosis-step.is-complete {
+  color: var(--success);
+}
+
+.diagnosis-step.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-low));
+  color: var(--accent-hi);
 }
 
 /* The ticket panel — client/machine header + the caller's reported symptoms,
@@ -2526,5 +2600,10 @@ html:active-view-transition .screen { animation: none; }
 
   .screen-job {
     align-content: start;
+  }
+
+  .screen-job .machine-stage--raster {
+    height: 190px;
+    max-height: 190px;
   }
 }

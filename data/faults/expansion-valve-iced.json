@@ -8,6 +8,10 @@
     "Suction line heavily frosted all the way to the compressor.",
     "Machine running but struggling."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Product starts firm, then turns soft as serving continues.", "White frost creeps along the suction pipe toward the compressor.", "Refrigeration runs almost continuously."] },
+    { "symptoms": ["Barrel takes far too long to recover between portions.", "The low-side line is buried under ice.", "Compressor sounds normal but cannot hold serving temperature."] }
+  ],
   "tests": {
     "error-log": "Repeated refrigeration warnings — temperatures drifting out of range under load. No hard fault codes.",
     "temp-probe": "Suction line at −20 °C — far colder than it should be — and superheat reading near zero."

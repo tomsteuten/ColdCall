@@ -8,6 +8,10 @@
     "Trips out after a few seconds.",
     "First start of the morning."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Opening shift found the barrel locked solid.", "Motor protection trips as soon as the beater tries to move.", "Machine served normally at close last night."] },
+    { "symptoms": ["Machine starts with a heavy hum, then shuts itself down.", "Nothing will dispense from the frozen side.", "This is the first start since yesterday."] }
+  ],
   "tests": {
     "error-log": "BEATER OVERCURRENT trips on every start attempt. Nothing else unusual in the log.",
     "temp-probe": "Barrel at −15 °C. That's not soft serve, that's a glacier.",

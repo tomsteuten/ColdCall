@@ -8,6 +8,10 @@
     "Pours slowly.",
     "Machine otherwise seems fine."
   ],
+  "symptomVariants": [
+    { "symptoms": ["Soft serve comes out heavy and wet-looking instead of holding a swirl.", "Portion volume is noticeably lower than usual.", "Freezing performance seems normal."] },
+    { "symptoms": ["Product tastes right but has the texture of dense ice cream.", "Draw speed is slow on both small and large portions.", "No alarms or temperature complaints."] }
+  ],
   "tests": {
     "error-log": "No active faults. Overrun percentage in service menu reads 3% — should be 30–50%.",
     "inspect-beater": "White mineral scale crusted through the mix path — anywhere hard water sits, it's furred up."
