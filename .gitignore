@@ -15,6 +15,14 @@ npm-debug.log*
 # Local scratch
 *.local.*
 
+# Disposable browser-audit output. Reusable preview harnesses in tools/*.html
+# stay tracked; Chromium profiles and captured pixels never ship with the game.
+tools/.audit-*/
+tools/.verify*/
+tools/audit-artifacts/
+tools/audit-*.png
+tools/verify-*.png
+
 # Raw art-generation source triptychs — intermediate input, not shipped assets.
 # Split into assets/generated/*.webp; kept locally as regeneration reference
 # (see assets/generated/PROMPTS.md).

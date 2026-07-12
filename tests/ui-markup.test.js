@@ -7,6 +7,7 @@ import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
 import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar } from '../js/ui/job.js';
 import { staffExplainerHTML } from '../js/ui/shop.js';
+import { render as renderCodex } from '../js/ui/codex.js';
 import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,6 +28,34 @@ test('service manual exposes accessible all, logged and unknown filters', () => 
   assert(codexUi.includes('data-codex-filter="logged"'), 'manual should expose the logged filter');
   assert(codexUi.includes('data-codex-filter="unknown"'), 'manual should expose the unknown filter');
   assert(codexUi.includes('aria-pressed='), 'manual filters should expose their selected state');
+});
+
+test('service manual collapses indistinguishable unknown faults by tier and machine', () => {
+  const state = defaultState();
+  state.codex.fixes['known-fault'] = 2;
+  const faults = {
+    'unknown-a': { id: 'unknown-a', tier: 1, machineType: 'machine-a', lesson: '' },
+    'unknown-b': { id: 'unknown-b', tier: 1, machineType: 'machine-a', lesson: '' },
+    'unknown-c': { id: 'unknown-c', tier: 1, machineType: 'machine-b', lesson: '' },
+    'known-fault': { id: 'known-fault', tier: 1, machineType: 'machine-a', lesson: 'Known lesson.' },
+  };
+  const root = {
+    innerHTML: '',
+    querySelector: () => null,
+    querySelectorAll: () => [],
+  };
+
+  renderCodex(root, {
+    state,
+    faults,
+    machines: [{ id: 'machine-a', name: 'Machine A' }, { id: 'machine-b', name: 'Machine B' }],
+    actions: { closeCodex() {} },
+  });
+
+  const unknownCards = root.innerHTML.match(/codex-card--unknown/g) ?? [];
+  assertEqual(unknownCards.length, 2, 'two tier/machine groups should render as two unknown cards');
+  assert(root.innerHTML.includes('aria-label="2 unknown faults"'), 'the grouped card should expose its hidden fault count');
+  assert(root.innerHTML.includes('Known fault'), 'logged faults should remain individual reference entries');
 });
 
 test('upgrade ladder marks one actionable item as the next goal', () => {

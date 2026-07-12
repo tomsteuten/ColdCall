@@ -51,14 +51,24 @@ export function render(root, ctx) {
   const orderedFaults = Object.values(faults)
     .slice()
     .sort((a, b) => a.tier - b.tier || a.machineType.localeCompare(b.machineType) || a.id.localeCompare(b.id));
-  const visibleFaults = orderedFaults.filter((fault) => {
-    const known = typeof state.codex.fixes[fault.id] === 'number';
-    return activeFilter === 'all' || (activeFilter === 'logged' ? known : !known);
-  });
-  const entries = visibleFaults
+  const unknownGroups = new Map();
+  for (const fault of orderedFaults) {
+    if (typeof state.codex.fixes[fault.id] === 'number') continue;
+    const key = `${fault.tier}:${fault.machineType}`;
+    const group = unknownGroups.get(key) ?? { count: 0, fault };
+    group.count += 1;
+    unknownGroups.set(key, group);
+  }
+
+  // Logged faults remain individual reference entries. Unknown faults reveal
+  // no distinguishing information yet, so collapse them by tier + machine
+  // instead of making the player scan dozens of identical cards.
+  const emittedUnknownGroups = new Set();
+  const entries = orderedFaults
     .map((fault) => {
       const count = state.codex.fixes[fault.id];
       if (typeof count === 'number') {
+        if (activeFilter === 'unknown') return '';
         return `
           <li class="codex-card codex-card--mastered">
             <div class="codex-card-head">
@@ -69,10 +79,17 @@ export function render(root, ctx) {
             <p class="codex-lesson">${escapeHtml(fault.lesson ?? '')}</p>
           </li>`;
       }
+
+      if (activeFilter === 'logged') return '';
+      const key = `${fault.tier}:${fault.machineType}`;
+      if (emittedUnknownGroups.has(key)) return '';
+      emittedUnknownGroups.add(key);
+      const group = unknownGroups.get(key);
       return `
         <li class="codex-card codex-card--unknown">
           <div class="codex-card-head">
             <span class="codex-fault-name">???</span>
+            <span class="codex-times" aria-label="${group.count} unknown faults">×${group.count}</span>
           </div>
           <p class="codex-machine">Tier ${fault.tier} · ${escapeHtml(machineName(fault.machineType))}</p>
           <p class="codex-lesson codex-lesson--hint">Diagnose it correctly once to log it.</p>
