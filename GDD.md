@@ -72,6 +72,40 @@ wiring). The raster interaction-state renders were generated the same day (see
 §7 and `assets/generated/PROMPTS.md`), so the visual payoff now shows in the
 shipped raster art, not just the fallback SVG.
 
+**Decision of record (2026-07-11) — image hotspots retired.** Cross-device
+review showed that a reliable hotspot needs one stable semantic target across
+the closed, probe, leads, and open raster compositions; the generated images
+move doors, tools, cables, and machine framing between those states. Percentage
+coordinates therefore produced controls in empty space or over the wrong part
+of the machine at some sizes. The duplicate hotspots were removed instead of
+shipping an interaction players could not trust. The labelled native test
+buttons remain the single input path, and running one still swaps the machine
+to its matching interaction-state art, preserving the visual payoff and all
+keyboard/touch accessibility. Hotspots should return only with artwork authored
+around stable per-machine anchor regions.
+
+**Decision of record (2026-07-11) — diagnosis information pass.** The job UI
+now presents three explicit layers: the caller's **Reported symptoms**, a
+**Measured evidence** ledger containing completed test results, and the
+remaining labelled diagnostic actions. Simulated job time and the available
+speed bonus sit in a compact instrument strip on the work order. Test actions
+separate their time cost from the resulting bonus change instead of running
+both into the label. The final section is named **Authorise repair** and states
+that choosing an option commits immediately. On wide screens fixes use a 2×2
+grid; phones keep the single-column touch layout. Ambient art particles were
+removed after review showed the larger drifting dot read as an unexplained
+amber control or misplaced hotspot.
+
+**Decision of record (2026-07-11) — collection and purchase navigation.** A
+browser audit of the mature-state screens identified the Service Manual's
+52-card unfilterable list as the largest remaining navigation cost. It now has
+sticky **All / Logged / Unknown** filters with visible counts and pressed-state
+semantics; repeated unknown entries collapse to their tier and machine instead
+of repeating the same hint sentence. The Upgrades ladder still shows every rung
+and lock condition, but the first unlocked unowned purchase is marked **Next
+goal**, preventing the actionable rung from disappearing among owned and future
+items. Neither treatment changes progression or purchase rules.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status
@@ -83,7 +117,7 @@ findings from the first external playtest, and their fixes:
   never punish. Starting anything new (ticket, callback, MotD, workshop) is
   blocked with a visible reason while a job is paused.
 - *"Doesn't fit on one screen"* → density pass: raster art capped at 190px on
-  mobile (240px desktop), compact caller block, tighter ticket panel. On
+  mobile (220px desktop), compact caller block, tighter ticket panel. On
   desktop the ticket no longer spans full width above the columns — it joins
   the art in the LEFT column with diagnostics/commit on the right, so the
   whole job fits even a zoomed ~640px-tall desktop viewport (Tom's live

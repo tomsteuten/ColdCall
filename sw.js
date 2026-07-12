@@ -1,6 +1,6 @@
 /** @file Service worker — cache-first for all app assets, fully offline after first load. */
 
-const CACHE = 'coldcall-v30';
+const CACHE = 'coldcall-v31';
 
 // Derive the base path from the SW registration scope so this works on both
 // local dev (/) and GitHub Pages (/ColdCall/).
@@ -145,6 +145,14 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Development must reflect the files on disk. A cache-first worker on
+  // localhost makes hard refreshes appear to succeed while returning an old
+  // CSS/JS shell, which is especially confusing during visual iteration.
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
+    e.respondWith(fetch(e.request));
+    return;
+  }
 
   e.respondWith(
     caches.match(e.request).then((hit) => {

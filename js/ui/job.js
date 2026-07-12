@@ -10,7 +10,7 @@ import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/ba
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
-import { machineImageSrc, machineSvg, HOTSPOTS } from '../machine-art.js';
+import { machineImageSrc, machineSvg } from '../machine-art.js';
 import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
 
 /** Player-facing label for a callback's source (GDD §3.1). */
@@ -89,65 +89,19 @@ export function testCostCopy(job, testId) {
   return `+${cost} min · speed bonus $${before} → $${after}`;
 }
 
-/** Small ambient DOM particles (steam/frost) drifting over the art slot.
- * Pure CSS-driven (no JS animation loop) so it stays cheap on a phone;
- * `.art-particles` is hidden under prefers-reduced-motion in main.css. */
-function artParticlesHtml() {
-  return `<span class="art-particles" aria-hidden="true">
-    <span class="art-particle"></span>
-    <span class="art-particle"></span>
-    <span class="art-particle"></span>
-    <span class="art-particle"></span>
-  </span>`;
-}
-
-/**
- * Tests-as-touches hotspot overlay (2026-07-08): one tappable, keyboard-focusable
- * button per test that has a matching machine-art interaction state
- * (`TEST_INTERACTION_STATE`), positioned over the art at that state's tool
- * coordinates (`HOTSPOTS`, shared `viewBox="0 0 160 70"` space converted to a
- * percentage — lands inside the raster slot too, just not pixel-precise
- * against photo content there since no raster interaction-state renders exist
- * yet). Skips tests already gated unavailable (tool tier) — the button list
- * still explains why; no duplicate copy on the art. Reuses the exact same
- * `data-test` wiring as the button list (job.js `wire()`), so a tap runs
- * `actions.runTest` with zero new dispatch code.
- * @param {object} state
- * @param {object} job state.jobs.active
- * @param {string} machineType
- * @returns {string}
- */
-function artHotspotsHtml(state, job, machineType) {
-  const coords = HOTSPOTS[machineType];
-  if (!coords) return '';
-  return Object.entries(TEST_INTERACTION_STATE)
-    .map(([testId, interactionState]) => {
-      const point = coords[interactionState];
-      if (!point) return '';
-      const { available } = testAvailability(state, testId);
-      if (!available) return '';
-      const left = (point.x / 160 * 100).toFixed(2);
-      const top = (point.y / 70 * 100).toFixed(2);
-      return `<button type="button" class="art-hotspot" data-test="${testId}" aria-label="${testLabel(testId, machineType)}" style="left:${left}%;top:${top}%"></button>`;
-    })
-    .join('');
-}
-
 /**
  * Shared art-slot markup for the job and repair views: picks raster or SVG
  * art for the given machine+state and wraps it with the shared motion/
  * particle layer so both views stay visually identical.
  * @param {string} machineType
  * @param {string} artState 'fault' | 'open' | 'working' | 'probe' | 'leads' | 'ajar'
- * @param {{fallback?: string, glow?: boolean, hotspotsHtml?: string}} [opts]
+ * @param {{fallback?: string, glow?: boolean}} [opts]
  *   fallback text for an unknown machine; glow adds the one-shot correct-fix
- *   flash (repair view only); hotspotsHtml adds tappable test hotspots (job
- *   view only — see `artHotspotsHtml`). When hotspots are present the slot
- *   itself is no longer `aria-hidden` (it now contains focusable controls);
- *   the decorative art/particles/glow stay individually hidden as before.
+ *   flash (repair view only). Machine art is decorative: the labelled test
+ *   controls drive diagnosis and the art reflects the most recent test.
  */
 function artSlotHtml(machineType, artState, opts = {}) {
-  const { fallback = '', glow = false, hotspotsHtml = '' } = opts;
+  const { fallback = '', glow = false } = opts;
   const imageSrc = machineImageSrc(machineType, artState);
   const svg = imageSrc ? null : machineSvg(machineType, artState);
   const machineClass = String(machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -156,14 +110,13 @@ function artSlotHtml(machineType, artState, opts = {}) {
     ? `art-slot art-slot--has-image machine-stage${imageSrc ? ' machine-stage--raster' : ''} machine-stage--${machineClass} machine-stage--${artState}`
     : 'art-slot';
   const content = imageSrc
-    ? `<img class="machine-art" src="${imageSrc}" alt="" width="768" height="480">`
+    ? `<div class="machine-art-frame">
+        <img class="machine-art" src="${imageSrc}" alt="" width="640" height="640">
+      </div>`
     : (svg ?? fallback);
-  const ariaHidden = hotspotsHtml ? '' : ' aria-hidden="true"';
-  return `<div class="${artSlotClass}"${ariaHidden}>
+  return `<div class="${artSlotClass}" aria-hidden="true">
     ${content}
-    ${hasArt ? artParticlesHtml() : ''}
     ${glow ? '<span class="repair-glow" aria-hidden="true"></span>' : ''}
-    ${hotspotsHtml}
   </div>`;
 }
 
@@ -239,7 +192,7 @@ export function statusBar(state, opts = {}) {
   const homeBtn = opts.home
     ? `<button class="status-home" data-action="go-home" aria-label="Back to home">
         <svg viewBox="0 0 14 13" width="13" height="12" aria-hidden="true"><path d="M7 0 0 6h2v7h4V9h2v4h4V6h2Z" fill="currentColor"/></svg>
-        Home
+        <span class="status-home-label">Home</span>
       </button>`
     : '';
   return `
@@ -597,43 +550,65 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const client = clients.find((c) => c.id === job.clientId);
   const machineName = machine ? machine.name : job.machineType;
 
-  const testRows = Object.keys(TESTS)
-    .map((id) => {
-      const { available, reason } = testAvailability(state, id);
-      if (job.testsRun.includes(id)) {
-        return `
-          <li class="test-row">
+  const completedTests = [];
+  const availableTests = [];
+  for (const id of Object.keys(TESTS)) {
+    const cost = DIAGNOSIS.testMinutes[id] ?? 0;
+    if (job.testsRun.includes(id)) {
+      completedTests.push(`
+        <li class="evidence-item">
+          <div class="evidence-head">
             <span class="test-label">${testLabel(id, job.machineType)}</span>
-            <p class="test-result">${testResult(job, id, faults)}</p>
-          </li>`;
-      }
-      if (!available) {
-        return `
-          <li class="test-row">
-            <button class="btn btn-test" disabled>${testLabel(id, job.machineType)}</button>
-            <p class="test-meta">${testCostCopy(job, id)}</p>
-            <p class="test-locked">${reason}</p>
-          </li>`;
-      }
-      return `
-        <li class="test-row">
-          <button class="btn btn-test" data-test="${id}">${testLabel(id, job.machineType)}</button>
-          <p class="test-meta">${testCostCopy(job, id)}</p>
-        </li>`;
-    })
-    .join('');
+            <span class="evidence-time">+${cost} min</span>
+          </div>
+          <p class="test-result">${testResult(job, id, faults)}</p>
+        </li>`);
+      continue;
+    }
+
+    const { available, reason } = testAvailability(state, id);
+    const testsSoFar = job.testsRun.length;
+    const before = earnedSpeedBonus(job.minutesSpent ?? 0, testsSoFar);
+    const after = earnedSpeedBonus((job.minutesSpent ?? 0) + cost, testsSoFar + 1);
+    const consequence = job.callback
+      ? 'Simulated job time'
+      : job.motd
+        ? 'Adds 1 test to score'
+        : `Bonus $${before} → $${after}`;
+    availableTests.push(`
+      <li class="test-row">
+        <button class="btn btn-test" ${available ? `data-test="${id}"` : 'disabled'}>
+          <span class="test-label">${testLabel(id, job.machineType)}</span>
+          <span class="test-consequence">
+            <strong>+${cost} min</strong>
+            <span>${consequence}</span>
+          </span>
+        </button>
+        ${available ? '' : `<p class="test-locked">${reason}</p>`}
+      </li>`);
+  }
 
   // Make the speed/thoroughness trade-off visible before each test (GDD §2.1).
   // Only fresh, non-MotD jobs earn the bonus — callbacks are already discounted
   // and MotD pays no cash, so showing a dollar bonus there would mislead.
   // Before the first test the bonus is locked (blind commits earn none).
   const minutes = job.minutesSpent ?? 0;
-  const bonusCopy = job.testsRun.length >= DIAGNOSIS.minTestsForBonus
-    ? `Speed bonus: <strong>$${earnedSpeedBonus(minutes, job.testsRun.length)}</strong>`
-    : `Speed bonus: <strong>locked</strong> — run a test to earn it`;
-  const clockBar = !job.callback && !job.motd
-    ? `<p class="job-clock">Job clock: ${minutes} min · ${bonusCopy}</p>`
-    : '';
+  const bonusUnlocked = job.testsRun.length >= DIAGNOSIS.minTestsForBonus;
+  const currentBonus = bonusUnlocked ? earnedSpeedBonus(minutes, job.testsRun.length) : 0;
+  const instrumentBar = `
+    <div class="job-instruments${job.callback || job.motd ? ' job-instruments--single' : ''}" aria-label="Job status">
+      <div class="job-instrument">
+        <span>Job time</span>
+        <strong>${minutes} min</strong>
+      </div>
+      ${!job.callback && !job.motd ? `
+        <div class="job-instrument job-instrument--bonus">
+          <span>Speed bonus</span>
+          <strong>${bonusUnlocked ? `$${currentBonus}` : 'Locked'}</strong>
+          <meter min="0" max="${DIAGNOSIS.speedBonusMax}" value="${currentBonus}">${currentBonus}</meter>
+          ${bonusUnlocked ? '' : '<small>Run one useful test to unlock</small>'}
+        </div>` : ''}
+    </div>`;
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
   const firstJob = isFirstJobOnboarding(state);
@@ -669,7 +644,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       </div>`
     : '';
 
-  // Art state (2026-07-08, tests-as-touches): show the interaction state
+  // Art feedback: show the interaction state
   // matching the LAST test run (probe/leads/ajar — the player just tapped or
   // clicked their way to it), falling back to the generic 'open' teardown
   // state when the last test has no matching gesture (error-log) or none has
@@ -680,7 +655,6 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     : 'fault';
   const artSlot = artSlotHtml(job.machineType, artState, {
     fallback: `[ ${safeMachineName} ]`,
-    hotspotsHtml: artHotspotsHtml(state, job, job.machineType),
   });
 
   // Symptoms are the caller's complaint — the ticket itself — so they render
@@ -723,7 +697,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
         ${portraitHtml}
 
-        ${clockBar}
+        ${instrumentBar}
 
       </div>
 
@@ -738,19 +712,31 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
         <div class="job-col-right">
 
-          <div class="panel">
+          <div class="panel diagnostics-panel">
 
             <h3 class="panel-label">Diagnostics</h3>
 
-            <ul class="tests">${testRows}</ul>
+            ${completedTests.length ? `
+              <section class="evidence-section" aria-labelledby="measured-evidence-title">
+                <h4 class="diagnostic-subhead" id="measured-evidence-title">Measured evidence</h4>
+                <ul class="evidence-ledger">${completedTests.join('')}</ul>
+              </section>` : ''}
+
+            ${availableTests.length ? `
+              <section class="diagnostic-actions" aria-labelledby="available-tests-title">
+                <h4 class="diagnostic-subhead" id="available-tests-title">${completedTests.length ? 'Run another test' : 'Available tests'}</h4>
+                <ul class="tests">${availableTests.join('')}</ul>
+              </section>` : ''}
 
           </div>
 
 
 
-          <div class="panel">
+          <div class="panel commit-panel">
 
-            <h3 class="panel-label">Commit fix</h3>
+            <h3 class="panel-label">Authorise repair</h3>
+
+            <p class="commit-guidance">Final diagnosis. Choosing a repair commits it immediately.</p>
 
             ${firstJob && !pendingFirstFixId
 

@@ -56,10 +56,10 @@ export const TESTS = {
 
 /**
  * Maps a test id to the machine-art "interaction state" it visually plays out
- * as, for the tests-as-touches diagnosis UI (2026-07-08): tapping the art's
- * probe/leads/ajar hotspot runs the matching test and the art swaps to show
- * it happening. `error-log` has no physical gesture (it's a controller
- * readout) and is intentionally absent — it stays button-only.
+ * as machine-art feedback after the corresponding labelled test is run:
+ * the probe/leads/ajar states show the corresponding physical action.
+ * `error-log` has no physical interaction state because it is a controller
+ * readout, so the art falls back to the general open-machine state.
  * @type {Object<string, 'probe'|'leads'|'ajar'>}
  */
 export const TEST_INTERACTION_STATE = {

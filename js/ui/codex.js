@@ -11,6 +11,8 @@ import { fixLabel } from '../diagnosis.js';
 import { CODEX } from '../../config/balance.js';
 import { escapeHtml } from '../utils.js';
 
+let activeFilter = 'all';
+
 /** "23/47" progress over faults still in the library (retired ids don't count). */
 export function codexProgress(state, faults) {
   const total = Object.keys(faults).length;
@@ -46,9 +48,14 @@ export function render(root, ctx) {
   const machineName = (id) => machines.find((m) => m.id === id)?.name ?? id;
 
   // Stable, readable order: tier, then machine, then fault name.
-  const entries = Object.values(faults)
+  const orderedFaults = Object.values(faults)
     .slice()
-    .sort((a, b) => a.tier - b.tier || a.machineType.localeCompare(b.machineType) || a.id.localeCompare(b.id))
+    .sort((a, b) => a.tier - b.tier || a.machineType.localeCompare(b.machineType) || a.id.localeCompare(b.id));
+  const visibleFaults = orderedFaults.filter((fault) => {
+    const known = typeof state.codex.fixes[fault.id] === 'number';
+    return activeFilter === 'all' || (activeFilter === 'logged' ? known : !known);
+  });
+  const entries = visibleFaults
     .map((fault) => {
       const count = state.codex.fixes[fault.id];
       if (typeof count === 'number') {
@@ -84,9 +91,20 @@ export function render(root, ctx) {
           ? `<p class="codex-next-milestone">${next.pct}% milestone pays <strong>$${next.bonus.toLocaleString('en-US')}</strong>${next.needed > 0 ? ` — ${next.needed} more to go` : ''}</p>`
           : `<p class="codex-next-milestone">Every milestone claimed. The manual is yours.</p>`
       }
+      <div class="codex-toolbar" aria-label="Filter service manual">
+        <button class="codex-filter" data-codex-filter="all" aria-pressed="${activeFilter === 'all'}">All <span>${total}</span></button>
+        <button class="codex-filter" data-codex-filter="logged" aria-pressed="${activeFilter === 'logged'}">Logged <span>${mastered}</span></button>
+        <button class="codex-filter" data-codex-filter="unknown" aria-pressed="${activeFilter === 'unknown'}">Unknown <span>${total - mastered}</span></button>
+      </div>
       <ul class="codex-list">${entries}</ul>
       <button class="btn" data-action="close-codex">Back</button>
     </section>`;
 
   root.querySelector('[data-action="close-codex"]')?.addEventListener('click', actions.closeCodex);
+  root.querySelectorAll('[data-codex-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeFilter = button.dataset.codexFilter;
+      render(root, ctx);
+    });
+  });
 }

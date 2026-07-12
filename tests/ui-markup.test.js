@@ -11,6 +11,8 @@ import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
+const shopUi = readFileSync(join(root, 'js/ui/shop.js'), 'utf8');
+const codexUi = readFileSync(join(root, 'js/ui/codex.js'), 'utf8');
 
 test('UI templates do not use smart quotes as HTML attribute delimiters', () => {
   const attributeWithSmartQuote = /\b(?:class|data-[\w-]+|aria-[\w-]+)=["“”]?[\u201c\u201d]/;
@@ -18,6 +20,19 @@ test('UI templates do not use smart quotes as HTML attribute delimiters', () => 
     !attributeWithSmartQuote.test(jobUi),
     'smart quotes in HTML attributes break CSS selectors and event wiring'
   );
+});
+
+test('service manual exposes accessible all, logged and unknown filters', () => {
+  assert(codexUi.includes('data-codex-filter="all"'), 'manual should expose the all filter');
+  assert(codexUi.includes('data-codex-filter="logged"'), 'manual should expose the logged filter');
+  assert(codexUi.includes('data-codex-filter="unknown"'), 'manual should expose the unknown filter');
+  assert(codexUi.includes('aria-pressed='), 'manual filters should expose their selected state');
+});
+
+test('upgrade ladder marks one actionable item as the next goal', () => {
+  assert(shopUi.includes("const nextGoal = ladder.find"), 'shop should derive the next unlocked purchase');
+  assert(shopUi.includes('shop-card-next'), 'next purchase should receive a stable visual hook');
+  assert(shopUi.includes('Next goal'), 'next purchase should be named in the UI');
 });
 
 test('invoice actions: Next ticket is primary, Home secondary, both wired (2026-07-04)', () => {
@@ -78,7 +93,8 @@ test('first fresh job renders integrated diagnosis guidance and an irreversible-
   assert(isFirstJobOnboarding(state), 'fresh first ticket should receive onboarding');
   const initial = jobView({ state, faults, machines, clients });
   assert(initial.includes('Read the symptoms.'), 'first ticket should teach the loop');
-  assert(initial.includes('+2 min · speed bonus $0 → $36'), 'test cost must be visible before use');
+  assert(initial.includes('<strong>+2 min</strong>'), 'test time cost must be visible before use');
+  assert(initial.includes('Bonus $0 → $36'), 'test bonus consequence must be visible before use');
   assert(initial.includes('Your first selection gets one confirmation.'), 'first fix should advertise the guard');
 
   const guarded = jobView({
@@ -121,21 +137,16 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
   assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
 });
 
-test('tests-as-touches: job art exposes tappable hotspots for probe/leads/ajar tests (2026-07-08)', () => {
+test('diagnostic controls remain the single reliable interaction path', () => {
   const state = onboardingState();
-  state.settings.graphicsMode = 'vector';
   const html = jobView({ state, faults, machines, clients });
-  assert(html.includes('class="art-hotspot" data-test="temp-probe"'), 'temp-probe hotspot should render');
-  assert(html.includes('class="art-hotspot" data-test="inspect-beater"'), 'inspect-beater hotspot should render');
-  assert(!html.includes('class="art-hotspot" data-test="error-log"'), 'error-log has no matching interaction state and stays button-only');
-  assert(!html.includes('class="art-hotspot" data-test="continuity-test"'), 'continuity-test hotspot should be absent below Multimeter Tier 2');
-
-  state.tools.multimeterTier = 2;
-  const upgradedHtml = jobView({ state, faults, machines, clients });
-  assert(upgradedHtml.includes('class="art-hotspot" data-test="continuity-test"'), 'continuity-test hotspot should appear once Multimeter Tier 2 is owned');
+  assert(!html.includes('art-hotspot'), 'decorative art should not expose unreliable invisible controls');
+  assert(html.includes('class="btn btn-test" data-test="temp-probe"'), 'temp probe should remain available from the labelled controls');
+  assert(html.includes('class="btn btn-test" data-test="inspect-beater"'), 'inspection should remain available from the labelled controls');
+  assert(html.includes('aria-hidden="true"'), 'decorative machine art should stay out of the accessibility tree');
 });
 
-test('tests-as-touches: art state follows the last test run, not just "any test"', () => {
+test('machine art state follows the last diagnostic test', () => {
   const state = onboardingState();
   state.jobs.active.testsRun.push('temp-probe');
   const probeHtml = jobView({ state, faults, machines, clients });
@@ -146,15 +157,29 @@ test('tests-as-touches: art state follows the last test run, not just "any test"
   assert(backToOpenHtml.includes('machine-stage--open'), 'error-log has no matching state and falls back to open');
 });
 
-test('tests-as-touches: raster mode still renders hotspots (functional, no matching photo yet)', () => {
-  // machineImageSrc() is a node-safe no-op in the test env (always null,
-  // regardless of graphicsMode — see js/machine-art.js), so this can't assert
-  // on the <img> tag itself; it confirms the hotspot layer doesn't depend on
-  // graphicsMode at all, which is the actual contract that matters here.
+test('job view separates reported symptoms, measured evidence and remaining actions', () => {
   const state = onboardingState();
-  state.settings.graphicsMode = 'rendered';
+  state.jobs.active.testsRun.push('temp-probe');
+  state.jobs.active.minutesSpent = 5;
   const html = jobView({ state, faults, machines, clients });
-  assert(html.includes('class="art-hotspot" data-test="temp-probe"'), 'raster mode should still expose the hotspot for the click to work');
+  assert(html.includes('Reported symptoms'), 'work order should retain reported evidence');
+  assert(html.includes('Measured evidence'), 'completed diagnostics should enter the evidence ledger');
+  assert(html.includes('Run another test'), 'remaining actions should be labelled separately');
+  assert(html.includes('job-instruments'), 'job time and speed bonus should use the instrument strip');
+  assert(html.includes('Authorise repair'), 'final choices should be framed as repair authorisation');
+});
+
+test('machine stage contains no ambient particle decoration', () => {
+  const state = onboardingState();
+  const html = jobView({ state, faults, machines, clients });
+  assert(!html.includes('art-particle'), 'machine art should not include ambiguous floating dots');
+});
+
+test('raster art uses its square intrinsic frame', () => {
+  // machineImageSrc() is a node-safe no-op in the test environment, so inspect
+  // the renderer source for the production-only raster wrapper contract.
+  assert(jobUi.includes('class="machine-art-frame"'), 'raster art should provide a square positioning frame');
+  assert(jobUi.includes('width="640" height="640"'), 'raster dimensions should match the generated assets');
 });
 
 test('workshop machine ids from a save are escaped inside HTML attributes', () => {

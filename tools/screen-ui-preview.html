@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base href="../">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cold Call — Screen UI Preview</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <main id="app"></main>
+  <script>
+    addEventListener('error', (event) => {
+      document.querySelector('#app').textContent = `Preview error: ${event.message}`;
+    });
+    addEventListener('unhandledrejection', (event) => {
+      document.querySelector('#app').textContent = `Preview error: ${event.reason?.message ?? event.reason}`;
+    });
+  </script>
+  <script type="module">
+    const [{ defaultState }, { loadGameData }, jobUi, shopUi, codexUi] = await Promise.all([
+      import('./js/state.js'),
+      import('./js/faults.js'),
+      import('./js/ui/job.js'),
+      import('./js/ui/shop.js'),
+      import('./js/ui/codex.js'),
+    ]);
+    const { faults, machines, clients } = await loadGameData('./data/');
+    const state = defaultState();
+    const params = new URLSearchParams(location.search);
+    const screen = params.get('screen') ?? 'home';
+    const app = document.querySelector('#app');
+    const noop = () => {};
+
+    state.player.cash = 7420;
+    state.player.reputation = 42;
+    state.player.tierUnlocked = 3;
+    state.player.lifetimeEarnings = 18500;
+    state.van.slots = 6;
+    state.van.stock['generic-parts'] = 3;
+    state.stats.jobsCompleted = 38;
+    state.stats.cleanStreak = 7;
+    state.tools.multimeterTier = 2;
+    state.contract = {
+      date: new Date(Date.now()).toISOString().slice(0, 10),
+      machineType: 'soft-serve-commercial',
+      count: 3,
+      reward: 300,
+      progress: 2,
+      paid: false,
+    };
+
+    const ids = Object.keys(faults);
+    for (const id of ids.slice(0, 14)) state.codex.fixes[id] = 1 + (id.length % 3);
+
+    const today = new Date(Date.now());
+    const date = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0, 10);
+    state.jobs.callbacks = [
+      {
+        faultId: 'mix-feed-valve-stuck-closed',
+        clientId: 'burgertown-high-st',
+        dueDay: date(0),
+        expiryDay: date(3),
+        misses: 1,
+        source: 'player',
+        evidence: ['error-log'],
+      },
+      {
+        faultId: 'slushie-condenser-clogged',
+        clientId: 'kwik-stop-corner',
+        dueDay: date(0),
+        expiryDay: date(3),
+        misses: 1,
+        source: 'tech',
+        techName: 'Dave',
+        evidence: null,
+      },
+      {
+        faultId: 'froyo-thermistor-drift',
+        clientId: 'yo-go-froyo',
+        dueDay: date(1),
+        expiryDay: date(4),
+        misses: 1,
+        source: 'tech',
+        techName: 'Priya',
+        evidence: null,
+      },
+    ];
+
+    const actions = new Proxy({}, { get: () => noop });
+    if (screen === 'home') {
+      app.innerHTML = jobUi.homeView({
+        state,
+        faults,
+        machines,
+        clients,
+        homePanels: {},
+        prestigeConfirm: false,
+        offlineReport: params.has('notices') ? {
+          jobsDone: 12,
+          totalEarned: 720,
+          callbacksAdded: 1,
+          techReports: [{ name: 'Dave', jobs: 7, callbacks: 1, earned: 360 }, { name: 'Priya', jobs: 5, callbacks: 0, earned: 360 }],
+        } : null,
+      });
+    } else if (screen === 'callbacks') {
+      app.innerHTML = jobUi.callbacksView({ state, faults, clients });
+    } else if (screen === 'shop') {
+      shopUi.render(app, { state, actions });
+    } else if (screen === 'codex') {
+      codexUi.render(app, { state, faults, machines, actions });
+      const filter = params.get('filter');
+      if (filter) app.querySelector(`[data-codex-filter="${filter}"]`)?.click();
+    }
+    document.body.dataset.viewportWidth = innerWidth;
+  </script>
+</body>
+</html>

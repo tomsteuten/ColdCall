@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { machineSvg, HOTSPOTS } from '../js/machine-art.js';
+import { machineSvg } from '../js/machine-art.js';
 
 const MACHINES = ['slushie-machine', 'soft-serve-commercial', 'froyo-multihead', 'granita-slushie', 'commercial-ice-dispenser'];
 const STATES = ['fault', 'open', 'working'];
@@ -26,7 +26,7 @@ test('unknown machines return null for the text fallback path', () => {
 });
 
 test('every catalogued machine has a generated raster asset for every art state', () => {
-  // The three base states plus the three tests-as-touches interaction states
+  // The three base states plus the three diagnostic-feedback interaction states
   // (2026-07-08) — the raster set is now complete, so the graphics toggle can
   // go and rendered can be the only real lane.
   const allStates = [...STATES, 'probe', 'leads', 'ajar'];
@@ -59,19 +59,6 @@ test('interaction states (probe/leads/ajar) render for every machine, distinct f
     }
     // The probe and leads props actually appear.
     assert(machineSvg(machineId, 'leads').includes('#ef6a6a'), `${machineId}/leads should show the red meter lead`);
-  }
-});
-
-test('every launch machine has a probe/leads/ajar hotspot coordinate for the tests-as-touches UI', () => {
-  for (const machineId of MACHINES) {
-    const coords = HOTSPOTS[machineId];
-    assert(coords, `${machineId} should have a HOTSPOTS entry`);
-    for (const stateKey of ['probe', 'leads', 'ajar']) {
-      const point = coords[stateKey];
-      assert(point && typeof point.x === 'number' && typeof point.y === 'number', `${machineId}/${stateKey} should have numeric x/y`);
-      assert(point.x >= 0 && point.x <= 160, `${machineId}/${stateKey} x should be inside the 0-160 viewBox`);
-      assert(point.y >= 0 && point.y <= 70, `${machineId}/${stateKey} y should be inside the 0-70 viewBox`);
-    }
   }
 });
 

@@ -23,7 +23,9 @@ export function render(root, ctx) {
 
   // The full purchase ladder, cheapest first, locked items included — the
   // player must always be able to see what's next (2026-07-04 wanting engine).
-  const ladderRows = purchaseLadder(state)
+  const ladder = purchaseLadder(state);
+  const nextGoal = ladder.find((item) => !item.owned && !item.lockReason) ?? null;
+  const ladderRows = ladder
     .map((item) => {
       const affordable = state.player.cash >= item.cost;
       let action;
@@ -39,8 +41,11 @@ export function render(root, ctx) {
         action = `<button class="btn btn-buy" data-ladder-buy="${item.id}">Buy — $${item.cost.toLocaleString('en-US')}</button>`;
       }
       return `
-        <li class="shop-card${item.owned ? ' shop-card-owned' : ''}${item.lockReason && !item.owned ? ' shop-card-locked' : ''}">
-          <h3 class="shop-tool-name">${escapeHtml(item.name)}</h3>
+        <li class="shop-card${item.owned ? ' shop-card-owned' : ''}${item.lockReason && !item.owned ? ' shop-card-locked' : ''}${nextGoal?.id === item.id ? ' shop-card-next' : ''}">
+          <div class="shop-card-heading">
+            <h3 class="shop-tool-name">${escapeHtml(item.name)}</h3>
+            ${nextGoal?.id === item.id ? '<span class="badge badge--success">Next goal</span>' : ''}
+          </div>
           <p class="shop-tool-blurb">${escapeHtml(item.detail)}</p>
           ${action}
         </li>`;
