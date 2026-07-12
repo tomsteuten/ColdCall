@@ -12,6 +12,21 @@ import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
 import { machineImageSrc, machineSvg } from '../machine-art.js';
 import { clientPortraitImageSrc, clientPortraitSvg } from '../character-art.js';
+import { termDisclosure, withTermHelp, wireTermHelp } from '../terminology.js';
+
+const TEST_PURPOSES = {
+  'error-log': 'Checks the controller for stored alarms and recent shutdowns.',
+  'temp-probe': 'Checks whether the machine temperatures match their setpoints.',
+  'inspect-beater': 'Checks the product side for visible wear, obstruction, leaks or damage.',
+  'continuity-test': 'Checks whether motor and sensor circuits have an unbroken electrical path.',
+};
+
+const TEST_VISUAL_FEEDBACK = {
+  'error-log': 'Controller log checked',
+  'temp-probe': 'Temperature reading logged',
+  'inspect-beater': 'Product side opened and inspected',
+  'continuity-test': 'Electrical reading logged',
+};
 
 /** Player-facing label for a callback's source (GDD §3.1). */
 export function sourceLabel(callback) {
@@ -75,18 +90,29 @@ export function isFirstJobOnboarding(state) {
     && state.stats.callbacksCaused === 0;
 }
 
+/** Whether contextual help should appear on this job. */
+export function showsBeginnerGuidance(state) {
+  const mode = state.settings?.guidanceMode ?? 'auto';
+  if (mode === 'off') return false;
+  if (mode === 'on') return !state.jobs.active?.motd;
+  return isFirstJobOnboarding(state);
+}
+
 /** Player-facing cost/consequence shown before a diagnostic is run. */
 export function testCostCopy(job, testId) {
   const cost = DIAGNOSIS.testMinutes[testId] ?? 0;
   if (job.callback) return `+${cost} min simulated job time`;
   if (job.motd) return `+${cost} min simulated job time · adds 1 test to your score`;
 
-  // The bonus is gated on running at least one test (GDD §2.1), so the first
-  // test UNLOCKS it — the preview shows $0 → $36, an incentive, not a cost.
+  // The first test unlocks the bonus; later tests trade bonus for information.
+  // Name those states instead of making the surprising $0 -> $36 transition
+  // look like a cost.
   const testsSoFar = job.testsRun.length;
   const before = earnedSpeedBonus(job.minutesSpent ?? 0, testsSoFar);
   const after = earnedSpeedBonus((job.minutesSpent ?? 0) + cost, testsSoFar + 1);
-  return `+${cost} min · speed bonus $${before} → $${after}`;
+  return testsSoFar === 0
+    ? `+${cost} min · unlocks $${after} speed bonus`
+    : `+${cost} min · speed bonus $${before} → $${after}`;
 }
 
 /**
@@ -95,13 +121,14 @@ export function testCostCopy(job, testId) {
  * particle layer so both views stay visually identical.
  * @param {string} machineType
  * @param {string} artState 'fault' | 'open' | 'working' | 'probe' | 'leads' | 'ajar'
- * @param {{fallback?: string, glow?: boolean}} [opts]
+ * @param {{fallback?: string, glow?: boolean, stateLabel?: string}} [opts]
  *   fallback text for an unknown machine; glow adds the one-shot correct-fix
- *   flash (repair view only). Machine art is decorative: the labelled test
- *   controls drive diagnosis and the art reflects the most recent test.
+ *   flash (repair view only); stateLabel acknowledges a completed test. Machine
+ *   art is decorative: labelled controls drive diagnosis and art reflects the
+ *   most recent test.
  */
 function artSlotHtml(machineType, artState, opts = {}) {
-  const { fallback = '', glow = false } = opts;
+  const { fallback = '', glow = false, stateLabel = '' } = opts;
   const imageSrc = machineImageSrc(machineType, artState);
   const svg = imageSrc ? null : machineSvg(machineType, artState);
   const machineClass = String(machineType).toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -116,6 +143,7 @@ function artSlotHtml(machineType, artState, opts = {}) {
     : (svg ?? fallback);
   return `<div class="${artSlotClass}" aria-hidden="true">
     ${content}
+    ${stateLabel ? `<span class="machine-state-feedback">${escapeHtml(stateLabel)}</span>` : ''}
     ${glow ? '<span class="repair-glow" aria-hidden="true"></span>' : ''}
   </div>`;
 }
@@ -600,6 +628,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const machine = machines.find((m) => m.id === job.machineType);
   const client = clients.find((c) => c.id === job.clientId);
   const machineName = machine ? machine.name : job.machineType;
+  const firstJob = isFirstJobOnboarding(state);
+  const guidance = showsBeginnerGuidance(state);
 
   const completedTests = [];
   const availableTests = [];
@@ -609,10 +639,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       completedTests.push(`
         <li class="evidence-item">
           <div class="evidence-head">
-            <span class="test-label">${testLabel(id, job.machineType)}</span>
+            <span class="test-label">${withTermHelp(testLabel(id, job.machineType))}</span>
             <span class="evidence-time">+${cost} min</span>
           </div>
-          <p class="test-result">${testResult(job, id, faults)}</p>
+          <p class="test-result">${withTermHelp(testResult(job, id, faults))}</p>
         </li>`);
       continue;
     }
@@ -625,7 +655,9 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
       ? 'Simulated job time'
       : job.motd
         ? 'Adds 1 test to score'
-        : `Bonus $${before} → $${after}`;
+        : testsSoFar === 0
+          ? `Unlocks $${after} bonus`
+          : `Bonus $${before} → $${after}`;
     availableTests.push(`
       <li class="test-row">
         <button class="btn btn-test" ${available ? `data-test="${id}"` : 'disabled'}>
@@ -657,12 +689,11 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
           <span>Speed bonus</span>
           <strong>${bonusUnlocked ? `$${currentBonus}` : 'Locked'}</strong>
           <meter min="0" max="${DIAGNOSIS.speedBonusMax}" value="${currentBonus}">${currentBonus}</meter>
-          ${bonusUnlocked ? '' : '<small>Run one useful test to unlock</small>'}
+          ${bonusUnlocked ? '' : '<small>No bonus for a blind guess · run one useful test to unlock</small>'}
         </div>` : ''}
     </div>`;
 
   const outOfParts = fault.partsCost > 0 && (state.van.stock['generic-parts'] ?? 0) < 1;
-  const firstJob = isFirstJobOnboarding(state);
   // Multimeter Tier 3 definitively rules out one wrong option (GDD §3.3 —
   // tools deepen diagnosis). Rendered struck-through, not hidden: seeing WHAT
   // was ruled out is itself evidence.
@@ -696,13 +727,11 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     : '';
 
   const diagnosisStep = pendingFirstFixId ? 3 : job.testsRun.length > 0 ? 2 : 1;
-  const diagnosisStepper = !firstJob
-    ? `<ol class="diagnosis-steps" aria-label="Diagnosis steps">
+  const diagnosisStepper = `<ol class="diagnosis-steps" aria-label="Diagnosis steps">
         <li class="diagnosis-step${diagnosisStep === 1 ? ' is-active' : ' is-complete'}"${diagnosisStep === 1 ? ' aria-current="step"' : ''}>Review symptoms</li>
         <li class="diagnosis-step${diagnosisStep === 2 ? ' is-active' : diagnosisStep > 2 ? ' is-complete' : ''}"${diagnosisStep === 2 ? ' aria-current="step"' : ''}>Gather evidence</li>
         <li class="diagnosis-step${diagnosisStep === 3 ? ' is-active' : ''}"${diagnosisStep === 3 ? ' aria-current="step"' : ''}>Authorise repair</li>
-      </ol>`
-    : '';
+      </ol>`;
 
   // Art feedback: show the interaction state
   // matching the LAST test run (probe/leads/ajar — the player just tapped or
@@ -715,7 +744,27 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     : 'fault';
   const artSlot = artSlotHtml(job.machineType, artState, {
     fallback: `[ ${safeMachineName} ]`,
+    stateLabel: lastTestId ? `Evidence logged · ${TEST_VISUAL_FEEDBACK[lastTestId]}` : '',
   });
+
+  const diagnosisGuide = !guidance
+    ? ''
+    : job.testsRun.length === 0
+      ? `<div class="context-guide" aria-label="Beginner guidance">
+          <div><strong>Next: gather evidence.</strong><p>Each test answers a different question. Your first useful test unlocks a speed bonus; extra test minutes reduce it.</p></div>
+          <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
+        </div>`
+      : `<div class="context-guide context-guide--evidence" aria-label="Beginner guidance">
+          <div><strong>Evidence logged.</strong><p>Compare the result with the reported symptoms. If more than one repair still fits, run the test that would separate them.</p></div>
+          <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
+        </div>`;
+  const testPurposeHelp = guidance
+    ? `<details class="test-purpose test-purpose--catalog">
+        <summary>What do these tests check?</summary>
+        <dl>${Object.keys(TESTS).map((id) => `<div><dt>${withTermHelp(testLabel(id, job.machineType))}</dt><dd>${withTermHelp(TEST_PURPOSES[id])}</dd></div>`).join('')}</dl>
+      </details>`
+    : '';
+  const repairTerms = termDisclosure(job.fixOptions.map(fixLabel), 'Repair terms');
 
   // Symptoms are the caller's complaint — the ticket itself — so they render
   // as the first content after the status bar on every viewport (2026-07-05
@@ -741,17 +790,12 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
           <p class="panel-label">Reported symptoms</p>
 
-          ${firstJob ? `<div class="diagnosis-guide" aria-label="First job guide">
+          <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${withTermHelp(s)}”</li>`).join('')}</ul>
 
-            <p><strong>1. Read the symptoms.</strong> They narrow down what failed.</p>
-
-            <p><strong>2. Run useful tests.</strong> Evidence costs simulated minutes and reduces the speed bonus.</p>
-
-            <p><strong>3. Commit one fix.</strong> That ends diagnosis; a wrong call returns as a reduced-rate callback.</p>
-
+          ${guidance && job.testsRun.length === 0 ? `<div class="ticket-next-step">
+            <p><strong>Start here.</strong> Symptoms describe what changed; tests turn those clues into measured evidence.</p>
+            <button class="btn btn-sm" data-action="go-to-diagnostics">Go to diagnostics</button>
           </div>` : ''}
-
-          <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${s}”</li>`).join('')}</ul>
 
         </blockquote>
 
@@ -778,6 +822,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
             <h3 class="panel-label">Diagnostics</h3>
 
+            ${diagnosisGuide}
+
+            ${testPurposeHelp}
+
             ${completedTests.length ? `
               <section class="evidence-section" aria-labelledby="measured-evidence-title">
                 <h4 class="diagnostic-subhead" id="measured-evidence-title">Measured evidence</h4>
@@ -802,9 +850,11 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
             ${firstJob && !pendingFirstFixId
 
-              ? `<p class="fix-guidance">Choose when the evidence is strong enough. Your first selection gets one confirmation.</p>`
+              ? `<p class="fix-guidance">If more than one repair still fits, gather evidence that separates them. Your first selection gets one confirmation.</p>`
 
               : ''}
+
+            ${repairTerms}
 
             ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
 
@@ -1053,6 +1103,7 @@ export function invoiceView({ state, invoice }) {
 
 /** Attach click handlers for the data-* hooks rendered above. */
 function wire(root, actions) {
+  wireTermHelp(root);
   root.querySelectorAll('[data-action="next-ticket"]').forEach((el) =>
     el.addEventListener('click', actions.nextTicket)
   );
@@ -1117,6 +1168,12 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="cancel-first-fix"]').forEach((el) =>
     el.addEventListener('click', actions.cancelFirstFix)
+  );
+  root.querySelectorAll('[data-action="dismiss-guidance"]').forEach((el) =>
+    el.addEventListener('click', actions.dismissGuidance)
+  );
+  root.querySelectorAll('[data-action="go-to-diagnostics"]').forEach((el) =>
+    el.addEventListener('click', actions.goToDiagnostics)
   );
   root.querySelectorAll('[data-action="finish-repair"]').forEach((el) =>
     el.addEventListener('click', actions.finishRepair)

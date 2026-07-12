@@ -10,6 +10,7 @@ import { statusBar } from './job.js';
 import { fixLabel } from '../diagnosis.js';
 import { CODEX } from '../../config/balance.js';
 import { escapeHtml } from '../utils.js';
+import { withTermHelp, wireTermHelp } from '../terminology.js';
 
 let activeFilter = 'all';
 
@@ -76,7 +77,7 @@ export function render(root, ctx) {
               <span class="codex-times">×${count}</span>
             </div>
             <p class="codex-machine">Tier ${fault.tier} · ${escapeHtml(machineName(fault.machineType))}</p>
-            <p class="codex-lesson">${escapeHtml(fault.lesson ?? '')}</p>
+            <p class="codex-lesson">${withTermHelp(fault.lesson ?? '')}</p>
           </li>`;
       }
 
@@ -118,6 +119,7 @@ export function render(root, ctx) {
     </section>`;
 
   root.querySelector('[data-action="close-codex"]')?.addEventListener('click', actions.closeCodex);
+  wireTermHelp(root);
   root.querySelectorAll('[data-codex-filter]').forEach((button) => {
     button.addEventListener('click', () => {
       activeFilter = button.dataset.codexFilter;

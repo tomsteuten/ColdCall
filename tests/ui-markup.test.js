@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar } from '../js/ui/job.js';
+import { isFirstJobOnboarding, showsBeginnerGuidance, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar } from '../js/ui/job.js';
+import { TERM_DEFINITIONS, termDisclosure, withTermHelp } from '../js/terminology.js';
 import { staffExplainerHTML } from '../js/ui/shop.js';
 import { render as renderCodex } from '../js/ui/codex.js';
 import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
@@ -115,20 +116,26 @@ function onboardingState() {
   return state;
 }
 
-test('diagnostic cost copy shows the first test UNLOCKING the speed bonus ($0 → $36)', () => {
+test('diagnostic cost copy explains that the first test unlocks the speed bonus', () => {
   // The bonus is gated on running at least one test (GDD §2.1, 2026-07-04), so
   // before any test the earned bonus is $0 and the first test raises it.
   const state = onboardingState();
-  assertEqual(testCostCopy(state.jobs.active, 'error-log'), '+2 min · speed bonus $0 → $36');
+  assertEqual(testCostCopy(state.jobs.active, 'error-log'), '+2 min · unlocks $36 speed bonus');
 });
 
 test('first fresh job renders integrated diagnosis guidance and an irreversible-choice guard', () => {
   const state = onboardingState();
   assert(isFirstJobOnboarding(state), 'fresh first ticket should receive onboarding');
+  assert(showsBeginnerGuidance(state), 'auto guidance should teach the first ticket');
   const initial = jobView({ state, faults, machines, clients });
-  assert(initial.includes('Read the symptoms.'), 'first ticket should teach the loop');
+  assert(initial.includes('Start here.'), 'first ticket should begin at the reported symptoms');
+  assert(initial.includes('data-action="go-to-diagnostics"'), 'first ticket should provide a direct path to the next action');
+  assert(initial.includes('Next: gather evidence.'), 'diagnostics should teach only the current step');
+  assert(initial.includes('What do these tests check?'), 'test purpose should be available without being forced open');
   assert(initial.includes('<strong>+2 min</strong>'), 'test time cost must be visible before use');
-  assert(initial.includes('Bonus $0 → $36'), 'test bonus consequence must be visible before use');
+  assert(initial.includes('Unlocks $36 bonus'), 'first-test bonus consequence must be named as an unlock');
+  assert(initial.includes('No bonus for a blind guess'), 'locked instrument should explain why evidence matters');
+  assert(initial.includes('class="diagnosis-steps"'), 'onboarding should retain the current-step rail');
   assert(initial.includes('Your first selection gets one confirmation.'), 'first fix should advertise the guard');
 
   const guarded = jobView({
@@ -151,10 +158,49 @@ test('returning players do not receive first-job guidance or confirmation fricti
   assert(!isFirstJobOnboarding(state), 'completed players are returning players');
   const html = jobView({ state, faults, machines, clients });
   assert(!html.includes('diagnosis-guide'), 'returning job should omit onboarding');
+  assert(!html.includes('context-guide'), 'auto guidance should recede for returning players');
   assert(html.includes('class="diagnosis-steps"'), 'returning jobs should retain compact loop guidance');
   assert(html.includes('aria-current="step">Review symptoms'), 'symptoms should be the initial active step');
   assert(!html.includes('Your first selection gets one confirmation.'), 'returning fix should commit directly');
   assert(html.includes('data-fix="right-fix"'), 'normal fix buttons should remain available');
+});
+
+test('guidance mode can force help on or turn it off without removing the first-fix guard', () => {
+  const state = onboardingState();
+  state.settings.guidanceMode = 'off';
+  assert(!showsBeginnerGuidance(state), 'off should suppress contextual help');
+  const hidden = jobView({ state, faults, machines, clients });
+  assert(!hidden.includes('data-action="go-to-diagnostics"'), 'off should keep the ticket compact');
+  assert(hidden.includes('Your first selection gets one confirmation.'), 'help preference must not remove the safety guard');
+
+  state.stats.jobsCompleted = 2;
+  state.settings.guidanceMode = 'on';
+  assert(showsBeginnerGuidance(state), 'on should restore help for a returning player');
+  assert(jobView({ state, faults, machines, clients }).includes('Next: gather evidence.'),
+    'forced help should use the same contextual coach');
+});
+
+test('completed evidence advances the coach and produces a visible machine-state acknowledgement', () => {
+  const state = onboardingState();
+  state.jobs.active.testsRun.push('temp-probe');
+  state.jobs.active.minutesSpent = 5;
+  const html = jobView({ state, faults, machines, clients });
+  assert(html.includes('Evidence logged.'), 'coach should respond to the completed test');
+  assert(html.includes('Temperature reading logged'), 'art should acknowledge the latest physical action');
+  assert(!html.includes('data-action="go-to-diagnostics"'), 'the symptoms-step action should recede after evidence exists');
+});
+
+test('technical terms expose neutral point-of-use definitions without changing action labels', () => {
+  const inline = withTermHelp('Auger and thermistor readings.');
+  assert(inline.includes('data-term-help="auger"'), 'auger should be an inline optional definition');
+  assert(inline.includes('data-term-help="thermistor"'), 'multiple supported terms should be discoverable');
+  assert(TERM_DEFINITIONS.auger.includes('spiral paddle'), 'auger definition should use plain physical language');
+  assert(!TERM_DEFINITIONS.auger.toLowerCase().includes('replace'), 'definition must not recommend a repair');
+  assert(!withTermHelp('<img src=x onerror=alert(1)> auger').includes('<img'),
+    'term markup must still escape hostile player-facing text');
+  const repairHelp = termDisclosure(['Replace auger motor', 'Replace thermostat'], 'Repair terms');
+  assert(repairHelp.includes('<details'), 'terms inside repair buttons should use an adjacent disclosure');
+  assert(repairHelp.includes('The spiral paddle'), 'repair disclosure should contain the same neutral definition');
 });
 
 test('diagnosis step indicator advances from symptoms to measured evidence', () => {

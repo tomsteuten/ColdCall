@@ -14,6 +14,9 @@ import { escapeHtml } from '../utils.js';
 export function renderModal(state, feedback = {}) {
   const exportBlob = exportSave(state);
   const audioEnabled = !!state.settings.audio;
+  const guidanceMode = ['auto', 'on', 'off'].includes(state.settings.guidanceMode)
+    ? state.settings.guidanceMode
+    : 'auto';
   const { exportMessage, importError } = feedback;
 
   return `
@@ -30,6 +33,15 @@ export function renderModal(state, feedback = {}) {
             <button class="btn-toggle ${audioEnabled ? 'active' : ''}" data-action="toggle-audio">
               ${audioEnabled ? 'ON' : 'OFF'}
             </button>
+          </div>
+          <div class="settings-guidance">
+            <div>
+              <span class="settings-label">Beginner guidance</span>
+              <p>Auto teaches the first ticket, then recedes.</p>
+            </div>
+            <div class="settings-segmented" role="group" aria-label="Beginner guidance mode">
+              ${['auto', 'on', 'off'].map((mode) => `<button class="btn-toggle${guidanceMode === mode ? ' active' : ''}" data-guidance-mode="${mode}" aria-pressed="${guidanceMode === mode}">${mode[0].toUpperCase() + mode.slice(1)}</button>`).join('')}
+            </div>
           </div>
         </div>
 
@@ -73,6 +85,9 @@ export function renderModal(state, feedback = {}) {
 export function wire(modalEl, actions) {
   modalEl.querySelector('[data-action="close-settings"]')?.addEventListener('click', actions.closeSettings);
   modalEl.querySelector('[data-action="toggle-audio"]')?.addEventListener('click', actions.toggleAudio);
+  modalEl.querySelectorAll('[data-guidance-mode]').forEach((button) => {
+    button.addEventListener('click', () => actions.setGuidanceMode(button.dataset.guidanceMode));
+  });
 
   const copyBtn = modalEl.querySelector('[data-action="copy-settings-save"]');
   const exportInput = modalEl.querySelector('.settings-export-input');

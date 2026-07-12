@@ -727,6 +727,32 @@ test('v14 save migrates to v15: empty anti-repeat window added', () => {
   assertEqual(migrated.player.cash, 4242);
 });
 
+test('v15 save migrates to v16: contextual guidance defaults to auto', () => {
+  const v15Fixture = defaultState();
+  v15Fixture.schemaVersion = 15;
+  delete v15Fixture.settings.guidanceMode;
+  v15Fixture.player.cash = 5150;
+
+  const migrated = migrate(JSON.parse(JSON.stringify(v15Fixture)));
+
+  assertEqual(migrated.schemaVersion, SCHEMA_VERSION);
+  assertEqual(migrated.settings.guidanceMode, 'auto');
+  assertEqual(migrated.player.cash, 5150, 'guidance migration must not touch progress');
+});
+
+test('validateState rejects an unknown guidance mode', () => {
+  const s = defaultState();
+  s.settings.guidanceMode = '<script>';
+  let threw = false;
+  try {
+    validateState(s);
+  } catch (e) {
+    threw = true;
+    assert(String(e.message).includes('guidanceMode'), e.message);
+  }
+  assert(threw, 'unknown guidance mode must be rejected');
+});
+
 test('validateState rejects a save with a non-numeric codex fix count', () => {
   const s = defaultState();
   s.codex.fixes['some-fault'] = '<img onerror=x>';

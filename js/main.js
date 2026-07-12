@@ -198,6 +198,14 @@ const actions = {
     pendingFirstFixId = null;
     render();
   },
+  dismissGuidance() {
+    state.settings.guidanceMode = 'off';
+    save(state);
+    render();
+  },
+  goToDiagnostics() {
+    app.querySelector('.diagnostics-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
   finishRepair() {
     // Dismiss the repair beat to reveal the invoice. Idempotent: a double-fire
     // (skip + hold completing together) is harmless since the money is settled.
@@ -386,6 +394,12 @@ const actions = {
   },
   toggleAudio() {
     state.settings.audio = !state.settings.audio;
+    save(state);
+    render();
+  },
+  setGuidanceMode(mode) {
+    if (!['auto', 'on', 'off'].includes(mode)) return;
+    state.settings.guidanceMode = mode;
     save(state);
     render();
   },

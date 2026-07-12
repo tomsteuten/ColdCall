@@ -2,7 +2,7 @@
 
 import { STARTING, JOBS } from '../config/balance.js';
 
-export const SCHEMA_VERSION = 15;
+export const SCHEMA_VERSION = 16;
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const SAVE_KEY = 'coldcall_save';
 
@@ -82,6 +82,9 @@ export function defaultState() {
 
     settings: {
       audio: true,
+      // 'auto' teaches the first ordinary ticket and then recedes; 'on' keeps
+      // contextual help available; 'off' is the experienced-player lane.
+      guidanceMode: 'auto',
       // 'rendered' (static raster) is the default for new games — all 5 machines
       // have full-state renders and they read far stronger than the SVGs
       // (session 22 visual pass). Existing saves keep whatever they have; the
@@ -287,6 +290,17 @@ export const MIGRATIONS = {
     old.schemaVersion = 15;
     return old;
   },
+  // v15 -> v16: optional contextual diagnosis help. Existing players receive
+  // 'auto', which is silent once they have completed a job; no experienced UI
+  // is unexpectedly expanded, while a paused first ticket can still be taught.
+  15: (old) => {
+    if (!old.settings || typeof old.settings !== 'object') old.settings = { audio: true };
+    if (!['auto', 'on', 'off'].includes(old.settings.guidanceMode)) {
+      old.settings.guidanceMode = 'auto';
+    }
+    old.schemaVersion = 16;
+    return old;
+  },
 };
 
 /**
@@ -365,6 +379,7 @@ export function validateState(s) {
     ['motd', 'object'], ['stats', 'object'], ['settings', 'object'],
     ['stats.jobsCompleted', 'number'], ['stats.cleanStreak', 'number'],
     ['offlineJobCarry', 'number'], ['settings.graphicsMode', 'string'],
+    ['settings.guidanceMode', 'string'],
   ];
   for (const [path, type] of checks) {
     let value = s;
@@ -372,6 +387,9 @@ export function validateState(s) {
     const ok =
       type === 'array' ? Array.isArray(value) : typeof value === type && value !== null;
     if (!ok) throw new Error(`Save is missing or has a bad "${path}" (expected ${type})`);
+  }
+  if (!['auto', 'on', 'off'].includes(s.settings.guidanceMode)) {
+    throw new Error('Save has a bad "settings.guidanceMode" (expected auto, on or off)');
   }
 
   // Fields the UI interpolates into innerHTML assuming they are numbers. A

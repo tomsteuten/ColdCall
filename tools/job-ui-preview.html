@@ -22,10 +22,11 @@
     const params = new URLSearchParams(location.search);
     const requestedFault = params.get('fault') ?? 'mix-feed-valve-stuck-closed';
     const faultFile = /^[a-z0-9-]+$/.test(requestedFault) ? requestedFault : 'mix-feed-valve-stuck-closed';
-    const [{ defaultState }, { startJob }, { jobView }, fault, machineData, clientData] = await Promise.all([
+    const [{ defaultState }, { startJob }, { jobView }, { wireTermHelp }, fault, machineData, clientData] = await Promise.all([
       import('../js/state.js'),
       import('../js/diagnosis.js'),
       import('../js/ui/job.js'),
+      import('../js/terminology.js'),
       fetch(`../data/faults/${faultFile}.json`).then((r) => r.json()),
       fetch('../data/machines.json').then((r) => r.json()),
       fetch('../data/clients.json').then((r) => r.json()),
@@ -36,7 +37,9 @@
     state.player.reputation = 36;
     state.player.tierUnlocked = 2;
     state.van.stock['generic-parts'] = 2;
-    state.stats.jobsCompleted = 8;
+    state.stats.jobsCompleted = params.has('first') ? 0 : 8;
+    const guidanceMode = params.get('guidance');
+    if (['auto', 'on', 'off'].includes(guidanceMode)) state.settings.guidanceMode = guidanceMode;
     const clientId = params.get('client') ?? 'burgertown-high-st';
     startJob(state, fault, clientId, () => 0.31);
 
@@ -57,6 +60,11 @@
       faults: { [fault.id]: fault },
       machines,
       clients,
+      pendingFirstFixId: params.has('confirm') ? state.jobs.active.fixOptions[0] : null,
+    });
+    wireTermHelp(document.querySelector('#app'));
+    document.querySelector('[data-action="go-to-diagnostics"]')?.addEventListener('click', () => {
+      document.querySelector('.diagnostics-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     document.body.dataset.viewportWidth = innerWidth;
   </script>
