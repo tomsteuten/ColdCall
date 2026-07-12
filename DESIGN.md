@@ -138,7 +138,9 @@ everywhere rather than defining a dozen near-duplicate tokens.
   client/machine name plus the reported symptoms quoted as a work order
   (`.job-ticket-order`, left-accent blockquote). Rendered outside `.job-cols`
   so it's always the first content after the status bar, on every viewport —
-  see §7 anti-patterns for why.
+  see §7 anti-patterns for why. The symptom block is the dominant inset within
+  the ticket: 4px accent, tinted low surface, upright semibold symptom lines.
+  Caller flavour and the progress rail must remain visually secondary.
 - **`.streak-flame`** (2026-07-05) — small inline SVG icon (not emoji) marking
   an escalating clean streak at 5/10/20 via `--1`/`--2`/`--3` glow tiers.
 - **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
@@ -157,9 +159,15 @@ everywhere rather than defining a dozen near-duplicate tokens.
   contract, paused-job, or unlock state; it never introduces a duplicate
   action or event hook. Keep it to one action line plus one short reason.
 - **`.diagnosis-steps`** (2026-07-12) — the compact three-stage
-  Symptoms / Evidence / Repair path shown to returning players. The active
-  step uses `aria-current="step"`; completed steps use success colour. It is
-  orientation only, never a hint about the correct test or fix.
+  Review symptoms / Gather evidence / Authorise repair path shown to returning
+  players. It is a quiet numbered rail below the symptom report, not a
+  segmented control: the active step uses `aria-current="step"`; completed
+  steps use success colour. It is orientation only, never a hint about the
+  correct test or fix.
+- **`.invoice-actions`** (2026-07-12) — Next ticket and Home share one centered
+  two-column row immediately below a normal receipt. A workshop invoice has
+  one full-width Home action. Failure teaching follows the exits so a long
+  lesson can never bury navigation.
 - **Image hotspots are retired** (2026-07-11). Generated raster compositions
   move their tools and panels between states, so percentage hit regions were
   unreliable across machines and viewports. Labelled `.btn-test` controls are

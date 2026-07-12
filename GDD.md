@@ -119,6 +119,18 @@ Tier 2 caller pool with four rotating call lines, and 12 frequently repeated
 Tier 2 faults each gain two alternate symptom presentations. Fault answers,
 evidence tables, payouts, callbacks, and save shape are unchanged.
 
+**Decision of record (2026-07-12) — symptom hierarchy and invoice actions.**
+Reported symptoms are the ticket's dominant information surface: an inset
+cold-blue work order with a 4px diagnostic accent, larger upright semibold
+lines, and no list bullets. The read-only diagnosis step indicator moves below
+that report and renders as a quiet numbered rail rather than button-like tabs;
+caller flavour is explicitly labelled **Caller note** and visually recedes.
+Invoices place Next ticket and Home together in one centered two-column action
+row immediately below the receipt, before any failure lesson. Short/mobile
+invoice layouts start at the top and use tighter receipt padding so both exits
+stay visible without an unnecessary second button row. Existing actions and
+diagnosis behavior are unchanged.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

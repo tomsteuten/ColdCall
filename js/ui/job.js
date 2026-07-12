@@ -690,7 +690,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
         ${portrait ? `<div class="client-portrait">${portrait}</div>` : ''}
         <div class="client-copy">
           <p class="client-contact">${contactName}${contactRole ? ` <span class="client-role">· ${contactRole}</span>` : ''}</p>
-          ${contactFlavour ? `<p class="client-flavour">"${contactFlavour}"</p>` : ''}
+          ${contactFlavour ? `<p class="client-flavour"><span class="client-note-label">Caller note</span> "${contactFlavour}"</p>` : ''}
         </div>
       </div>`
     : '';
@@ -698,9 +698,9 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const diagnosisStep = pendingFirstFixId ? 3 : job.testsRun.length > 0 ? 2 : 1;
   const diagnosisStepper = !firstJob
     ? `<ol class="diagnosis-steps" aria-label="Diagnosis steps">
-        <li class="diagnosis-step${diagnosisStep === 1 ? ' is-active' : ' is-complete'}"${diagnosisStep === 1 ? ' aria-current="step"' : ''}>Symptoms</li>
-        <li class="diagnosis-step${diagnosisStep === 2 ? ' is-active' : diagnosisStep > 2 ? ' is-complete' : ''}"${diagnosisStep === 2 ? ' aria-current="step"' : ''}>Evidence</li>
-        <li class="diagnosis-step${diagnosisStep === 3 ? ' is-active' : ''}"${diagnosisStep === 3 ? ' aria-current="step"' : ''}>Repair</li>
+        <li class="diagnosis-step${diagnosisStep === 1 ? ' is-active' : ' is-complete'}"${diagnosisStep === 1 ? ' aria-current="step"' : ''}>Review symptoms</li>
+        <li class="diagnosis-step${diagnosisStep === 2 ? ' is-active' : diagnosisStep > 2 ? ' is-complete' : ''}"${diagnosisStep === 2 ? ' aria-current="step"' : ''}>Gather evidence</li>
+        <li class="diagnosis-step${diagnosisStep === 3 ? ' is-active' : ''}"${diagnosisStep === 3 ? ' aria-current="step"' : ''}>Authorise repair</li>
       </ol>`
     : '';
 
@@ -737,8 +737,6 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
         <p class="job-machine">${safeMachineName}</p>
 
-        ${diagnosisStepper}
-
         <blockquote class="job-ticket-order">
 
           <p class="panel-label">Reported symptoms</p>
@@ -756,6 +754,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
           <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${s}”</li>`).join('')}</ul>
 
         </blockquote>
+
+        ${diagnosisStepper}
 
         ${portraitHtml}
 
@@ -1041,13 +1041,13 @@ export function invoiceView({ state, invoice }) {
         ${unlockedTier ? `<p class="receipt-unlock celebration-card">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
         ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
       </div>
-      ${learningBlock}
-      <div class="invoice-actions">
+      <div class="invoice-actions${isWorkshop ? ' invoice-actions--single' : ''}">
         ${isWorkshop
           ? `<button class="btn btn-primary" data-action="dismiss-invoice">Home</button>`
           : `<button class="btn btn-primary" data-action="invoice-next-ticket">Next ticket</button>
              <button class="btn" data-action="dismiss-invoice">Home</button>`}
       </div>
+      ${learningBlock}
     </section>`;
 }
 

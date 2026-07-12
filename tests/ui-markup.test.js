@@ -12,6 +12,7 @@ import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
+const mainCss = readFileSync(join(root, 'css/main.css'), 'utf8');
 const shopUi = readFileSync(join(root, 'js/ui/shop.js'), 'utf8');
 const codexUi = readFileSync(join(root, 'js/ui/codex.js'), 'utf8');
 
@@ -81,6 +82,10 @@ test('invoice actions: Next ticket is primary, Home secondary, both wired (2026-
     jobUi.includes("root.querySelectorAll('[data-action=\"invoice-next-ticket\"]')"),
     'invoice next-ticket selector must be wired'
   );
+  assert(mainCss.includes('.invoice-actions .btn') && mainCss.includes('text-align: center'),
+    'both invoice actions should share centered alignment');
+  assert(mainCss.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'),
+    'normal invoice actions should share one compact row');
 });
 
 test('save-derived job fallbacks are escaped before innerHTML interpolation', () => {
@@ -147,7 +152,7 @@ test('returning players do not receive first-job guidance or confirmation fricti
   const html = jobView({ state, faults, machines, clients });
   assert(!html.includes('diagnosis-guide'), 'returning job should omit onboarding');
   assert(html.includes('class="diagnosis-steps"'), 'returning jobs should retain compact loop guidance');
-  assert(html.includes('aria-current="step">Symptoms'), 'symptoms should be the initial active step');
+  assert(html.includes('aria-current="step">Review symptoms'), 'symptoms should be the initial active step');
   assert(!html.includes('Your first selection gets one confirmation.'), 'returning fix should commit directly');
   assert(html.includes('data-fix="right-fix"'), 'normal fix buttons should remain available');
 });
@@ -157,8 +162,21 @@ test('diagnosis step indicator advances from symptoms to measured evidence', () 
   state.stats.jobsCompleted = 1;
   state.jobs.active.testsRun.push('temp-probe');
   const html = jobView({ state, faults, machines, clients });
-  assert(html.includes('is-complete">Symptoms'), 'symptoms should complete after the first test');
-  assert(html.includes('is-active" aria-current="step">Evidence'), 'evidence should become the active step');
+  assert(html.includes('is-complete">Review symptoms'), 'symptoms should complete after the first test');
+  assert(html.includes('is-active" aria-current="step">Gather evidence'), 'evidence should become the active step');
+});
+
+test('reported symptoms precede the progress rail and secondary caller context', () => {
+  const state = onboardingState();
+  state.stats.jobsCompleted = 1;
+  const html = jobView({ state, faults, machines, clients });
+  const symptomsAt = html.indexOf('job-ticket-order');
+  const stepsAt = html.indexOf('diagnosis-steps');
+  const callerAt = html.indexOf('client-callout');
+  assert(symptomsAt !== -1 && symptomsAt < stepsAt && stepsAt < callerAt,
+    'symptoms should lead, followed by the quiet progress rail and caller context');
+  assert(mainCss.includes('border-left: 4px solid var(--accent)'),
+    'symptom work order should receive the strongest ticket accent');
 });
 
 test('machine art exposes stable machine and state hooks for CSS motion', () => {

@@ -111,6 +111,38 @@
       codexUi.render(app, { state, faults, machines, actions });
       const filter = params.get('filter');
       if (filter) app.querySelector(`[data-codex-filter="${filter}"]`)?.click();
+    } else if (screen === 'invoice') {
+      const fault = faults['barrel-freeze-up'];
+      const miss = params.get('outcome') === 'miss';
+      app.innerHTML = jobUi.invoiceView({
+        state,
+        invoice: {
+          correct: !miss,
+          fault,
+          earned: miss ? 40 : 145,
+          chosenFix: miss ? 'replace-beater-motor' : fault.correctFix,
+          callback: false,
+          callbackSource: null,
+          unlockedTier: miss ? null : 3,
+          isWorkshop: false,
+          minutesSpent: 5,
+          testsUsed: 1,
+          repDelta: miss ? -2 : 1,
+          cleanStreak: miss ? 0 : 7,
+          codex: miss ? null : {
+            isNew: true,
+            mastered: 14,
+            total: Object.keys(faults).length,
+            milestonesPaid: [{ pct: 25, bonus: 250 }],
+          },
+          contract: miss ? null : {
+            progress: 3,
+            count: 3,
+            justCompleted: true,
+            reward: 180,
+          },
+        },
+      });
     }
     document.body.dataset.viewportWidth = innerWidth;
   </script>
