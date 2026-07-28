@@ -16,6 +16,18 @@ const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
 const mainCss = readFileSync(join(root, 'css/main.css'), 'utf8');
 const shopUi = readFileSync(join(root, 'js/ui/shop.js'), 'utf8');
 const codexUi = readFileSync(join(root, 'js/ui/codex.js'), 'utf8');
+const indexHtml = readFileSync(join(root, 'index.html'), 'utf8');
+const playBat = readFileSync(join(root, 'play.bat'), 'utf8');
+
+test('local launcher pins its server directory and clears legacy workers before importing the game', () => {
+  assert(playBat.includes('cd /d "%~dp0"'), 'play.bat should work regardless of the caller working directory');
+  assert(playBat.includes('--directory "%~dp0"'), 'Python must serve the Cold Call project, not an arbitrary IDE directory');
+  assert(!indexHtml.includes('type="module" src="js/main.js"'), 'main.js must not race ahead of local worker cleanup');
+  const cleanupAt = indexHtml.indexOf('navigator.serviceWorker.getRegistrations()');
+  const importAt = indexHtml.indexOf("import('./js/main.js')");
+  assert(cleanupAt >= 0 && cleanupAt < importAt, 'legacy worker cleanup should finish before the module graph is requested');
+  assert(indexHtml.includes("app.classList.add('boot-error')"), 'startup failures should render a visible recovery message');
+});
 
 test('UI templates do not use smart quotes as HTML attribute delimiters', () => {
   const attributeWithSmartQuote = /\b(?:class|data-[\w-]+|aria-[\w-]+)=["“”]?[\u201c\u201d]/;

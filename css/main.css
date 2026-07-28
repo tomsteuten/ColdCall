@@ -137,6 +137,18 @@ p { text-wrap: pretty; }
   flex-direction: column;
 }
 
+#app.boot-error {
+  max-width: 42rem;
+  min-height: auto;
+  margin-top: var(--space-xl);
+  padding: var(--space);
+  border: var(--border);
+  border-left: var(--stroke-accent) solid var(--warn);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
 /* ── Screen transition ───────────────────────────────────────── */
 @keyframes screen-in {
   from { opacity: 0; transform: translateY(6px); }

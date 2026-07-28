@@ -15,28 +15,48 @@
   <main id="app">
     <noscript>Cold Call needs JavaScript to run.</noscript>
   </main>
-  <script type="module" src="js/main.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      const localDevelopment =
-        location.hostname === 'localhost' ||
-        location.hostname === '127.0.0.1' ||
-        location.hostname === '[::1]';
+  <script type="module">
+    const localDevelopment =
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1' ||
+      location.hostname === '[::1]';
 
+    async function boot() {
       if (localDevelopment) {
-        // Never let the offline production shell hide local CSS/JS edits.
-        navigator.serviceWorker.getRegistrations().then((registrations) =>
-          Promise.all(registrations.map((registration) => registration.unregister()))
-        );
-        if ('caches' in window) {
-          caches.keys().then((keys) =>
-            Promise.all(keys.filter((key) => key.startsWith('coldcall-')).map((key) => caches.delete(key)))
-          );
+        // Cleanup must finish BEFORE main.js is requested. Otherwise a legacy
+        // cache-first worker can serve a mismatched module graph on this load.
+        const wasControlled = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
         }
-      } else {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter((key) => key.startsWith('coldcall-')).map((key) => caches.delete(key)));
+        }
+
+        // An unregistered worker controls its current page until navigation.
+        // Reload once, then request the game modules directly from Python.
+        const reloadKey = 'coldcall_dev_worker_cleared';
+        if (wasControlled && sessionStorage.getItem(reloadKey) !== '1') {
+          sessionStorage.setItem(reloadKey, '1');
+          location.reload();
+          return;
+        }
+        sessionStorage.removeItem(reloadKey);
+      } else if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js');
       }
+
+      await import('./js/main.js');
     }
+
+    boot().catch((error) => {
+      console.error('Cold Call failed to start:', error);
+      const app = document.querySelector('#app');
+      app.textContent = 'Cold Call failed to start. Close this tab, run play.bat again, and check the browser console if this message returns.';
+      app.classList.add('boot-error');
+    });
   </script>
 </body>
 </html>
