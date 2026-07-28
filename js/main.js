@@ -3,7 +3,7 @@
 import { load, makePersist, exportSave, importSave as importSaveBlob, save as rawSave, SAVE_KEY } from './state.js';
 import { loadGameData } from './faults.js';
 import { startJob, runTest, commitFix } from './diagnosis.js';
-import { buyLadderItem, claimCallback, expireCallbacks, restockVan, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
+import { buyLadderItem, canRepairWorkshopMachine, claimCallback, expireCallbacks, restockVan, prestige, buyWorkshopMachine, sellWorkshopMachine } from './economy.js';
 import { simulateOfflineProgress } from './idle.js';
 import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
@@ -292,9 +292,12 @@ const actions = {
     render();
   },
   repairWorkshopMachine(machineId) {
-    if (state.jobs.active) return; // paused job must be resumed first
+    const availability = canRepairWorkshopMachine(state, machineId);
+    if (!availability.ok) {
+      console.warn(`Cold Call: workshop repair not started: ${availability.reason}`);
+      return;
+    }
     const machine = state.workshop.machines.find(m => m.id === machineId);
-    if (!machine || machine.status !== 'broken') return;
     const fault = faults[machine.faultId];
     if (!fault) return;
 

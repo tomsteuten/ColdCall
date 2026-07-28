@@ -168,6 +168,13 @@ everywhere rather than defining a dozen near-duplicate tokens.
   desktop may use the 900px shell. It is a readout, not a real-time simulation:
   never animate fake progress or introduce duplicate actions merely to make it
   look busy. New players retain the simpler single-column Home sequence.
+- **`.workshop-pipeline`** (2026-07-28) — the Operations Board's production
+  line: Receiving, Repair, and Ready capacity bays. Phones stack them with
+  downward flow markers; wide Home lays them left-to-right. Machine cards use
+  warn for damaged intake, accent for active diagnosis, and success only after
+  QA/repair. Capacity badges must state full bottlenecks in words, not rely on
+  colour. The active job remains the one Repair bay; never animate progress the
+  simulation does not actually track.
 - **`.diagnosis-steps`** (2026-07-12) — the compact three-stage
   Review symptoms / Gather evidence / Authorise repair path shown to returning
   players. It is a quiet numbered rail below the symptom report, not a

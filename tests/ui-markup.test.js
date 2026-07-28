@@ -324,6 +324,42 @@ test('workshop panel is hidden from Tier 1 players and shown collapsed from Tier
     'workshop starts collapsed');
 });
 
+test('mature workshop shows Receiving, Repair and Ready as a capacity pipeline', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 5;
+  state.player.tierUnlocked = 2;
+  state.workshop.machines.push(
+    { id: 'broken', machineType: 'slushie-machine', faultId: 'f1', status: 'broken' },
+    { id: 'ready', machineType: 'soft-serve-commercial', faultId: 'f2', status: 'repaired' },
+  );
+  const html = homeView({ state, faults: {} });
+  assert(html.includes('class="workshop-pipeline"'), 'the workshop should expose its production line');
+  assert(html.includes('<h3>Receiving</h3>'), 'damaged intake should be a named bay');
+  assert(html.includes('<h3>Repair</h3>'), 'active diagnosis should be a named bay');
+  assert(html.includes('<h3>Ready</h3>'), 'sale inventory should be a named bay');
+  assert(html.includes('data-repair-workshop-machine="broken"'), 'Receiving should feed the existing diagnosis action');
+  assert(html.includes('Move to Repair'), 'the transition should be stated as movement');
+  assert(html.includes('data-sell-workshop-machine="ready"'), 'Ready should keep the existing sale action');
+  assert(html.includes('Source damaged machines'), 'new intake should remain available below the line');
+});
+
+test('active workshop diagnosis occupies Repair and full Ready visibly blocks the next machine', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 5;
+  state.player.tierUnlocked = 2;
+  state.workshop.machines.push(
+    { id: 'waiting', machineType: 'slushie-machine', faultId: 'f1', status: 'broken' },
+    { id: 'active', machineType: 'soft-serve-commercial', faultId: 'f2', status: 'broken' },
+    { id: 'ready-1', machineType: 'slushie-machine', faultId: 'f3', status: 'repaired' },
+    { id: 'ready-2', machineType: 'slushie-machine', faultId: 'f4', status: 'repaired' },
+  );
+  state.jobs.active = { clientId: 'workshop-active' };
+  const html = homeView({ state, faults: {} });
+  assert(html.includes('Diagnosis in progress'), 'the active machine should occupy Repair');
+  assert(html.includes('data-repair-workshop-machine="waiting" disabled'), 'blocked movement should be disabled');
+  assert(html.includes('2/2 full'), 'the full Ready bottleneck should be visible');
+});
+
 // --- contact flavour line rotation (session 22, data-driven caller variation) ---
 
 test('contactFlavourLine: machine-specific lines only appear on that machine', () => {

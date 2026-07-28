@@ -4,7 +4,7 @@
  */
 
 import { TESTS, TEST_INTERACTION_STATE, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
-import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
+import { canRepairWorkshopMachine, dueCallbacks, earnedSpeedBonus, workshopPipeline, WORKSHOP_MACHINES } from '../economy.js';
 
 import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, ROUTES, STARTING, TECHS } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
@@ -447,10 +447,14 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
 
 
 
+  const machinesInWorkshop = state.workshop?.machines ?? [];
+  const workshopState = workshopPipeline(state);
+  const receivingFull = workshopState.receiving.length >= workshopState.capacity.receiving;
+
   let buyOptions = '';
   for (const [id, info] of Object.entries(WORKSHOP_MACHINES)) {
     if (state.player.tierUnlocked >= info.tierRequired) {
-      const canBuy = state.player.cash >= info.buyPrice;
+      const canBuy = state.player.cash >= info.buyPrice && !receivingFull;
       buyOptions += `
         <div class="workshop-row">
           <span class="workshop-machine">${escapeHtml(info.name)} ($${info.buyPrice})</span>
@@ -458,40 +462,82 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
         </div>`;
     }
   }
-
-
-
-  let ownedMachines = '';
-  const machinesInWorkshop = state.workshop?.machines ?? [];
-  if (machinesInWorkshop.length > 0) {
-    ownedMachines = machinesInWorkshop.map((m) => {
-      const info = WORKSHOP_MACHINES[m.machineType];
-      const name = info ? info.name : m.machineType;
-      if (m.status === 'broken') {
-        return `
-          <div class="workshop-row">
-            <span class="workshop-machine"><span class="dot dot--warn" aria-hidden="true"></span> ${escapeHtml(name)} (Broken)</span>
-            <button class="btn btn-sm btn-primary" data-repair-workshop-machine="${escapeHtml(m.id)}">Repair</button>
-          </div>`;
-      }
-      // Sales are not founderBonus-scaled (rule 5 — see balance.js WORKSHOP).
-      // info can be missing when an imported save holds an unknown machineType;
-      // render a $0 sale rather than crashing the whole home screen.
-      const sellVal = info ? info.sellPrice : 0;
-      return `
-          <div class="workshop-row">
-            <span class="workshop-machine"><span class="dot dot--ok" aria-hidden="true"></span> ${escapeHtml(name)} (Refurbished)</span>
-            <button class="btn btn-sm btn-workshop-sell" data-sell-workshop-machine="${escapeHtml(m.id)}">Sell ($${sellVal})</button>
-          </div>`;
-    }).join('');
-  } else {
-    ownedMachines = `<p class="workshop-empty">No machines in the workshop. Buy a damaged machine to refurbish.</p>`;
+  if (receivingFull) {
+    buyOptions += `<p class="workshop-capacity-note">Receiving is full. Move a machine into Repair before buying another.</p>`;
   }
+
+  const workshopMachineCard = (machine, stage) => {
+    const info = WORKSHOP_MACHINES[machine.machineType];
+    const name = info ? info.name : machine.machineType;
+    if (stage === 'receiving') {
+      const availability = canRepairWorkshopMachine(state, machine.id);
+      return `
+        <article class="workshop-machine-card workshop-machine-card--broken">
+          <div class="workshop-machine-card-head">
+            <span class="dot dot--warn" aria-hidden="true"></span>
+            <strong>${escapeHtml(name)}</strong>
+          </div>
+          <span class="workshop-machine-meta">Fault logged · awaiting diagnosis</span>
+          <button class="btn btn-sm btn-fix" data-repair-workshop-machine="${escapeHtml(machine.id)}" ${availability.ok ? '' : 'disabled'}>Move to Repair</button>
+          ${availability.reason ? `<span class="workshop-machine-blocked">${escapeHtml(availability.reason)}</span>` : ''}
+        </article>`;
+    }
+    if (stage === 'repair') {
+      return `
+        <article class="workshop-machine-card workshop-machine-card--active">
+          <div class="workshop-machine-card-head">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>${escapeHtml(name)}</strong>
+          </div>
+          <span class="workshop-machine-meta">Diagnosis in progress · resume from Work Queue</span>
+        </article>`;
+    }
+    // Sales are not founderBonus-scaled (rule 5 — see balance.js WORKSHOP).
+    // Unknown imported machine types remain visible with a safe $0 offer.
+    const sellVal = info ? info.sellPrice : 0;
+    return `
+      <article class="workshop-machine-card workshop-machine-card--ready">
+        <div class="workshop-machine-card-head">
+          <span class="dot dot--ok" aria-hidden="true"></span>
+          <strong>${escapeHtml(name)}</strong>
+        </div>
+        <span class="workshop-machine-meta">QA passed · signed off for sale</span>
+        <button class="btn btn-sm btn-workshop-sell" data-sell-workshop-machine="${escapeHtml(machine.id)}">Sell ($${sellVal})</button>
+      </article>`;
+  };
+
+  const workshopBay = (stage, number, title, machines, emptyCopy) => {
+    const full = machines.length >= workshopState.capacity[stage];
+    const capacityLabel = stage === 'repair'
+      ? `${machines.length}/${workshopState.capacity[stage]} ${machines.length > 0 ? 'active' : 'idle'}`
+      : `${machines.length}/${workshopState.capacity[stage]}${full ? ' full' : ''}`;
+    return `
+    <section class="workshop-bay workshop-bay--${stage}${full ? ' workshop-bay--full' : ''}">
+      <header class="workshop-bay-head">
+        <div>
+          <p class="workshop-bay-step">${number}</p>
+          <h3>${title}</h3>
+        </div>
+        <span class="badge${full && stage !== 'repair' ? ' badge--warn' : ''}">${capacityLabel}</span>
+      </header>
+      <div class="workshop-bay-items">
+        ${machines.length > 0
+          ? machines.map((machine) => workshopMachineCard(machine, stage)).join('')
+          : `<p class="workshop-bay-empty">${emptyCopy}</p>`}
+      </div>
+    </section>`;
+  };
+
+  const workshopPipelineMarkup = `
+    <div class="workshop-pipeline" aria-label="Workshop production line">
+      ${workshopBay('receiving', '01', 'Receiving', workshopState.receiving, 'No damaged machines waiting.')}
+      ${workshopBay('repair', '02', 'Repair', workshopState.repair, 'Repair bay available.')}
+      ${workshopBay('ready', '03', 'Ready', workshopState.ready, 'No machines signed off.')}
+    </div>`;
 
   // Hidden until Tier 2: a brand-new player's home screen should be about the
   // core ticket loop, not a side hustle they can't yet judge the value of.
-  // Collapsed to a one-line summary (2026-07-04 home tightening).
-  const readyCount = machinesInWorkshop.filter((m) => m.status === 'repaired').length;
+  const readyCount = workshopState.ready.length;
   const workshopSummary = machinesInWorkshop.length
     ? `Workshop — ${machinesInWorkshop.length} machine${machinesInWorkshop.length !== 1 ? 's' : ''}${readyCount > 0 ? ` · ${readyCount} ready to sell` : ''}`
     : `Workshop — buy & flip damaged machines`;
@@ -499,10 +545,17 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
     <details class="home-details" data-home-panel="workshop"${homePanels?.workshop ? ' open' : ''}>
       <summary class="home-details-summary">${workshopSummary}</summary>
       <div class="home-details-body">
+        ${workshopPipelineMarkup}
         <p class="workshop-heading">Buy damaged machines</p>
         ${buyOptions}
-        <p class="workshop-heading">Your workshop inventory</p>
-        ${ownedMachines}
+      </div>
+    </details>`;
+  const workshopOperationsSection = `
+    ${workshopPipelineMarkup}
+    <details class="home-details workshop-market" data-home-panel="workshop"${homePanels?.workshop ? ' open' : ''}>
+      <summary class="home-details-summary">Source damaged machines · Receiving ${workshopState.receiving.length}/${workshopState.capacity.receiving}</summary>
+      <div class="home-details-body">
+        ${buyOptions}
       </div>
     </details>`;
 
@@ -530,7 +583,8 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
   const crewSummary = state.techs.length > 0
     ? `${state.techs.length} active · ~${techCapacity} jobs/hour offline`
     : 'Manual service only';
-  const brokenCount = machinesInWorkshop.filter((machine) => machine.status === 'broken').length;
+  const totalWorkshopCapacity =
+    workshopState.capacity.receiving + workshopState.capacity.repair + workshopState.capacity.ready;
   const workshopLane = state.player.tierUnlocked < 2
     ? ''
     : `
@@ -540,10 +594,10 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
             <p class="operations-lane-kicker">03 · Workshop</p>
             <h2 class="operations-lane-title">Refurb line</h2>
           </div>
-          <span class="badge">${machinesInWorkshop.length} bay${machinesInWorkshop.length === 1 ? '' : 's'}</span>
+          <span class="badge">${machinesInWorkshop.length}/${totalWorkshopCapacity} machines</span>
         </header>
-        <p class="operations-lane-summary">${brokenCount} broken · ${readyCount} ready to sell</p>
-        ${workshopSection}
+        <p class="operations-lane-summary">${workshopState.receiving.length} waiting · ${workshopState.repair.length} in repair · ${readyCount} ready</p>
+        ${workshopOperationsSection}
       </article>`;
 
   const operationsBoard = `

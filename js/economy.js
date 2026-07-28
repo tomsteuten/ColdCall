@@ -573,8 +573,54 @@ export function buyLadderItem(state, id, now = Date.now()) {
 export const WORKSHOP_MACHINES = WORKSHOP.machines;
 
 /**
+ * Derive the workshop's three physical bays from existing machine/job state.
+ * The active workshop diagnosis is the single Repair bay; no extra persisted
+ * status is needed, so old saves remain factually intact.
+ * @param {object} state game state
+ * @returns {{receiving: object[], repair: object[], ready: object[], capacity: object}}
+ */
+export function workshopPipeline(state) {
+  const activeClientId = state.jobs?.active?.clientId;
+  const activeMachineId = typeof activeClientId === 'string' && activeClientId.startsWith('workshop-')
+    ? activeClientId.slice('workshop-'.length)
+    : null;
+  const machines = state.workshop?.machines ?? [];
+  return {
+    receiving: machines.filter((machine) =>
+      machine.status === 'broken' && machine.id !== activeMachineId
+    ),
+    repair: activeMachineId
+      ? machines.filter((machine) => machine.id === activeMachineId && machine.status === 'broken')
+      : [],
+    ready: machines.filter((machine) => machine.status === 'repaired'),
+    capacity: WORKSHOP.bays,
+  };
+}
+
+/**
+ * Explain whether a damaged machine may enter the Repair bay.
+ * @param {object} state game state
+ * @param {string} machineId workshop machine id
+ * @returns {{ok: boolean, reason: string|null}}
+ */
+export function canRepairWorkshopMachine(state, machineId) {
+  const machine = state.workshop?.machines?.find((entry) => entry.id === machineId);
+  if (!machine) return { ok: false, reason: 'No such machine' };
+  if (machine.status !== 'broken') return { ok: false, reason: 'Machine is not awaiting repair' };
+  if (state.jobs?.active) return { ok: false, reason: 'Finish the current job first' };
+  const pipeline = workshopPipeline(state);
+  if (pipeline.repair.length >= WORKSHOP.bays.repair) {
+    return { ok: false, reason: 'Repair bay occupied' };
+  }
+  if (pipeline.ready.length >= WORKSHOP.bays.ready) {
+    return { ok: false, reason: 'Ready bay full — sell a machine first' };
+  }
+  return { ok: true, reason: null };
+}
+
+/**
  * Buy a damaged machine for the workshop. Refuses (without mutating) when the
- * type is unknown, tier-locked, or unaffordable.
+ * type is unknown, tier-locked, unaffordable, or Receiving is full.
  * @param {object} state game state (mutated on success)
  * @param {string} machineType key in WORKSHOP_MACHINES
  * @param {string} faultId the fault the machine arrives with
@@ -586,6 +632,9 @@ export function buyWorkshopMachine(state, machineType, faultId, id) {
   if (!info) return { ok: false, reason: 'Unknown machine type' };
   if (state.player.tierUnlocked < info.tierRequired) {
     return { ok: false, reason: `Unlock Tier ${info.tierRequired} first` };
+  }
+  if (workshopPipeline(state).receiving.length >= WORKSHOP.bays.receiving) {
+    return { ok: false, reason: 'Receiving bay full' };
   }
   if (state.player.cash < info.buyPrice) return { ok: false, reason: 'Not enough cash' };
   state.player.cash -= info.buyPrice;
@@ -674,5 +723,4 @@ export function prestige(state) {
   // a fast second run from collecting the daily reward twice (GDD §5).
   if (state.contract && !state.contract.paid) state.contract = null;
 }
-
 

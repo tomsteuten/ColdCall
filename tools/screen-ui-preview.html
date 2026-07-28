@@ -51,8 +51,18 @@
     ];
     state.workshop.machines = [
       { id: 'preview-broken', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
+      { id: 'preview-active', machineType: 'slushie-machine', faultId: 'slushie-motor-brushes-worn', status: 'broken' },
       { id: 'preview-ready', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
     ];
+    state.jobs.active = {
+      faultId: 'slushie-motor-brushes-worn',
+      clientId: 'workshop-preview-active',
+      testsRun: ['error-log'],
+      fixOptions: ['replace-motor-brushes'],
+      minutesSpent: 2,
+      variant: 0,
+      motd: false,
+    };
     state.contract = {
       date: new Date(Date.now()).toISOString().slice(0, 10),
       machineType: 'soft-serve-commercial',

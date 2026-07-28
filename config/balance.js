@@ -180,6 +180,14 @@ export const PRESTIGE = {
  * so active ticket play pulls further ahead with every prestige.
  */
 export const WORKSHOP = {
+  // Physical capacity makes the refurb loop readable as a small production
+  // line. Existing saves may temporarily exceed these limits; nothing is
+  // deleted, but new intake/repairs wait until the player clears space.
+  bays: {
+    receiving: 2,
+    repair: 1,
+    ready: 2,
+  },
   machines: {
     'slushie-machine': {
       name: 'Polar Twister Twin-Bowl Slushie',

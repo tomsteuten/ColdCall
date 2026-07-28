@@ -1,7 +1,7 @@
 /** @file Economy invariants: settlement maths exactly matches config/balance.js, stats, callbacks and tier unlocks update correctly. */
 
 import { defaultState } from '../js/state.js';
-import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, VAN, ROUTES, CODEX } from '../config/balance.js';
+import { JOBS, REPUTATION, TOOLS, TECHS, DIAGNOSIS, PRESTIGE, VAN, ROUTES, CODEX, WORKSHOP } from '../config/balance.js';
 import { STARTING } from '../config/balance.js';
 import {
   settleJob,
@@ -16,7 +16,9 @@ import {
   prestige,
   WORKSHOP_MACHINES,
   buyWorkshopMachine,
+  canRepairWorkshopMachine,
   sellWorkshopMachine,
+  workshopPipeline,
   upgradeVan,
   trainTech,
   buyRoute,
@@ -705,6 +707,61 @@ test('buyWorkshopMachine deducts cash, respects tier locks and affordability', (
   const broke = buyWorkshopMachine(state, 'slushie-machine', 'f', 'm3');
   assert(!broke.ok, 'must refuse when unaffordable');
   assertEqual(state.workshop.machines.length, 1, 'refusals must not add machines');
+});
+
+test('workshop pipeline derives Receiving, Repair and Ready without new save fields', () => {
+  const state = defaultState();
+  state.workshop.machines.push(
+    { id: 'waiting', machineType: 'slushie-machine', faultId: 'f1', status: 'broken' },
+    { id: 'active', machineType: 'slushie-machine', faultId: 'f2', status: 'broken' },
+    { id: 'sale', machineType: 'slushie-machine', faultId: 'f3', status: 'repaired' },
+  );
+  state.jobs.active = { clientId: 'workshop-active' };
+  const pipeline = workshopPipeline(state);
+  assertEqual(pipeline.receiving.map((m) => m.id).join(','), 'waiting');
+  assertEqual(pipeline.repair.map((m) => m.id).join(','), 'active');
+  assertEqual(pipeline.ready.map((m) => m.id).join(','), 'sale');
+  assertEqual(pipeline.capacity.receiving, WORKSHOP.bays.receiving);
+  assert(!('bay' in state.workshop.machines[0]), 'derived bay must not alter the persisted machine');
+});
+
+test('Receiving capacity blocks new intake without deleting an old backlog', () => {
+  const state = defaultState();
+  state.player.cash = 10000;
+  for (let i = 0; i < WORKSHOP.bays.receiving; i++) {
+    const bought = buyWorkshopMachine(state, 'slushie-machine', `f-${i}`, `m-${i}`);
+    assert(bought.ok, `receiving slot ${i + 1} should accept a machine`);
+  }
+  const cashBefore = state.player.cash;
+  const blocked = buyWorkshopMachine(state, 'slushie-machine', 'extra-fault', 'extra');
+  assert(!blocked.ok, 'intake should stop when Receiving is full');
+  assertEqual(blocked.reason, 'Receiving bay full');
+  assertEqual(state.player.cash, cashBefore, 'a blocked intake must not move cash');
+  assertEqual(state.workshop.machines.length, WORKSHOP.bays.receiving, 'no machine should be discarded or added');
+});
+
+test('Repair waits for the active job and enough Ready capacity', () => {
+  const state = defaultState();
+  state.workshop.machines.push(
+    { id: 'waiting', machineType: 'slushie-machine', faultId: 'f', status: 'broken' },
+    ...Array.from({ length: WORKSHOP.bays.ready }, (_, i) => ({
+      id: `ready-${i}`,
+      machineType: 'slushie-machine',
+      faultId: `r-${i}`,
+      status: 'repaired',
+    })),
+  );
+  const full = canRepairWorkshopMachine(state, 'waiting');
+  assert(!full.ok, 'repair should not start when it has nowhere to finish');
+  assert(full.reason.includes('Ready bay full'), 'the bottleneck should be explained');
+
+  state.workshop.machines.pop();
+  assert(canRepairWorkshopMachine(state, 'waiting').ok, 'selling down Ready should unblock repair');
+
+  state.jobs.active = { clientId: 'ordinary-client' };
+  const busy = canRepairWorkshopMachine(state, 'waiting');
+  assert(!busy.ok, 'the one active diagnosis slot should remain exclusive');
+  assertEqual(busy.reason, 'Finish the current job first');
 });
 
 
