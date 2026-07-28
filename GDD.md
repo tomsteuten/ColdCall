@@ -141,6 +141,18 @@ fields, or duplicate actions. New players keep the simpler teaching sequence;
 mobile stacks the lanes and desktop uses the wider management surface. Active
 manual diagnosis remains the prominent, high-value action.
 
+**Decision of record (2026-07-28) — diagnosis keeps the work handover.**
+Every machine now arrives at the shared diagnosis bench with a compact source
+and stakes strip: fresh field call (best pay, cash/rep and speed bonus), player
+return visit (reduced pay and reputation obligation), technician rescue
+(higher rescue rate, attributed to the tech), workshop refurb (no call-out
+pay; correct diagnosis moves it to Ready for sale), or the score-only daily.
+The strip exists only while that job is active, so it teaches at the decision
+point and recedes with the work order. Workshop tests no longer advertise a
+dollar speed bonus: workshop sale margin is fixed, and the active repair still
+pays $0 until the player sells from Ready. This corrects misleading UI only;
+settlement, rates, margins, progression, and save shape are unchanged.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

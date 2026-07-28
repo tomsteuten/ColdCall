@@ -101,6 +101,9 @@ export function showsBeginnerGuidance(state) {
 /** Player-facing cost/consequence shown before a diagnostic is run. */
 export function testCostCopy(job, testId) {
   const cost = DIAGNOSIS.testMinutes[testId] ?? 0;
+  if (job.clientId?.startsWith('workshop-')) {
+    return `+${cost} min simulated workshop time · sale margin stays fixed`;
+  }
   if (job.callback) return `+${cost} min simulated job time`;
   if (job.motd) return `+${cost} min simulated job time · adds 1 test to your score`;
 
@@ -213,9 +216,11 @@ export function statusBar(state, opts = {}) {
   const rep = state.player.reputation;
   const nextTier = state.player.tierUnlocked + 1;
   const threshold = REPUTATION.tierThresholds[nextTier];
+  const repRemaining = threshold !== undefined ? Math.max(0, threshold - rep) : null;
   const repLabel =
-    threshold !== undefined
-      ? `Rep ${rep} · ${Math.max(0, threshold - rep)} to Tier ${nextTier}`
+    repRemaining !== null
+      ? `<span class="status-rep-full">Rep ${rep} · ${repRemaining} to Tier ${nextTier}</span>
+         <span class="status-rep-compact">Rep ${rep} · T${nextTier} in ${repRemaining}</span>`
       : `Rep ${rep}`;
   const homeBtn = opts.home
     ? `<button class="status-home" data-action="go-home" aria-label="Back to home">
@@ -332,7 +337,9 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
   let shiftReason;
   if (paused) {
     shiftRecommendation = `Resume ${pausedLabel}`;
-    shiftReason = 'Your diagnosis is saved and simulated time is paused.';
+    shiftReason = paused.clientId?.startsWith('workshop-')
+      ? 'Finish the diagnosis to move this machine into Ready for sale.'
+      : 'Your diagnosis is saved and simulated time is paused.';
   } else if (dueObligations.length > 0) {
     shiftRecommendation = `Clear ${dueObligations.length} callback obligation${dueObligations.length === 1 ? '' : 's'}`;
     shiftReason = 'These clients cost reputation if they expire.';
@@ -788,6 +795,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const machine = machines.find((m) => m.id === job.machineType);
   const client = clients.find((c) => c.id === job.clientId);
   const machineName = machine ? machine.name : job.machineType;
+  const isWorkshop = job.clientId?.startsWith('workshop-');
+  const isCallback = !!job.callback;
+  const isTechRescue = job.callback?.source === 'tech';
+  const earnsSpeedBonus = !isWorkshop && !isCallback && !job.motd;
   const firstJob = isFirstJobOnboarding(state);
   const guidance = showsBeginnerGuidance(state);
 
@@ -811,8 +822,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     const testsSoFar = job.testsRun.length;
     const before = earnedSpeedBonus(job.minutesSpent ?? 0, testsSoFar);
     const after = earnedSpeedBonus((job.minutesSpent ?? 0) + cost, testsSoFar + 1);
-    const consequence = job.callback
-      ? 'Simulated job time'
+    const consequence = isWorkshop
+      ? 'Sale margin stays fixed'
+      : isCallback
+        ? 'Simulated job time'
       : job.motd
         ? 'Adds 1 test to score'
         : testsSoFar === 0
@@ -839,12 +852,12 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const bonusUnlocked = job.testsRun.length >= DIAGNOSIS.minTestsForBonus;
   const currentBonus = bonusUnlocked ? earnedSpeedBonus(minutes, job.testsRun.length) : 0;
   const instrumentBar = `
-    <div class="job-instruments${job.callback || job.motd ? ' job-instruments--single' : ''}" aria-label="Job status">
+    <div class="job-instruments${earnsSpeedBonus ? '' : ' job-instruments--single'}" aria-label="Job status">
       <div class="job-instrument">
         <span>Job time</span>
         <strong>${minutes} min</strong>
       </div>
-      ${!job.callback && !job.motd ? `
+      ${earnsSpeedBonus ? `
         <div class="job-instrument job-instrument--bonus">
           <span>Speed bonus</span>
           <strong>${bonusUnlocked ? `$${currentBonus}` : 'Locked'}</strong>
@@ -867,7 +880,11 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     .join('');
   const pendingFixLabel = pendingFirstFixId ? escapeHtml(fixLabel(pendingFirstFixId)) : '';
 
-  const clientName = job.motd ? 'Machine of the Day' : (client ? escapeHtml(client.name) : escapeHtml(job.clientId));
+  const clientName = job.motd
+    ? 'Machine of the Day'
+    : isWorkshop
+      ? 'Workshop bench'
+      : (client ? escapeHtml(client.name) : escapeHtml(job.clientId));
   const safeMachineName = escapeHtml(machineName);
   const clientImg = !job.motd && client ? clientPortraitImageSrc(client.id) : null;
   const portrait = !job.motd && client ? (clientImg ? `<img src="${clientImg}" alt="" width="64" height="64">` : clientPortraitSvg(client.portrait)) : null;
@@ -876,7 +893,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const contactRole = contact?.role ? escapeHtml(contact.role) : '';
   const flavourLine = contactFlavourLine(contact, job);
   const contactFlavour = flavourLine ? escapeHtml(flavourLine) : '';
-  const portraitHtml = !job.motd
+  const portraitHtml = !job.motd && !isWorkshop
     ? `<div class="client-callout${portrait ? '' : ' client-callout--text-only'}">
         ${portrait ? `<div class="client-portrait">${portrait}</div>` : ''}
         <div class="client-copy">
@@ -885,6 +902,38 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
         </div>
       </div>`
     : '';
+
+  // The same diagnosis bench serves five kinds of work. Keep the handover
+  // attached to the work order so the source and settlement rules remain clear
+  // precisely while the player is choosing tests — then disappear with the job.
+  let workKind;
+  let workStakes;
+  let workTone = '';
+  if (job.motd) {
+    workKind = 'Daily diagnostic';
+    workStakes = 'Score only · same fault for every player · no cash or reputation';
+    workTone = ' work-order-context--daily';
+  } else if (isWorkshop) {
+    workKind = 'Workshop refurb';
+    workStakes = 'No call-out pay · diagnose correctly to move this machine to Ready for sale';
+    workTone = ' work-order-context--workshop';
+  } else if (isTechRescue) {
+    workKind = 'Technician rescue';
+    workStakes = `${escapeHtml(sourceLabel(job.callback))} · pays ${callbackRatePct('tech')}% of net · no clean-streak bonus`;
+    workTone = ' work-order-context--callback';
+  } else if (isCallback) {
+    workKind = 'Return visit';
+    workStakes = `Your earlier miss · pays ${callbackRatePct('player')}% of net · client reputation is on the line`;
+    workTone = ' work-order-context--callback';
+  } else {
+    workKind = 'Field call';
+    workStakes = 'Best pay · earns reputation · one useful test unlocks the speed bonus';
+  }
+  const workOrderContext = `
+    <div class="work-order-context${workTone}">
+      <span class="work-order-kind">${workKind}</span>
+      <span class="work-order-stakes">${workStakes}</span>
+    </div>`;
 
   const diagnosisStep = pendingFirstFixId ? 3 : job.testsRun.length > 0 ? 2 : 1;
   const diagnosisStepper = `<ol class="diagnosis-steps" aria-label="Diagnosis steps">
@@ -938,9 +987,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
       <div class="panel job-ticket">
 
-        ${job.motd ? `<span class="badge badge--success">Machine of the Day</span>` : ''}
-
-        ${job.callback ? `<span class="badge badge--warn">Callback — reduced rate</span>` : ''}
+        ${workOrderContext}
 
         <h2 class="job-client">${clientName}</h2>
 

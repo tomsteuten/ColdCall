@@ -168,6 +168,13 @@ everywhere rather than defining a dozen near-duplicate tokens.
   desktop may use the 900px shell. It is a readout, not a real-time simulation:
   never animate fake progress or introduce duplicate actions merely to make it
   look busy. New players retain the simpler single-column Home sequence.
+- **`.work-order-context`** (2026-07-28) — a compact handover strip at the top
+  of every active diagnosis. It names where the machine came from and what a
+  correct diagnosis advances: field calls pay cash/rep, player callbacks are
+  owed return visits, technician misses are optional rescues, workshop refurbs
+  move to Ready for sale, and the daily is score-only. Use semantic accent,
+  warn, amber, and success edge colours; keep it to one label plus one stakes
+  line so it disappears with the work order instead of becoming tutorial copy.
 - **`.workshop-pipeline`** (2026-07-28) — the Operations Board's production
   line: Receiving, Repair, and Ready capacity bays. Phones stack them with
   downward flow markers; wide Home lays them left-to-right. Machine cards use

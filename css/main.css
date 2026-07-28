@@ -197,6 +197,7 @@ html:active-view-transition .screen { animation: none; }
 .status-bar .stat { font-weight: 600; }
 .status-bar .stat:nth-child(3) { text-align: right; }
 .status-bar .stat:nth-child(2) { text-align: center; }
+.status-rep-compact { display: none; }
 
 /* The always-there Home affordance (2026-07-08 playtest fix): a 4th column on
    every screen except home itself — top of screen, never below the fold. */
@@ -233,6 +234,24 @@ html:active-view-transition .screen { animation: none; }
 @media (max-width: 420px) {
   .status-bar--nav {
     grid-template-columns: auto minmax(0, 1fr) auto auto;
+    column-gap: var(--space-xs);
+    font-size: var(--text-xs);
+  }
+
+  .status-bar--nav .stat {
+    white-space: nowrap;
+  }
+
+  .status-bar--nav .stat:nth-child(2) {
+    min-width: 0;
+  }
+
+  .status-rep-full {
+    display: none;
+  }
+
+  .status-rep-compact {
+    display: inline;
   }
 
   .status-home-label {
@@ -1539,6 +1558,48 @@ html:active-view-transition .screen { animation: none; }
 .diagnostics-panel,
 .commit-panel { border-left: 3px solid var(--steel); }
 
+.work-order-context {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: baseline;
+  padding: 0.35rem 0.5rem;
+  border: var(--border-soft);
+  border-left: var(--stroke-accent) solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-low));
+  font-size: var(--text-xs);
+  line-height: 1.25;
+}
+
+.work-order-context--callback {
+  border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface-low));
+}
+
+.work-order-context--workshop {
+  border-left-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, var(--surface-low));
+}
+
+.work-order-context--daily {
+  border-left-color: var(--success);
+  background: color-mix(in srgb, var(--success) 7%, var(--surface-low));
+}
+
+.work-order-kind {
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.work-order-stakes {
+  color: var(--text-dim);
+  text-align: right;
+}
+
 .job-ticket-order {
   margin: var(--space-xs) 0 0;
   padding: 0.65rem 0.75rem;
@@ -1702,6 +1763,17 @@ html:active-view-transition .screen { animation: none; }
   grid-column: 1 / -1;
   color: var(--text-muted);
   line-height: 1.2;
+}
+
+@media (max-width: 420px) {
+  .work-order-context {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .work-order-stakes {
+    text-align: left;
+  }
 }
 
 /* section-head kept for backward compat (callbacks screen uses it) */

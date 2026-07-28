@@ -18,96 +18,144 @@
     });
   </script>
   <script type="module">
-    const [{ defaultState }, { loadGameData }, jobUi, shopUi, codexUi] = await Promise.all([
+    const [{ defaultState }, { loadGameData }, jobUi, shopUi, codexUi, { startJob }, { mulberry32 }] = await Promise.all([
       import('./js/state.js'),
       import('./js/faults.js'),
       import('./js/ui/job.js'),
       import('./js/ui/shop.js'),
       import('./js/ui/codex.js'),
+      import('./js/diagnosis.js'),
+      import('./js/rng.js'),
     ]);
     const { faults, machines, clients } = await loadGameData('./data/');
     const state = defaultState();
     const params = new URLSearchParams(location.search);
     const screen = params.get('screen') ?? 'home';
+    const fixture = params.get('state') ?? 'mature';
     const app = document.querySelector('#app');
     const noop = () => {};
 
-    state.player.cash = 7420;
-    state.player.reputation = 42;
-    state.player.tierUnlocked = 3;
-    state.player.lifetimeEarnings = 18500;
-    state.van.slots = 6;
-    state.van.stock['generic-parts'] = 3;
-    state.stats.jobsCompleted = 38;
-    state.stats.cleanStreak = 7;
-    state.tools.multimeterTier = 2;
-    state.routes = [
-      { id: 'burgertown-south', clientId: 'burgertown-high-st' },
-      { id: 'froyo-strip', clientId: 'yo-go-froyo' },
-    ];
-    state.techs = [
-      { id: 'tech-1', name: 'Dave', skill: 2, routeId: 'burgertown-south', hiredAt: Date.now() - 12 * 86400000 },
-      { id: 'tech-2', name: 'Priya', skill: 1, routeId: 'froyo-strip', hiredAt: Date.now() - 4 * 86400000 },
-    ];
-    state.workshop.machines = [
-      { id: 'preview-broken', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
-      { id: 'preview-active', machineType: 'slushie-machine', faultId: 'slushie-motor-brushes-worn', status: 'broken' },
-      { id: 'preview-ready', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
-    ];
-    state.jobs.active = {
-      faultId: 'slushie-motor-brushes-worn',
-      clientId: 'workshop-preview-active',
-      testsRun: ['error-log'],
-      fixOptions: ['replace-motor-brushes'],
-      minutesSpent: 2,
-      variant: 0,
-      motd: false,
-    };
-    state.contract = {
-      date: new Date(Date.now()).toISOString().slice(0, 10),
-      machineType: 'soft-serve-commercial',
-      count: 3,
-      reward: 300,
-      progress: 2,
-      paid: false,
-    };
-
-    const ids = Object.keys(faults);
-    for (const id of ids.slice(0, 14)) state.codex.fixes[id] = 1 + (id.length % 3);
-
     const today = new Date(Date.now());
     const date = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0, 10);
-    state.jobs.callbacks = [
-      {
-        faultId: 'mix-feed-valve-stuck-closed',
-        clientId: 'burgertown-high-st',
-        dueDay: date(0),
-        expiryDay: date(3),
-        misses: 1,
-        source: 'player',
-        evidence: ['error-log'],
-      },
-      {
-        faultId: 'slushie-condenser-clogged',
-        clientId: 'kwik-stop-corner',
-        dueDay: date(0),
-        expiryDay: date(3),
-        misses: 1,
-        source: 'tech',
-        techName: 'Dave',
-        evidence: null,
-      },
-      {
-        faultId: 'froyo-thermistor-drift',
-        clientId: 'yo-go-froyo',
-        dueDay: date(1),
-        expiryDay: date(4),
-        misses: 1,
-        source: 'tech',
-        techName: 'Priya',
-        evidence: null,
-      },
-    ];
+
+    if (fixture !== 'first') {
+      state.player.cash = 7420;
+      state.player.reputation = 42;
+      state.player.tierUnlocked = 3;
+      state.player.lifetimeEarnings = 18500;
+      state.van.slots = 6;
+      state.van.stock['generic-parts'] = 3;
+      state.stats.jobsCompleted = 38;
+      state.stats.cleanStreak = 7;
+      state.tools.multimeterTier = 2;
+      state.routes = [
+        { id: 'burgertown-south', clientId: 'burgertown-high-st' },
+        { id: 'froyo-strip', clientId: 'yo-go-froyo' },
+      ];
+      state.techs = [
+        { id: 'tech-1', name: 'Dave', skill: 2, routeId: 'burgertown-south', hiredAt: Date.now() - 12 * 86400000 },
+        { id: 'tech-2', name: 'Priya', skill: 1, routeId: 'froyo-strip', hiredAt: Date.now() - 4 * 86400000 },
+      ];
+      state.workshop.machines = [
+        { id: 'preview-broken', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
+        { id: 'preview-ready', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
+      ];
+      state.contract = {
+        date: new Date(Date.now()).toISOString().slice(0, 10),
+        machineType: 'soft-serve-commercial',
+        count: 3,
+        reward: 300,
+        progress: 2,
+        paid: false,
+      };
+
+      const ids = Object.keys(faults);
+      for (const id of ids.slice(0, 14)) state.codex.fixes[id] = 1 + (id.length % 3);
+
+      state.jobs.callbacks = [
+        {
+          faultId: 'mix-feed-valve-stuck-closed',
+          clientId: 'burgertown-high-st',
+          dueDay: date(0),
+          expiryDay: date(3),
+          misses: 1,
+          source: 'player',
+          evidence: ['error-log'],
+        },
+        {
+          faultId: 'slushie-condenser-clogged',
+          clientId: 'kwik-stop-corner',
+          dueDay: date(0),
+          expiryDay: date(3),
+          misses: 1,
+          source: 'tech',
+          techName: 'Dave',
+          evidence: null,
+        },
+        {
+          faultId: 'froyo-thermistor-drift',
+          clientId: 'yo-go-froyo',
+          dueDay: date(1),
+          expiryDay: date(4),
+          misses: 1,
+          source: 'tech',
+          techName: 'Priya',
+          evidence: null,
+        },
+      ];
+    }
+
+    if (fixture === 'workshop-empty') {
+      state.player.tierUnlocked = 2;
+      state.workshop.machines = [];
+    } else if (fixture === 'workshop-active') {
+      state.workshop.machines = [
+        { id: 'preview-waiting', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
+        { id: 'preview-active', machineType: 'slushie-machine', faultId: 'slushie-motor-brushes-worn', status: 'broken' },
+        { id: 'preview-ready', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
+      ];
+      startJob(state, faults['slushie-motor-brushes-worn'], 'workshop-preview-active', mulberry32('preview-workshop'));
+      state.jobs.active.testsRun = ['error-log'];
+      state.jobs.active.minutesSpent = 2;
+    } else if (fixture === 'workshop-full') {
+      state.workshop.machines = [
+        { id: 'waiting-1', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
+        { id: 'waiting-2', machineType: 'slushie-machine', faultId: 'slushie-motor-brushes-worn', status: 'broken' },
+        { id: 'ready-1', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
+        { id: 'ready-2', machineType: 'soft-serve-commercial', faultId: 'mix-feed-valve-stuck-closed', status: 'repaired' },
+      ];
+    } else if (fixture === 'prestige') {
+      state.player.lifetimeEarnings = 34250;
+      state.player.reputation = 128;
+    }
+
+    if (screen === 'job' && !state.jobs.active) {
+      const previewFault = fixture === 'first'
+        ? Object.values(faults).find((entry) => entry.tier === 1)
+        : faults['barrel-freeze-up'];
+      const previewClient = fixture === 'first'
+        ? clients.find((entry) => entry.tier === 1)?.id
+        : 'burgertown-high-st';
+      if (fixture === 'callback-player') {
+        startJob(state, previewFault, 'burgertown-high-st', mulberry32('preview-return'), {
+          misses: 1,
+          source: 'player',
+          evidence: ['error-log'],
+        });
+      } else if (fixture === 'callback-tech') {
+        startJob(state, previewFault, 'burgertown-high-st', mulberry32('preview-rescue'), {
+          misses: 1,
+          source: 'tech',
+          techName: 'Dave',
+        });
+      } else if (fixture === 'motd') {
+        startJob(state, previewFault, 'motd', mulberry32('preview-daily'), null, true, date(0));
+      } else if (fixture === 'workshop-active') {
+        // Already configured above.
+      } else {
+        startJob(state, previewFault, previewClient, mulberry32(`preview-${fixture}`));
+      }
+    }
 
     const actions = new Proxy({}, { get: () => noop });
     if (screen === 'home') {
@@ -116,8 +164,11 @@
         faults,
         machines,
         clients,
-        homePanels: {},
-        prestigeConfirm: false,
+        homePanels: {
+          workshop: fixture.startsWith('workshop-'),
+          prestige: fixture === 'prestige',
+        },
+        prestigeConfirm: params.has('confirm'),
         offlineReport: params.has('notices') ? {
           jobsDone: 12,
           totalEarned: 720,
@@ -125,6 +176,8 @@
           techReports: [{ name: 'Dave', jobs: 7, callbacks: 1, earned: 360 }, { name: 'Priya', jobs: 5, callbacks: 0, earned: 360 }],
         } : null,
       });
+    } else if (screen === 'job') {
+      app.innerHTML = jobUi.jobView({ state, faults, machines, clients });
     } else if (screen === 'callbacks') {
       app.innerHTML = jobUi.callbacksView({ state, faults, clients });
     } else if (screen === 'shop') {

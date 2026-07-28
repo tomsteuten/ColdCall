@@ -9,7 +9,7 @@ import { isFirstJobOnboarding, showsBeginnerGuidance, jobView, invoiceView, repa
 import { TERM_DEFINITIONS, termDisclosure, withTermHelp } from '../js/terminology.js';
 import { staffExplainerHTML } from '../js/ui/shop.js';
 import { render as renderCodex } from '../js/ui/codex.js';
-import { REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
+import { JOBS, REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const jobUi = readFileSync(join(root, 'js/ui/job.js'), 'utf8');
@@ -121,6 +121,54 @@ test('diagnostic cost copy explains that the first test unlocks the speed bonus'
   // before any test the earned bonus is $0 and the first test raises it.
   const state = onboardingState();
   assertEqual(testCostCopy(state.jobs.active, 'error-log'), '+2 min · unlocks $36 speed bonus');
+});
+
+test('work orders keep each diagnosis source and its stakes visible', () => {
+  const fresh = onboardingState();
+  let html = jobView({ state: fresh, faults, machines, clients });
+  assert(html.includes('Field call'), 'fresh work should identify the high-value client loop');
+  assert(html.includes('Best pay · earns reputation'), 'fresh work should name why it matters');
+
+  const playerReturn = defaultState();
+  startJob(playerReturn, fault, 'kwik-stop', () => 0, { misses: 1, source: 'player' });
+  html = jobView({ state: playerReturn, faults, machines, clients });
+  assert(html.includes('Return visit'), 'a player-caused callback should be named as owed work');
+  assert(html.includes(`pays ${Math.round(JOBS.callbackJobPayoutMult * 100)}% of net`),
+    'a return visit should show its configured rate');
+  assert(html.includes('client reputation is on the line'), 'a return visit should explain its consequence');
+
+  const techRescue = defaultState();
+  startJob(techRescue, fault, 'kwik-stop', () => 0, {
+    misses: 1,
+    source: 'tech',
+    techName: 'Dave',
+  });
+  html = jobView({ state: techRescue, faults, machines, clients });
+  assert(html.includes('Technician rescue'), 'a tech miss should read as optional crew follow-up');
+  assert(html.includes(`Dave&#39;s miss · pays ${Math.round(JOBS.rescueCallbackPayoutMult * 100)}% of net`),
+    'the responsible technician and configured rescue rate should carry into diagnosis');
+
+  const daily = defaultState();
+  startJob(daily, fault, 'motd', () => 0, null, true, '2026-07-28');
+  html = jobView({ state: daily, faults, machines, clients });
+  assert(html.includes('Daily diagnostic'), 'the shared puzzle should be distinct from paid work');
+  assert(html.includes('no cash or reputation'), 'daily puzzle stakes should be explicit');
+});
+
+test('workshop diagnosis explains the sale handoff and never advertises a speed bonus', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 1;
+  startJob(state, fault, 'workshop-bench-1', () => 0);
+  const html = jobView({ state, faults, machines, clients });
+  assert(html.includes('Workshop refurb'), 'workshop source should follow the machine onto the diagnosis bench');
+  assert(html.includes('move this machine to Ready for sale'), 'correct diagnosis should name its next workshop state');
+  assert(html.includes('Sale margin stays fixed'), 'tests should explain that workshop value is not time-bonused');
+  assert(!html.includes('Speed bonus'), 'a $0 workshop repair must not show the client-call speed instrument');
+  assert(!html.includes('Caller details unavailable'), 'an in-house workshop machine should not pretend it has a caller');
+  assertEqual(
+    testCostCopy(state.jobs.active, 'error-log'),
+    '+2 min simulated workshop time · sale margin stays fixed'
+  );
 });
 
 test('first fresh job renders integrated diagnosis guidance and an irreversible-choice guard', () => {
@@ -608,6 +656,7 @@ test('status bar shows reputation progress to the next tier', () => {
   const html = statusBar(state);
   const toGo = REPUTATION.tierThresholds[3] - 18;
   assert(html.includes(`Rep 18 · ${toGo} to Tier 3`), `expected tier progress, got: ${html}`);
+  assert(html.includes(`Rep 18 · T3 in ${toGo}`), 'phone header should keep the same goal in compact form');
   // At the top tier there is nothing to count down to.
   state.player.tierUnlocked = 3;
   assert(statusBar(state).includes('Rep 18'), 'top tier still shows rep');
