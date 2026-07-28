@@ -131,6 +131,16 @@ invoice layouts start at the top and use tighter receipt padding so both exits
 stay visible without an unnecessary second button row. Existing actions and
 diagnosis behavior are unchanged.
 
+**Decision of record (2026-07-28) — mature Home becomes an Operations Board.**
+After the first completed job, Home groups the existing manual queue, field
+technicians/contract routes, and Tier-2 workshop into a visible operations
+readout. This is the first presentation step toward a repair-tycoon/automation
+hybrid: the player can see capacity and bottlenecks without turning diagnosis
+into an idle task. It is UI-only — no real-time ticking, economy changes, save
+fields, or duplicate actions. New players keep the simpler teaching sequence;
+mobile stacks the lanes and desktop uses the wider management surface. Active
+manual diagnosis remains the prominent, high-value action.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

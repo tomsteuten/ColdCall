@@ -41,6 +41,18 @@
     state.stats.jobsCompleted = 38;
     state.stats.cleanStreak = 7;
     state.tools.multimeterTier = 2;
+    state.routes = [
+      { id: 'burgertown-south', clientId: 'burgertown-high-st' },
+      { id: 'froyo-strip', clientId: 'yo-go-froyo' },
+    ];
+    state.techs = [
+      { id: 'tech-1', name: 'Dave', skill: 2, routeId: 'burgertown-south', hiredAt: Date.now() - 12 * 86400000 },
+      { id: 'tech-2', name: 'Priya', skill: 1, routeId: 'froyo-strip', hiredAt: Date.now() - 4 * 86400000 },
+    ];
+    state.workshop.machines = [
+      { id: 'preview-broken', machineType: 'soft-serve-commercial', faultId: 'barrel-freeze-up', status: 'broken' },
+      { id: 'preview-ready', machineType: 'slushie-machine', faultId: 'slushie-condenser-clogged', status: 'repaired' },
+    ];
     state.contract = {
       date: new Date(Date.now()).toISOString().slice(0, 10),
       machineType: 'soft-serve-commercial',

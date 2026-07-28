@@ -606,19 +606,20 @@ test('receipt shows the reputation change and a grown clean streak', () => {
   assert(!missHtml.includes('in a row'), 'no streak line after a miss');
 });
 
-test('home screen order: ticket loop first, then daily, then business panels, then codex', () => {
+test('mature home groups the ticket loop, crew and workshop before daily and long-term goals', () => {
   const state = defaultState();
   state.stats.jobsCompleted = 3;
   state.player.tierUnlocked = 2;
   state.player.lifetimeEarnings = 1e9; // prestige banner visible
   const html = homeView({ state, faults: {} });
   const order = [
+    'class="operations-board"',
     'data-action="next-ticket"',
+    'data-action="open-shop"',
+    'data-home-panel="workshop"',
     'data-action="start-motd"',
     'data-home-panel="prestige"',
-    'data-home-panel="workshop"',
     'data-action="open-codex"',
-    'data-action="open-shop"',
     'data-action="open-settings"',
   ];
   let last = -1;
@@ -628,6 +629,42 @@ test('home screen order: ticket loop first, then daily, then business panels, th
     assert(at > last, `${marker} out of order`);
     last = at;
   }
+});
+
+test('operations board appears after the first completed job without changing new-player home', () => {
+  const fresh = defaultState();
+  const freshHtml = homeView({ state: fresh, faults: {} });
+  assert(!freshHtml.includes('operations-board'), 'onboarding home should remain a simple action sequence');
+  assert(freshHtml.includes('data-action="next-ticket"'), 'onboarding home keeps its primary ticket action');
+
+  const mature = defaultState();
+  mature.stats.jobsCompleted = 1;
+  const matureHtml = homeView({ state: mature, faults: {} });
+  assert(matureHtml.includes('operations-board'), 'returning players should see the operations readout');
+  assert(matureHtml.includes('01 · Work queue'), 'the board should expose the manual queue');
+  assert(matureHtml.includes('02 · Field crew'), 'the board should expose idle capacity');
+  assert(!matureHtml.includes('03 · Workshop'), 'the workshop lane stays hidden until Tier 2');
+});
+
+test('operations board exposes technician route, skill and offline capacity', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 8;
+  state.player.tierUnlocked = 2;
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+  state.techs.push({
+    id: 'tech-1',
+    name: 'Dave',
+    skill: 2,
+    routeId: 'burgertown-south',
+    hiredAt: 0,
+  });
+  const html = homeView({ state, faults: {} });
+  assert(html.includes('03 · Workshop'), 'Tier 2 should add the workshop lane');
+  assert(html.includes('Dave'), 'the assigned technician should be visible');
+  assert(html.includes('Burgertown South Side'), 'the assigned route should be visible');
+  assert(html.includes('Skill 2 · 90%'), 'skill should explain the technician success rate');
+  assert(html.includes('~2 jobs/hour offline'), 'crew throughput should be readable at a glance');
+  assertEqual((html.match(/data-action="open-shop"/g) ?? []).length, 1, 'crew management should have one action');
 });
 
 test('home shift brief recommends the most urgent existing action', () => {

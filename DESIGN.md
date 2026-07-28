@@ -44,16 +44,16 @@ everywhere rather than defining a dozen near-duplicate tokens.
 
 | Token | Value | Role |
 |---|---|---|
-| `--bg` | `#10141c` | App background — near-black cold navy |
-| `--surface` | `#1a2230` | Panels, cards, buttons' resting fill |
-| `--surface-hi` | `#202c3e` | Raised surface / dividers / badge default bg |
-| `--text` | `#e8edf5` | Primary text |
-| `--text-dim` | `#8a96a8` | Secondary text, meta, disabled |
-| `--text-inv` | `#10141c` | Text on the accent fill (primary buttons) |
-| `--accent` | `#7fd4f0` | **Mint ice-blue** — the brand colour. Primary actions, focus, "in progress" |
-| `--warn` | `#f0917f` | **Callback salmon** — misses, callbacks, at-risk, "broken" |
-| `--success` | `#a8d8a8` | **Clean-job green** — correct fixes, "refurbished", solved |
-| `--amber` | `#f0b84a` | **Van/restock amber** — restock, prestige, one warm caution |
+| `--bg` | `#0b1017` | App background — near-black cold navy |
+| `--surface` | `#182331` | Panels, cards, buttons' resting fill |
+| `--surface-hi` | `#213043` | Raised surface / dividers / badge default bg |
+| `--text` | `#edf2f6` | Primary text |
+| `--text-dim` | `#aab6c3` | Secondary text, meta, disabled |
+| `--text-inv` | `#0b1017` | Text on the accent fill (primary buttons) |
+| `--accent` | `#76d6ee` | **Mint ice-blue** — the brand colour. Primary actions, focus, "in progress" |
+| `--warn` | `#ea806f` | **Callback salmon** — misses, callbacks, at-risk, "broken" |
+| `--success` | `#8fd19a` | **Clean-job green** — correct fixes, "refurbished", solved |
+| `--amber` | `#e7b557` | **Van/restock amber** — restock, prestige, one warm caution |
 
 **Semantic mapping (keep this consistent — colour carries meaning here):**
 - Accent = the core loop / neutral-positive / interactive.
@@ -72,8 +72,8 @@ everywhere rather than defining a dozen near-duplicate tokens.
 
   | Token | Size | Typical use |
   |---|---|---|
-  | `--text-xs` | 0.75rem | Meta, badges, uppercase eyebrows, receipt fine print |
-  | `--text-sm` | 0.875rem | Secondary copy, card blurbs, list rows |
+  | `--text-xs` | 0.8125rem | Meta, badges, uppercase eyebrows, receipt fine print |
+  | `--text-sm` | 0.9rem | Secondary copy, card blurbs, list rows |
   | `--text-base` | 1rem | Body, button labels |
   | `--text-lg` | 1.125rem | Sub-headers |
   | `--text-xl` | 1.25rem | Compact wordmark, section emphasis |
@@ -93,13 +93,17 @@ everywhere rather than defining a dozen near-duplicate tokens.
   `--space-sm` 0.5rem · `--space` 1rem · `--space-lg` 1.5rem · `--space-xl`
   2.5rem. Screens and lists are `display:flex; flex-direction:column` with a
   `gap` from this scale — prefer `gap` over margins.
-- **Radius:** `--radius-sm` 4px (chips/dots/inline) · `--radius` 8px
-  (buttons, cards, panels — the default) · `--radius-lg` 12px (rare, large).
-- **Layout:** mobile-first, single column, `#app` capped at **380px** and
+- **Radius:** `--radius-sm` 3px (chips/dots/inline) · `--radius` 6px
+  (buttons, cards, panels — the default) · `--radius-lg` 9px (rare, large).
+- **Accent stroke:** `--stroke-accent` 3px for the load-bearing edge on
+  recommendation and operations surfaces; use the token rather than a raw
+  component-specific width.
+- **Layout:** mobile-first, single column, `#app` capped at **420px** and
   centred. At `min-width: 601px` the app widens to 900px, but **non-job screens
   (home, callbacks, shop, codex, MotD, invoice) stay a centred ~480px column** —
-  only the two-column job/repair screens use the full width. Keep new screens in
-  that rule: a list of buttons stretched to 900px reads badly.
+  only the two-column job/repair screens and the mature Home Operations Board
+  use the full width. Keep list screens in the narrow rule: a list of buttons
+  stretched to 900px reads badly.
 - **Desktop job screen is a two-column grid on `.screen-job` itself**
   (2026-07-08): the ticket panel + machine art form the left column and the
   diagnostics/commit panels the right (`.job-cols { display: contents }`
@@ -158,6 +162,12 @@ everywhere rather than defining a dozen near-duplicate tokens.
   Home's primary action. It summarizes the most urgent existing queue,
   contract, paused-job, or unlock state; it never introduces a duplicate
   action or event hook. Keep it to one action line plus one short reason.
+- **`.operations-board`** (2026-07-28) — the mature-player Home surface after
+  the first completed job. It groups existing state and actions into Work
+  Queue, Field Crew, and (from Tier 2) Workshop lanes. Mobile stacks the lanes;
+  desktop may use the 900px shell. It is a readout, not a real-time simulation:
+  never animate fake progress or introduce duplicate actions merely to make it
+  look busy. New players retain the simpler single-column Home sequence.
 - **`.diagnosis-steps`** (2026-07-12) — the compact three-stage
   Review symptoms / Gather evidence / Authorise repair path shown to returning
   players. It is a quiet numbered rail below the symptom report, not a

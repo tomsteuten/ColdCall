@@ -6,7 +6,7 @@
 import { TESTS, TEST_INTERACTION_STATE, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { dueCallbacks, earnedSpeedBonus, WORKSHOP_MACHINES } from '../economy.js';
 
-import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, STARTING } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, ROUTES, STARTING, TECHS } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
@@ -506,6 +506,92 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       </div>
     </details>`;
 
+  // Mature Home becomes an operations readout rather than a vertical menu.
+  // This is deliberately derived from state the game already owns: the board
+  // introduces no background ticking, duplicate actions, or save fields.
+  const techRows = state.techs.length > 0
+    ? state.techs.map((tech) => {
+        const route = ROUTES[tech.routeId];
+        const routeName = route?.name ?? 'Unassigned';
+        const successRate = Math.round(
+          (TECHS.successRateBySkill[tech.skill] ?? TECHS.baseSuccessRate) * 100
+        );
+        return `
+          <li class="operations-tech">
+            <span class="dot ${route ? 'dot--ok' : 'dot--warn'}" aria-hidden="true"></span>
+            <span class="operations-tech-copy">
+              <strong>${escapeHtml(tech.name)}</strong>
+              <span>${escapeHtml(routeName)} · Skill ${tech.skill} · ${successRate}%</span>
+            </span>
+          </li>`;
+      }).join('')
+    : `<li class="operations-empty">No field techs yet. Manual calls stop when you clock off.</li>`;
+  const techCapacity = state.techs.length * TECHS.jobsPerHour;
+  const crewSummary = state.techs.length > 0
+    ? `${state.techs.length} active · ~${techCapacity} jobs/hour offline`
+    : 'Manual service only';
+  const brokenCount = machinesInWorkshop.filter((machine) => machine.status === 'broken').length;
+  const workshopLane = state.player.tierUnlocked < 2
+    ? ''
+    : `
+      <article class="operations-lane operations-lane--workshop">
+        <header class="operations-lane-head">
+          <div>
+            <p class="operations-lane-kicker">03 · Workshop</p>
+            <h2 class="operations-lane-title">Refurb line</h2>
+          </div>
+          <span class="badge">${machinesInWorkshop.length} bay${machinesInWorkshop.length === 1 ? '' : 's'}</span>
+        </header>
+        <p class="operations-lane-summary">${brokenCount} broken · ${readyCount} ready to sell</p>
+        ${workshopSection}
+      </article>`;
+
+  const operationsBoard = `
+    <section class="operations-board" aria-labelledby="operations-title">
+      <header class="operations-board-head">
+        <div>
+          <p class="operations-board-kicker">Service control</p>
+          <h2 class="operations-board-title" id="operations-title">Operations board</h2>
+        </div>
+        <span class="operations-board-rule">Manual repairs fund the network</span>
+      </header>
+      <div class="operations-lanes">
+        <article class="operations-lane operations-lane--queue">
+          <header class="operations-lane-head">
+            <div>
+              <p class="operations-lane-kicker">01 · Work queue</p>
+              <h2 class="operations-lane-title">${paused ? 'Job paused' : due > 0 ? `${due} call${due === 1 ? '' : 's'} ready` : 'Bay available'}</h2>
+            </div>
+            <span class="badge${dueObligations.length > 0 ? ' badge--warn' : ''}">${total} queued</span>
+          </header>
+          <p class="operations-lane-summary">${paused ? 'Simulated time is stopped safely.' : 'Take the high-value manual work yourself.'}</p>
+          <div class="operations-actions">
+            ${primaryAction}
+            ${alternateTicketAction}
+            ${total > 0 && !callbackIsPrimary ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
+            ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
+              ? `<button class="btn btn-restock" data-action="restock-van">Restock van</button>`
+              : ''}
+          </div>
+        </article>
+
+        <article class="operations-lane operations-lane--crew">
+          <header class="operations-lane-head">
+            <div>
+              <p class="operations-lane-kicker">02 · Field crew</p>
+              <h2 class="operations-lane-title">Contract routes</h2>
+            </div>
+            <span class="badge">${state.techs.length}/${TECHS.maxTechs} techs</span>
+          </header>
+          <p class="operations-lane-summary">${crewSummary}</p>
+          <ul class="operations-techs">${techRows}</ul>
+          <button class="btn btn-sm" data-action="open-shop">${state.techs.length > 0 ? 'Manage crew & upgrades' : 'Hire in upgrades'}</button>
+        </article>
+
+        ${workshopLane}
+      </div>
+    </section>`;
+
 
 
   // The brand block shrinks once the player has fixed anything (2026-07-04):
@@ -522,19 +608,24 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
   const codexTotal = Object.keys(faults ?? {}).length;
   const codexMastered = Object.keys(state.codex?.fixes ?? {}).filter((id) => faults && id in faults).length;
 
-  // Home order (2026-07-04): status → notices/offline report → Next ticket →
-  // Callbacks/MotD → prestige banner → workshop summary → Codex → shop/settings.
-  return `
-    ${statusBar(state)}
-    <section class="screen screen-home">
-      ${brand}
-      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>
-
-      ${unlockBanner}
-      ${corruptBanner}
-      ${expiryBanner}
-      ${offlineBanner}
-
+  const matureHome = state.stats.jobsCompleted > 0;
+  const homeContent = matureHome
+    ? `
+      ${shiftBrief}
+      ${operationsBoard}
+      <section class="home-daily" aria-labelledby="home-daily-title">
+        <h2 class="home-section-title" id="home-daily-title">Today's targets</h2>
+        <div class="home-daily-grid">
+          ${motdSection}
+          ${contractSection}
+        </div>
+      </section>
+      ${prestigeSection}
+      <nav class="home-utility-nav" aria-label="Business tools">
+        <button class="btn" data-action="open-codex">Service Manual — ${codexMastered}/${codexTotal} logged</button>
+        <button class="btn" data-action="open-settings">Settings</button>
+      </nav>`
+    : `
       ${shiftBrief}
       ${primaryAction}
       ${alternateTicketAction}
@@ -546,10 +637,25 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       <button class="btn" data-action="open-codex">Service Manual — ${codexMastered}/${codexTotal} logged</button>
       <button class="btn" data-action="open-shop">Upgrades shop</button>
       <button class="btn" data-action="open-settings">Settings</button>
-
       ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
         ? `<button class="btn btn-restock" data-action="restock-van">Restock van</button>`
-        : ''}
+        : ''}`;
+
+  // New players retain the single-column teaching sequence. Once the first
+  // repair is complete, the same actions move into a persistent operations
+  // board: queue → crew → workshop, followed by daily and long-term goals.
+  return `
+    ${statusBar(state)}
+    <section class="screen screen-home${matureHome ? ' screen-home--operations' : ''}">
+      ${brand}
+      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>
+
+      ${unlockBanner}
+      ${corruptBanner}
+      ${expiryBanner}
+      ${offlineBanner}
+
+      ${homeContent}
     </section>`;
 }
 
