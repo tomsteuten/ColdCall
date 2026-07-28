@@ -105,7 +105,19 @@ export function offlineReportView(state, report) {
         <span class="badge">${report.techReports?.length ?? 0} run sheet${report.techReports?.length === 1 ? '' : 's'}</span>
       </header>
       ${techLines ? `<ul class="field-return-sheets">${techLines}</ul>` : ''}
-      <p class="field-return-total">Run total · ${report.jobsDone} fixed · $${report.totalEarned} banked</p>
+      <div class="field-return-settlement" role="img" aria-label="Run total · ${report.jobsDone} fixed · $${report.totalEarned} banked">
+        <span class="field-return-output">
+          <small>Route output</small>
+          <strong>${report.jobsDone} fixed</strong>
+        </span>
+        <span class="field-return-track" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span class="field-return-bank">
+          <small>Invoice bank</small>
+          <strong>$${report.totalEarned}</strong>
+        </span>
+      </div>
       ${callbackNote}
       <button class="btn btn-sm" data-action="dismiss-offline-report">File report</button>
     </section>`;
@@ -653,6 +665,79 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
         ${workshopOperationsSection}
       </article>`;
 
+  // The operations board is a network, not three unrelated dashboard cards.
+  // This compact schematic is entirely derived from existing state: manual
+  // diagnosis powers expansion; routes and refurbs return work to the bench.
+  const manualNetworkState = paused
+    ? `Occupied · ${pausedLabel}`
+    : dueObligations.length > 0
+      ? `${dueObligations.length} owed return${dueObligations.length === 1 ? '' : 's'}`
+      : due > 0
+        ? `${due} optional rescue${due === 1 ? '' : 's'} ready`
+        : 'Bench available';
+  const manualNetworkTone = paused
+    ? ' service-network-node--active'
+    : dueObligations.length > 0
+      ? ' service-network-node--blocked'
+      : '';
+  const fieldNetworkState = state.techs.length > 0
+    ? `${state.techs.length} dispatched · ~${techCapacity} jobs/hour`
+    : 'No routes running';
+  const readyFull = workshopState.ready.length >= workshopState.capacity.ready;
+  const workshopNetworkState = readyFull
+    ? `Ready full · ${readyCount} to sell`
+    : receivingFull
+      ? 'Receiving full'
+      : workshopState.repair.length > 0
+        ? 'Diagnosis on bench'
+        : readyCount > 0
+          ? `${readyCount} ready to sell`
+          : workshopState.receiving.length > 0
+            ? `${workshopState.receiving.length} awaiting repair`
+            : 'Line available';
+  const workshopNetworkTone = readyFull || receivingFull
+    ? ' service-network-node--blocked'
+    : readyCount > 0
+      ? ' service-network-node--output'
+      : workshopState.repair.length > 0
+        ? ' service-network-node--active'
+        : '';
+  const serviceNetwork = `
+    <div class="service-network${offlineReport ? ' service-network--settled' : ''}"
+         aria-label="Business flow: manual diagnosis funds field routes and the refurb line. Route misses and workshop repairs return to the manual bench.">
+      <div class="service-network-node service-network-source${manualNetworkTone}">
+        <span class="service-network-icon service-network-icon--bench" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="service-network-copy">
+          <span class="service-network-kicker">Manual bench</span>
+          <strong>Best pay + reputation</strong>
+          <small>${escapeHtml(manualNetworkState)}</small>
+        </span>
+      </div>
+      <span class="service-network-bus" aria-hidden="true">
+        <small>funds</small><i></i><i></i>
+      </span>
+      <div class="service-network-branches${state.player.tierUnlocked < 2 ? ' service-network-branches--single' : ''}">
+        <div class="service-network-node${state.techs.length > 0 ? ' service-network-node--active' : ''}">
+          <span class="service-network-icon service-network-icon--route" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="service-network-copy">
+            <span class="service-network-kicker">Field routes</span>
+            <strong>${fieldNetworkState}</strong>
+            <small>Misses return as optional rescues</small>
+          </span>
+        </div>
+        ${state.player.tierUnlocked < 2 ? '' : `
+          <div class="service-network-node${workshopNetworkTone}">
+            <span class="service-network-icon service-network-icon--line" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="service-network-copy">
+              <span class="service-network-kicker">Refurb line</span>
+              <strong>${workshopNetworkState}</strong>
+              <small>Manual diagnosis → Ready → sale</small>
+            </span>
+          </div>`}
+      </div>
+      <p class="service-network-return"><span aria-hidden="true">↩</span> Work loops back to your diagnostic bench.</p>
+    </div>`;
+
   const operationsBoard = `
     <section class="operations-board" aria-labelledby="operations-title">
       <header class="operations-board-head">
@@ -660,8 +745,9 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
           <p class="operations-board-kicker">Service control</p>
           <h2 class="operations-board-title" id="operations-title">Operations board</h2>
         </div>
-        <span class="operations-board-rule">Manual repairs fund the network</span>
+        <span class="operations-board-rule">Cold-chain service network</span>
       </header>
+      ${serviceNetwork}
       <div class="operations-lanes">
         <article class="operations-lane operations-lane--queue">
           <header class="operations-lane-head">

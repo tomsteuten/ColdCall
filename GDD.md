@@ -184,6 +184,22 @@ no longer visually overstates the work performed. The new raster state remains
 decorative and button-only — image hotspots are still retired. This changes no
 test result, time cost, payout, save field, or diagnosis rule.
 
+**Decision of record (2026-07-29) — Home becomes a cold-chain service
+network.** The mature Operations Board now puts the Manual Bench upstream of
+Field Routes and the Refurb Line. It says, at a glance, that manual diagnosis
+earns the best pay and reputation, technicians turn contract routes into
+settled jobs while away, route misses return as optional rescues, and workshop
+machines return to the same bench before becoming Ready inventory for sale.
+Every node derives its wording and tone from current state: crew throughput,
+an owed callback, active diagnosis, ready output, and full workshop capacity
+all change the diagram without introducing a new system. Offline crew reports
+use a short one-shot settlement conveyor from fixed jobs to the invoice bank;
+workshop connectors stay static and full bays show a stop hatch. This is the
+repair-tycoon/automation fantasy as truthful visual storytelling, not a fake
+real-time factory. DOM/CSS graphics were chosen over new raster assets so the
+network can never disagree with the save. Economy, simulation, save shape, and
+active-over-idle balance are unchanged.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

@@ -141,7 +141,13 @@
       }
     }
 
-    if (fixture === 'workshop-empty') {
+    if (fixture === 'network-idle') {
+      state.player.tierUnlocked = 2;
+      state.routes = [];
+      state.techs = [];
+      state.workshop.machines = [];
+      state.jobs.callbacks = [];
+    } else if (fixture === 'workshop-empty') {
       state.player.tierUnlocked = 2;
       state.workshop.machines = [];
     } else if (fixture === 'workshop-active') {

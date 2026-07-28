@@ -168,6 +168,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   desktop may use the 900px shell. It is a readout, not a real-time simulation:
   never animate fake progress or introduce duplicate actions merely to make it
   look busy. New players retain the simpler single-column Home sequence.
+- **`.service-network`** (2026-07-29) — the Operations Board's compact,
+  state-derived schematic. The Manual Bench is always the source and explicitly
+  carries the best-pay-and-reputation promise; Field Routes and the Refurb Line
+  branch from it with real crew throughput, capacity, and output states. Warn
+  hatching means work is blocked or a bay is full, not generic decoration.
+  Misses and workshop repairs visibly loop back to manual diagnosis. The marks
+  are DOM/CSS rather than raster art because every label and state must match
+  the current save. Never add cosmetic packets, spinning gears, or fake ticking.
 - **`.work-order-context`** (2026-07-28) — a compact handover strip at the top
   of every active diagnosis. It names where the machine came from and what a
   correct diagnosis advances: field calls pay cash/rep, player callbacks are
@@ -192,11 +200,11 @@ everywhere rather than defining a dozen near-duplicate tokens.
   so technician attribution does not vanish while the call is waiting.
 - **`.workshop-pipeline`** (2026-07-28) — the Operations Board's production
   line: Receiving, Repair, and Ready capacity bays. Phones stack them with
-  downward flow markers; wide Home lays them left-to-right. Machine cards use
-  warn for damaged intake, accent for active diagnosis, and success only after
-  QA/repair. Capacity badges must state full bottlenecks in words, not rely on
-  colour. The active job remains the one Repair bay; never animate progress the
-  simulation does not actually track.
+  static dashed conveyor links; wide Home lays them left-to-right. Machine cards
+  use warn for damaged intake, accent for active diagnosis, and success only
+  after QA/repair. Capacity badges state full bottlenecks in words and full bays
+  gain a stationary stop hatch, never colour alone. The active job remains the
+  one Repair bay; never animate progress the simulation does not actually track.
 - **`.diagnosis-steps`** (2026-07-12) — the compact three-stage
   Review symptoms / Gather evidence / Authorise repair path shown to returning
   players. It is a quiet numbered rail below the symptom report, not a
@@ -274,6 +282,12 @@ everywhere rather than defining a dozen near-duplicate tokens.
   while `audio.diagnostic()` supplies controller keys, a probe chirp, fastener
   clicks, or the meter's continuity beep. Every keyframe is suppressed in the
   reduced-motion block; no motion is required to identify a test.
+- **Cold-chain settlement pass (2026-07-29):** the offline report turns only
+  already-settled crew output into three one-shot invoice packets, then the
+  mature Home schematic may echo one returned packet along its funding bus.
+  These animations mount only with a real return report; ordinary Home and the
+  workshop line remain still. `.field-return-track i` and
+  `.service-network-bus i` are both disabled by the reduced-motion block.
 
 ## 7. Anti-patterns (things that broke this system before — don't repeat)
 

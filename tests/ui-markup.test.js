@@ -405,6 +405,7 @@ test('mature workshop shows Receiving, Repair and Ready as a capacity pipeline',
   assert(html.includes('Move to Repair'), 'the transition should be stated as movement');
   assert(html.includes('data-sell-workshop-machine="ready"'), 'Ready should keep the existing sale action');
   assert(html.includes('Source damaged machines'), 'new intake should remain available below the line');
+  assert(html.includes('Manual diagnosis → Ready → sale'), 'the network should explain why manual diagnosis matters to workshop output');
 });
 
 test('active workshop diagnosis occupies Repair and full Ready visibly blocks the next machine', () => {
@@ -422,6 +423,7 @@ test('active workshop diagnosis occupies Repair and full Ready visibly blocks th
   assert(html.includes('Diagnosis in progress'), 'the active machine should occupy Repair');
   assert(html.includes('data-repair-workshop-machine="waiting" disabled'), 'blocked movement should be disabled');
   assert(html.includes('2/2 full'), 'the full Ready bottleneck should be visible');
+  assert(html.includes('Ready full · 2 to sell'), 'the network summary should surface the blocked output');
 });
 
 // --- contact flavour line rotation (session 22, data-driven caller variation) ---
@@ -660,6 +662,8 @@ test('the offline report attributes jobs and misses per technician', () => {
   assert(html.includes('<strong>3</strong><small>fixed</small>'), 'Dave should be attributed his fixed work');
   assert(html.includes('<strong>1</strong><small>missed</small>'), 'Mike should be attributed his miss');
   assert(html.includes('Run total · 5 fixed · $250 banked'), 'the total must reconcile with the per-tech sheets');
+  assert(html.includes('class="field-return-settlement"'), 'settled output should visibly travel into the invoice bank');
+  assert(html.includes('class="field-return-track"'), 'the report should use one real return conveyor, not ambient activity');
   assert(html.includes('Due tomorrow, optional, no reputation owed'), 'tech misses should immediately teach the rescue consequence');
 });
 
@@ -777,6 +781,9 @@ test('operations board appears after the first completed job without changing ne
   mature.stats.jobsCompleted = 1;
   const matureHtml = homeView({ state: mature, faults: {} });
   assert(matureHtml.includes('operations-board'), 'returning players should see the operations readout');
+  assert(matureHtml.includes('class="service-network"'), 'the mature board should expose its state-derived business flow');
+  assert(matureHtml.includes('Manual bench'), 'manual diagnosis should be the network source');
+  assert(matureHtml.includes('Best pay + reputation'), 'the source should explain why the player keeps diagnosing');
   assert(matureHtml.includes('01 · Work queue'), 'the board should expose the manual queue');
   assert(matureHtml.includes('02 · Field crew'), 'the board should expose idle capacity');
   assert(!matureHtml.includes('03 · Workshop'), 'the workshop lane stays hidden until Tier 2');
@@ -800,6 +807,8 @@ test('operations board exposes technician route, skill and offline capacity', ()
   assert(html.includes('Burgertown South Side'), 'the assigned route should be visible');
   assert(html.includes('Skill 2 · 90%'), 'skill should explain the technician success rate');
   assert(html.includes('~2 jobs/hour away'), 'crew throughput should be readable at a glance');
+  assert(html.includes('1 dispatched · ~2 jobs/hour'), 'the network should summarize real route throughput');
+  assert(html.includes('Misses return as optional rescues'), 'the route branch should return misses to the manual loop');
   assert(html.includes('$50/clean fix'), 'route pay should be attached to the assignment');
   assert(html.includes('Miss → optional rescue'), 'the route card should state the miss handoff');
   assert(html.includes('settles on return'), 'offline settlement timing should be visible before clock-off');
