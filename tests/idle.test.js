@@ -150,6 +150,10 @@ test('tech report lists the tech by name', () => {
   assert(report !== null, 'should have a report');
   assert(report.techReports.length === 1, 'one tech, one report');
   assertEqual(report.techReports[0].name, 'Dave');
+  assertEqual(report.techReports[0].routeId, 'burgertown-south', 'run sheet keeps the route handover');
+  assertEqual(report.techReports[0].skill, 1, 'run sheet keeps the skill that drove outcomes');
+  assertEqual(report.techReports[0].successRate, TECHS.successRateBySkill[1], 'run sheet exposes the configured success rate');
+  assertEqual(report.techReports[0].perJob, TECHS.routeEarningsPerJob[2], 'run sheet exposes route-derived pay');
 });
 
 test('two-tech failures are attributed to the technician who generated them', () => {

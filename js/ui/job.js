@@ -6,7 +6,7 @@
 import { TESTS, TEST_INTERACTION_STATE, testAvailability, testResult, testLabel, fixLabel, jobSymptoms, eliminatedFix } from '../diagnosis.js';
 import { canRepairWorkshopMachine, dueCallbacks, earnedSpeedBonus, workshopPipeline, WORKSHOP_MACHINES } from '../economy.js';
 
-import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, ROUTES, STARTING, TECHS } from '../../config/balance.js';
+import { DIAGNOSIS, JOBS, REPUTATION, PRESTIGE, ROUTES, STARTING, TECHS, OFFLINE } from '../../config/balance.js';
 import { canPlayToday, nextPuzzleCountdown, streakAtRisk } from '../motd.js';
 import { escapeHtml, prefersReducedMotion } from '../utils.js';
 import { mulberry32 } from '../rng.js';
@@ -40,6 +40,60 @@ export function sourceLabel(callback) {
 function callbackRatePct(source) {
   const mult = source === 'tech' ? JOBS.rescueCallbackPayoutMult : JOBS.callbackJobPayoutMult;
   return Math.round(mult * 100);
+}
+
+/** Contract route that serves a callback/client, if the current catalogue has one. */
+function routeForClient(clientId) {
+  return Object.entries(ROUTES).find(([, route]) => route.clientId === clientId)?.[1] ?? null;
+}
+
+/**
+ * Returned offline work rendered as route run sheets. The report stays
+ * transient, while route names and configured outcomes come from durable state
+ * and balance config so the hire → route → miss story uses one vocabulary.
+ */
+export function offlineReportView(state, report) {
+  if (!report) return '';
+  const techLines = (report.techReports ?? []).map((techReport) => {
+    const missed = techReport.callbacks ?? 0;
+    const fixed = techReport.jobs - missed;
+    const tech = state.techs.find((entry) => entry.name === techReport.name);
+    const route = ROUTES[techReport.routeId ?? tech?.routeId];
+    const success = Math.round(
+      (techReport.successRate ?? TECHS.successRateBySkill[techReport.skill ?? tech?.skill] ?? TECHS.baseSuccessRate) * 100
+    );
+    return `
+      <li class="field-return-sheet${missed > 0 ? ' field-return-sheet--miss' : ''}">
+        <div class="field-return-sheet-head">
+          <span><strong>${escapeHtml(techReport.name)}</strong>${route ? ` · ${escapeHtml(route.name)}` : ''}</span>
+          <span class="badge${missed > 0 ? ' badge--warn' : ' badge--success'}">${missed > 0 ? `${missed} tagged` : 'Clean run'}</span>
+        </div>
+        <div class="field-return-numbers">
+          <span><strong>${fixed}</strong><small>fixed</small></span>
+          <span><strong>${missed}</strong><small>missed</small></span>
+          <span><strong>$${techReport.earned}</strong><small>banked</small></span>
+        </div>
+        <p>Skill ${techReport.skill ?? tech?.skill ?? 1} · ${success}% success${techReport.perJob ? ` · $${techReport.perJob}/clean fix` : ''}</p>
+      </li>`;
+  }).join('');
+  const callbackNote = report.callbacksAdded > 0
+    ? `<p class="field-return-callbacks"><strong>${report.callbacksAdded} rescue tag${report.callbacksAdded === 1 ? '' : 's'} raised.</strong> Due tomorrow, optional, no reputation owed.</p>`
+    : '<p class="field-return-clean">Nothing came back with your name on it. Lovely.</p>';
+
+  return `
+    <section class="field-return" aria-label="Returned technician run sheets">
+      <header class="field-return-head">
+        <div>
+          <p class="field-return-kicker">Crew clock-in</p>
+          <h2>Keys back on the peg</h2>
+        </div>
+        <span class="badge">${report.techReports?.length ?? 0} run sheet${report.techReports?.length === 1 ? '' : 's'}</span>
+      </header>
+      ${techLines ? `<ul class="field-return-sheets">${techLines}</ul>` : ''}
+      <p class="field-return-total">Run total · ${report.jobsDone} fixed · $${report.totalEarned} banked</p>
+      ${callbackNote}
+      <button class="btn btn-sm" data-action="dismiss-offline-report">File report</button>
+    </section>`;
 }
 
 /** Whole UTC days from one "YYYY-MM-DD" string to another (toStr − fromStr), or null if unparseable. */
@@ -364,35 +418,6 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       <p class="home-shift-reason">${escapeHtml(shiftReason)} ${shiftProgress}</p>
     </aside>`;
 
-  const offlineBanner = offlineReport
-    ? (() => {
-        const r = offlineReport;
-        // Per-tech lines reconcile arithmetically with the totals (2026-07-04):
-        // fixed + missed = attempts per tech; the totals sum the fixed counts
-        // and dollars, so "Dave: 8 fixed · 4 missed · $400" always adds up.
-        const techLines = (r.techReports ?? [])
-          .map((t) => {
-            const missed = t.callbacks ?? 0;
-            const fixed = t.jobs - missed;
-            return `<li class="home-offline-tech">${escapeHtml(t.name)}: ${fixed} fixed · ${missed} missed · $${t.earned}</li>`;
-          })
-          .join('');
-        // Offline callbacks return tomorrow, not now — say so, so the home count's
-        // "returning soon" entry doesn't read like it appeared then disappeared.
-        const callbackNote =
-          r.callbacksAdded > 0
-            ? `<p class="home-offline-callbacks">${r.callbacksAdded} missed job${r.callbacksAdded !== 1 ? 's' : ''} — back on the board tomorrow, claim from Callbacks.</p>`
-            : '';
-        return `<div class="home-offline-report">
-         <p class="home-offline-title">While you were away</p>
-         ${techLines ? `<ul class="home-offline-techs">${techLines}</ul>` : ''}
-         <p class="home-offline-detail">${r.jobsDone} fixed · $${r.totalEarned} earned in total</p>
-         ${callbackNote}
-         <button class="btn btn-sm" data-action="dismiss-offline-report">Dismiss</button>
-       </div>`;
-      })()
-    : '';
-
   const corruptBanner = corruptSaveBlob
     ? `<div class="corrupt-banner">
          <p class="corrupt-title">Save file couldn't be loaded</p>
@@ -576,20 +601,26 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
         const successRate = Math.round(
           (TECHS.successRateBySkill[tech.skill] ?? TECHS.baseSuccessRate) * 100
         );
+        const routePay = route ? (TECHS.routeEarningsPerJob[route.tier] ?? TECHS.earningsPerJob) : null;
         return `
-          <li class="operations-tech">
-            <span class="dot ${route ? 'dot--ok' : 'dot--warn'}" aria-hidden="true"></span>
-            <span class="operations-tech-copy">
+          <li class="operations-tech field-route-card${route ? '' : ' field-route-card--unassigned'}">
+            <span class="field-route-rail" aria-hidden="true"><i></i><i></i></span>
+            <span class="operations-tech-copy field-route-copy">
               <strong>${escapeHtml(tech.name)}</strong>
               <span>${escapeHtml(routeName)} · Skill ${tech.skill} · ${successRate}%</span>
+              <span class="field-route-effects">
+                <span>~${TECHS.jobsPerHour} jobs/hour away</span>
+                ${routePay ? `<span>$${routePay}/clean fix</span>` : ''}
+                <span>Miss → optional rescue</span>
+              </span>
             </span>
           </li>`;
       }).join('')
-    : `<li class="operations-empty">No field techs yet. Manual calls stop when you clock off.</li>`;
+    : `<li class="operations-empty"><strong>No keys signed out.</strong><span>Hire a technician to cover contract calls while you're away. Manual diagnosis stays your best work.</span></li>`;
   const techCapacity = state.techs.length * TECHS.jobsPerHour;
   const crewSummary = state.techs.length > 0
-    ? `${state.techs.length} active · ~${techCapacity} jobs/hour offline`
-    : 'Manual service only';
+    ? `${state.techs.length} dispatched · ~${techCapacity} jobs/hour away · settles on return`
+    : 'Manual service only · you take every call';
   const totalWorkshopCapacity =
     workshopState.capacity.receiving + workshopState.capacity.repair + workshopState.capacity.ready;
   const workshopLane = state.player.tierUnlocked < 2
@@ -644,7 +675,7 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
             </div>
             <span class="badge">${state.techs.length}/${TECHS.maxTechs} techs</span>
           </header>
-          <p class="operations-lane-summary">${crewSummary}</p>
+          <p class="operations-lane-summary">${crewSummary}<small>Route decides jobs and pay · skill decides clean outcomes · up to ${OFFLINE.baseCapHours}h per return</small></p>
           <ul class="operations-techs">${techRows}</ul>
           <button class="btn btn-sm" data-action="open-shop">${state.techs.length > 0 ? 'Manage crew & upgrades' : 'Hire in upgrades'}</button>
         </article>
@@ -714,7 +745,7 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       ${unlockBanner}
       ${corruptBanner}
       ${expiryBanner}
-      ${offlineBanner}
+      ${offlineReportView(state, offlineReport)}
 
       ${homeContent}
     </section>`;
@@ -740,12 +771,17 @@ export function callbacksView({ state, faults, clients }) {
       const isDue = cb.dueDay <= today;
       const isTech = cb.source === 'tech';
       const clientName = client ? client.name : escapeHtml(cb.clientId);
+      const route = routeForClient(cb.clientId);
+      const sourceKicker = isTech
+        ? `${sourceLabel(cb)}${route ? ` · ${route.name}` : ''}`
+        : 'Your return visit · reputation obligation';
 
       // Not-yet-due entries collapse to a single line (2026-07-04): they exist
       // only so a queued callback doesn't seem to vanish — no decisions to make.
       if (!isDue) {
         return `
-        <li class="callback-line">
+        <li class="callback-line${isTech ? ' callback-line--rescue' : ''}">
+          <span class="callback-source-tag">${escapeHtml(sourceKicker)}</span>
           ${clientName} · ${escapeHtml(machineName)} · returns ${relativeDayPhrase(today, cb.dueDay)}
         </li>`;
       }
@@ -769,9 +805,13 @@ export function callbacksView({ state, faults, clients }) {
         : `<button class="btn btn-callback-take" data-take="${index}">Take callback</button>`;
 
       return `
-        <li class="callback-card">
+        <li class="callback-card${isTech ? ' callback-card--rescue' : ' callback-card--obligation'}">
+          <div class="callback-card-head">
+            <span class="callback-source-tag">${isTech ? 'Optional route rescue' : 'Owed return visit'}</span>
+            <span class="badge${isTech ? '' : ' badge--warn'}">${callbackRatePct(cb.source)}% net</span>
+          </div>
           <p class="callback-client">${clientName}</p>
-          <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceLabel(cb))} · pays ${callbackRatePct(cb.source)}% of net</p>
+          <p class="callback-meta">${escapeHtml(machineName)} · ${escapeHtml(sourceKicker)}</p>
           <p class="callback-timing">${timing}</p>
           <p class="callback-consequence">${consequence}</p>
           ${takeBtn}
@@ -918,8 +958,9 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     workStakes = 'No call-out pay · diagnose correctly to move this machine to Ready for sale';
     workTone = ' work-order-context--workshop';
   } else if (isTechRescue) {
+    const rescueRoute = routeForClient(job.clientId);
     workKind = 'Technician rescue';
-    workStakes = `${escapeHtml(sourceLabel(job.callback))} · pays ${callbackRatePct('tech')}% of net · no clean-streak bonus`;
+    workStakes = `${escapeHtml(sourceLabel(job.callback))}${rescueRoute ? ` · ${escapeHtml(rescueRoute.name)}` : ''} · pays ${callbackRatePct('tech')}% of net · optional, no clean-streak bonus`;
     workTone = ' work-order-context--callback';
   } else if (isCallback) {
     workKind = 'Return visit';

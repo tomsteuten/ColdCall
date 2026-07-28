@@ -105,3 +105,19 @@ export function fanfare(enabled) {
     tone(ac, { freq: 1046.5, at: 0.18, dur: 0.28, type: 'triangle', peak: 0.045 }); // C6
   } catch { /* sound is optional, never fatal */ }
 }
+
+/**
+ * Two clipped radio chirps when keys, training, or a route are signed over to
+ * the field crew. It is deliberately drier than the reward fanfare: a dispatch
+ * acknowledgement, not a jackpot.
+ * @param {boolean} enabled state.settings.audio
+ */
+export function dispatch(enabled) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    tone(ac, { freq: 740, at: 0.04, dur: 0.045, type: 'square', peak: 0.025 });
+    tone(ac, { freq: 980, at: 0.13, dur: 0.06, type: 'square', peak: 0.022 });
+  } catch { /* sound is optional, never fatal */ }
+}

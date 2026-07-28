@@ -153,6 +153,21 @@ dollar speed bonus: workshop sale margin is fixed, and the active repair still
 pays $0 until the player sells from Ready. This corrects misleading UI only;
 settlement, rates, margins, progression, and save shape are unchanged.
 
+**Decision of record (2026-07-28) — first technician becomes a field
+dispatch handover.** Buying the first technician no longer resolves as a
+silent “Owned” ladder row. A transient signed docket names the hire, the
+included Burgertown route, skill success, jobs/hour, and the route-miss →
+optional-rescue consequence, then leads directly back to the Operations Board.
+Route purchases and training reuse the same sign-off language so automatic
+assignment is visible. Home keeps technician, route, pay, pace, skill, and miss
+outcome on one compact route card; the returning-from-offline report brings
+those cards back as settled run sheets with exact fixed/missed/earned totals.
+Technician callbacks carry the same route identity into the queue and shared
+diagnosis work order, visually distinct from the player's owed return visits.
+A dry generated radio chirp acknowledges crew sign-offs. This is presentation
+and transient report metadata only: save shape, simulation, route assignment,
+economy, offline cap, and active-over-idle balance are unchanged.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

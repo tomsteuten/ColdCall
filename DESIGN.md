@@ -175,6 +175,21 @@ everywhere rather than defining a dozen near-duplicate tokens.
   move to Ready for sale, and the daily is score-only. Use semantic accent,
   warn, amber, and success edge colours; keep it to one label plus one stakes
   line so it disappears with the work order instead of becoming tutorial copy.
+- **Field dispatch family** (2026-07-28) — delegation is presented as one
+  physical handover across screens, not as disconnected idle stats.
+  `.dispatch-handover` is the transient signed docket after a hire, training,
+  or route purchase; it names who has the keys, which route moved, and the
+  immediate effect before leading back to Home. `.field-route-card` is the
+  durable Operations Board version: route and technician stay attached to
+  jobs/hour, clean-fix pay, skill success, and the miss → optional rescue
+  outcome. `.field-return` brings the same language back as settled run sheets
+  after an absence. These surfaces may animate a quick stamp or play the dry
+  radio chirp, but must never imply real-time travel or ticking.
+- **Callback source treatments** (2026-07-28) — `.callback-card--obligation`
+  uses the warn edge and “Owed return visit”; `.callback-card--rescue` uses the
+  dispatch accent and “Optional route rescue.” Both retain exact payout,
+  expiry, and consequence copy. Pending rescue lines keep a compact source tag
+  so technician attribution does not vanish while the call is waiting.
 - **`.workshop-pipeline`** (2026-07-28) — the Operations Board's production
   line: Receiving, Repair, and Ready capacity bays. Phones stack them with
   downward flow markers; wide Home lays them left-to-right. Machine cards use

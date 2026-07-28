@@ -38,7 +38,7 @@
     const today = new Date(Date.now());
     const date = (offset) => new Date(today.getTime() + offset * 86400000).toISOString().slice(0, 10);
 
-    if (fixture !== 'first') {
+    if (!['first', 'first-tech', 'first-tech-hired', 'tech-miss'].includes(fixture)) {
       state.player.cash = 7420;
       state.player.reputation = 42;
       state.player.tierUnlocked = 3;
@@ -103,6 +103,42 @@
           evidence: null,
         },
       ];
+    }
+
+    if (fixture === 'first-tech' || fixture === 'first-tech-hired' || fixture === 'tech-miss') {
+      state.player.cash = 1850;
+      state.player.reputation = 12;
+      state.player.tierUnlocked = 2;
+      state.player.lifetimeEarnings = 3920;
+      state.stats.jobsCompleted = 14;
+      state.stats.cleanStreak = 3;
+      state.tools.multimeterTier = 2;
+      state.routes = [{ id: 'burgertown-south', clientId: 'burgertown-high-st' }];
+      state.techs = [
+        { id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: Date.now() },
+      ];
+      state.workshop.machines = [];
+      state.contract = {
+        date: date(0),
+        machineType: 'slushie-machine',
+        count: 2,
+        reward: 80,
+        progress: 0,
+        paid: false,
+      };
+      if (fixture === 'tech-miss') {
+        state.jobs.callbacks = [{
+          faultId: 'slushie-condenser-clogged',
+          clientId: 'burgertown-high-st',
+          dueDay: date(0),
+          expiryDay: date(3),
+          misses: 1,
+          source: 'tech',
+          techId: 'tech-1',
+          techName: 'Dave',
+          evidence: null,
+        }];
+      }
     }
 
     if (fixture === 'workshop-empty') {
@@ -170,10 +206,13 @@
         },
         prestigeConfirm: params.has('confirm'),
         offlineReport: params.has('notices') ? {
-          jobsDone: 12,
-          totalEarned: 720,
+          jobsDone: 11,
+          totalEarned: 650,
           callbacksAdded: 1,
-          techReports: [{ name: 'Dave', jobs: 7, callbacks: 1, earned: 360 }, { name: 'Priya', jobs: 5, callbacks: 0, earned: 360 }],
+          techReports: [
+            { name: 'Dave', routeId: 'burgertown-south', skill: 2, successRate: 0.9, perJob: 50, jobs: 7, callbacks: 1, earned: 300 },
+            { name: 'Priya', routeId: 'froyo-strip', skill: 1, successRate: 0.75, perJob: 70, jobs: 5, callbacks: 0, earned: 350 },
+          ],
         } : null,
       });
     } else if (screen === 'job') {
@@ -181,7 +220,12 @@
     } else if (screen === 'callbacks') {
       app.innerHTML = jobUi.callbacksView({ state, faults, clients });
     } else if (screen === 'shop') {
-      shopUi.render(app, { state, actions });
+      const purchaseNotice = fixture === 'first-tech-hired'
+        ? { itemId: 'hire-tech-1' }
+        : fixture === 'route-assignment'
+          ? { itemId: 'route-froyo-strip' }
+          : null;
+      shopUi.render(app, { state, actions, purchaseNotice });
     } else if (screen === 'codex') {
       codexUi.render(app, { state, faults, machines, actions });
       const filter = params.get('filter');
@@ -217,6 +261,12 @@
             reward: 180,
           },
         },
+      });
+    }
+    const focus = params.get('focus');
+    if (focus) {
+      requestAnimationFrame(() => {
+        app.querySelector(`[data-home-panel="${focus}"]`)?.scrollIntoView({ block: 'start' });
       });
     }
     document.body.dataset.viewportWidth = innerWidth;

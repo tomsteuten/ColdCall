@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defaultState } from '../js/state.js';
 import { startJob } from '../js/diagnosis.js';
-import { isFirstJobOnboarding, showsBeginnerGuidance, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar } from '../js/ui/job.js';
+import { isFirstJobOnboarding, showsBeginnerGuidance, jobView, invoiceView, repairView, testCostCopy, homeView, callbacksView, contactFlavourLine, statusBar, offlineReportView } from '../js/ui/job.js';
 import { TERM_DEFINITIONS, termDisclosure, withTermHelp } from '../js/terminology.js';
-import { staffExplainerHTML } from '../js/ui/shop.js';
+import { staffExplainerHTML, purchaseNoticeHTML } from '../js/ui/shop.js';
 import { render as renderCodex } from '../js/ui/codex.js';
 import { JOBS, REPUTATION, TECHS, OFFLINE } from '../config/balance.js';
 
@@ -589,6 +589,8 @@ test('a due player callback shows its expiry timing and the reputation it risks'
     const state = stateWithCallback({});
     const html = callbacksView({ state, faults: cbFaults, clients: cbClients });
     assert(html.includes('data-take="0"'), 'a due callback should be takeable');
+    assert(html.includes('callback-card--obligation'), 'the player miss should carry the owed-work treatment');
+    assert(html.includes('Owed return visit'), 'the source should be visible before the client details');
     assert(html.includes('Due now · expires in 2 days'), 'due callback should show its claim window');
     assert(html.includes(`lose ${REPUTATION.expiredCallbackRepPenalty} rep`), 'player obligation should warn about the rep penalty');
   } finally {
@@ -610,6 +612,8 @@ test('a not-yet-due tech rescue is shown returning soon, untakeable and penalty-
     assert(!html.includes('data-take='), 'a not-yet-due callback must not be takeable');
     assert(html.includes('returns tomorrow'), 'pending callback should show when it returns');
     assert(html.includes('callback-line'), 'a pending callback collapses to a one-line entry (2026-07-04)');
+    assert(html.includes('callback-line--rescue'), 'a pending tech miss should retain the route-rescue treatment');
+    assert(html.includes('Mike&#39;s miss'), 'the technician attribution should lead the pending line');
     assert(!html.includes('callback-card'), 'no full card for a not-yet-due callback');
   } finally {
     Date.now = realNow;
@@ -632,22 +636,53 @@ test('home Callbacks button distinguishes ready from returning-soon callbacks', 
 
 test('the offline report attributes jobs and misses per technician', () => {
   const state = defaultState();
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+  state.techs.push(
+    { id: 'tech-1', name: 'Dave', skill: 2, routeId: 'burgertown-south', hiredAt: 0 },
+    { id: 'tech-2', name: 'Mike', skill: 1, routeId: 'burgertown-south', hiredAt: 0 },
+  );
   const offlineReport = {
     jobsDone: 5,
     totalEarned: 250,
     callbacksAdded: 1,
     techReports: [
-      { name: 'Dave', jobs: 3, earned: 150, callbacks: 0 },
-      { name: 'Mike', jobs: 3, earned: 100, callbacks: 1 },
+      { name: 'Dave', routeId: 'burgertown-south', skill: 2, successRate: 0.9, perJob: 50, jobs: 3, earned: 150, callbacks: 0 },
+      { name: 'Mike', routeId: 'burgertown-south', skill: 1, successRate: 0.75, perJob: 50, jobs: 3, earned: 100, callbacks: 1 },
     ],
   };
-  const html = homeView({ state, offlineReport });
-  // 2026-07-04: per-tech lines reconcile arithmetically with the total —
-  // fixed = jobs − missed, and the total line sums the fixed counts and $.
-  assert(html.includes('Dave: 3 fixed · 0 missed · $150'), 'Dave should be attributed his jobs and earnings');
-  assert(html.includes('Mike: 2 fixed · 1 missed · $100'), 'Mike should be attributed his miss');
-  assert(html.includes('5 fixed · $250 earned in total'), 'the total must reconcile with the per-tech lines');
-  assert(html.includes('back on the board tomorrow'), 'offline callbacks should be explained, not left to seem vanished');
+  const html = offlineReportView(state, offlineReport);
+  assert(html.includes('Keys back on the peg'), 'the return should feel like a crew hand-back, not a generic alert');
+  assert(html.includes('<strong>Dave</strong> · Burgertown South Side'), 'Dave should return with his route attached');
+  assert(html.includes('<strong>3</strong><small>fixed</small>'), 'Dave should be attributed his fixed work');
+  assert(html.includes('<strong>1</strong><small>missed</small>'), 'Mike should be attributed his miss');
+  assert(html.includes('Run total · 5 fixed · $250 banked'), 'the total must reconcile with the per-tech sheets');
+  assert(html.includes('Due tomorrow, optional, no reputation owed'), 'tech misses should immediately teach the rescue consequence');
+});
+
+test('the first technician purchase signs over a real route and explains the return loop', () => {
+  const state = defaultState();
+  state.player.tierUnlocked = 2;
+  state.routes.push({ id: 'burgertown-south', clientId: 'burgertown-high-st' });
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'burgertown-south', hiredAt: 0 });
+  const html = purchaseNoticeHTML(state, { itemId: 'hire-tech-1' });
+  assert(html.includes('Keys signed out'), 'the hire should land as a physical handover');
+  assert(html.includes('Dave is on the books'), 'the new technician should be named');
+  assert(html.includes('Burgertown South Side'), 'the included route should be visible at purchase time');
+  assert(html.includes('Skill 1 · 75% · ~2/hr'), 'skill and expected route pace should be shown together');
+  assert(html.includes('optional rescue calls'), 'the miss outcome should be taught before the player clocks off');
+  assert(html.includes('See the dispatch board'), 'the handover should lead directly to its durable Home representation');
+});
+
+test('route purchase feedback names the technician assignment and route effect', () => {
+  const state = defaultState();
+  state.player.tierUnlocked = 3;
+  state.routes.push({ id: 'froyo-strip', clientId: 'yo-go-froyo' });
+  state.techs.push({ id: 'tech-1', name: 'Dave', skill: 1, routeId: 'froyo-strip', hiredAt: 0 });
+  const html = purchaseNoticeHTML(state, { itemId: 'route-froyo-strip' });
+  assert(html.includes('Route pinned'), 'a route purchase should visibly change dispatch');
+  assert(html.includes('Dave has the keys'), 'automatic assignment should never be invisible');
+  assert(html.includes('Route tier sets the jobs and pay'), 'route effect should be stated at the handover');
+  assert(html.includes('$70/clean fix'), 'configured route pay should carry into the docket');
 });
 
 test('the staff explainer states jobs/hour, success, offline cap, wage, and callback risk before hiring', () => {
@@ -760,7 +795,10 @@ test('operations board exposes technician route, skill and offline capacity', ()
   assert(html.includes('Dave'), 'the assigned technician should be visible');
   assert(html.includes('Burgertown South Side'), 'the assigned route should be visible');
   assert(html.includes('Skill 2 · 90%'), 'skill should explain the technician success rate');
-  assert(html.includes('~2 jobs/hour offline'), 'crew throughput should be readable at a glance');
+  assert(html.includes('~2 jobs/hour away'), 'crew throughput should be readable at a glance');
+  assert(html.includes('$50/clean fix'), 'route pay should be attached to the assignment');
+  assert(html.includes('Miss → optional rescue'), 'the route card should state the miss handoff');
+  assert(html.includes('settles on return'), 'offline settlement timing should be visible before clock-off');
   assertEqual((html.match(/data-action="open-shop"/g) ?? []).length, 1, 'crew management should have one action');
 });
 

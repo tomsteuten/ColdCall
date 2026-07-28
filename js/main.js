@@ -9,7 +9,7 @@ import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
-import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, stamp as sfxStamp, fanfare as sfxFanfare } from './audio.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, stamp as sfxStamp, fanfare as sfxFanfare, dispatch as sfxDispatch } from './audio.js';
 import { prefersReducedMotion } from './utils.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
@@ -54,6 +54,11 @@ let motdResult = null;
 // Feedback messages for the save data panel in the shop. Transient.
 let exportMessage = null;
 let importError = null;
+
+// A successful shop purchase gets one tactile sign-off before settling into
+// the durable Home board. The item itself is already saved; this docket is
+// transient feedback and may safely disappear on refresh.
+let purchaseNotice = null;
 
 // Feedback messages for the settings modal. Transient.
 let settingsExportMessage = null;
@@ -237,18 +242,26 @@ const actions = {
   openShop() {
     exportMessage = null;
     importError = null;
+    purchaseNotice = null;
     screen = 'shop';
     render();
   },
   closeShop() {
     exportMessage = null;
     importError = null;
+    purchaseNotice = null;
     screen = 'home';
     render();
   },
   buyLadderItem(itemId) {
     const { ok, reason } = buyLadderItem(state, itemId);
-    if (ok) save(state);
+    if (ok) {
+      purchaseNotice = { itemId };
+      save(state);
+      if (itemId.startsWith('hire-tech-') || itemId.startsWith('train-tech-') || itemId.startsWith('route-')) {
+        sfxDispatch(state.settings.audio);
+      }
+    }
     else console.warn(`Cold Call: not bought: ${reason}`);
     render();
   },
@@ -483,7 +496,7 @@ function paint() {
   if (screen === 'motd') {
     motdScreen.render(app, { state, motdResult, actions });
   } else if (screen === 'shop' && !repairBeat && !invoice) {
-    shopScreen.render(app, { state, actions, exportMessage, importError });
+    shopScreen.render(app, { state, actions, purchaseNotice, exportMessage, importError });
   } else if (screen === 'codex' && !repairBeat && !invoice) {
     codexScreen.render(app, { state, faults, machines, actions });
   } else {

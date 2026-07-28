@@ -20,7 +20,9 @@ const MINUTE_MS = 60 * 1000;
  * @param {number} [now] ms epoch, injectable for tests
  * @returns {{elapsedMs: number, simulatedMs: number, totalEarned: number,
  *   jobsDone: number, callbacksAdded: number,
- *   techReports: Array<{name: string, jobs: number, earned: number, callbacks: number}>}|null}
+ *   techReports: Array<{name: string, routeId: string, skill: number,
+ *   successRate: number, perJob: number, jobs: number, earned: number,
+ *   callbacks: number}>}|null}
  *   null when there is nothing to report (fresh save or < 1 min elapsed)
  */
 export function simulateOfflineProgress(state, faults, now = Date.now()) {
@@ -97,7 +99,16 @@ export function simulateOfflineProgress(state, faults, now = Date.now()) {
     }
 
     totalEarned += techEarned;
-    techReports.push({ name: tech.name, jobs, earned: techEarned, callbacks: techCallbacks });
+    techReports.push({
+      name: tech.name,
+      routeId: route.id,
+      skill: tech.skill,
+      successRate,
+      perJob,
+      jobs,
+      earned: techEarned,
+      callbacks: techCallbacks,
+    });
   }
 
   if (totalEarned === 0 && callbacksAdded === 0) return null;
