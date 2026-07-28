@@ -57,12 +57,13 @@ export const TESTS = {
 /**
  * Maps a test id to the machine-art "interaction state" it visually plays out
  * as machine-art feedback after the corresponding labelled test is run:
- * the probe/leads/ajar states show the corresponding physical action.
- * `error-log` has no physical interaction state because it is a controller
- * readout, so the art falls back to the general open-machine state.
- * @type {Object<string, 'probe'|'leads'|'ajar'>}
+ * the log/probe/leads/ajar states show the corresponding instrument action.
+ * The controller read stays button-only because it has no stable physical
+ * hotspot, but its closed-cabinet feedback no longer implies a teardown.
+ * @type {Object<string, 'log'|'probe'|'leads'|'ajar'>}
  */
 export const TEST_INTERACTION_STATE = {
+  'error-log': 'log',
   'temp-probe': 'probe',
   'continuity-test': 'leads',
   'inspect-beater': 'ajar',

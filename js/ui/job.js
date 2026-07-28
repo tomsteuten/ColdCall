@@ -28,6 +28,21 @@ const TEST_VISUAL_FEEDBACK = {
   'continuity-test': 'Electrical reading logged',
 };
 
+const TEST_INSTRUMENT_CLASS = {
+  'error-log': 'log',
+  'temp-probe': 'probe',
+  'inspect-beater': 'inspect',
+  'continuity-test': 'meter',
+};
+
+/** Compact code-native instrument mark shared by an action and its evidence. */
+function testInstrumentHtml(testId) {
+  const kind = TEST_INSTRUMENT_CLASS[testId] ?? 'log';
+  return `<span class="test-instrument test-instrument--${kind}" aria-hidden="true">
+    <i></i><i></i><i></i>
+  </span>`;
+}
+
 /** Player-facing label for a callback's source (GDD §3.1). */
 export function sourceLabel(callback) {
   if (callback?.source !== 'tech') return 'your miss';
@@ -174,10 +189,10 @@ export function testCostCopy(job, testId) {
 
 /**
  * Shared art-slot markup for the job and repair views: picks raster or SVG
- * art for the given machine+state and wraps it with the shared motion/
- * particle layer so both views stay visually identical.
+ * art for the given machine+state and wraps it with the shared motion layer so
+ * both views stay visually identical.
  * @param {string} machineType
- * @param {string} artState 'fault' | 'open' | 'working' | 'probe' | 'leads' | 'ajar'
+ * @param {string} artState 'fault' | 'open' | 'working' | 'log' | 'probe' | 'leads' | 'ajar'
  * @param {{fallback?: string, glow?: boolean, stateLabel?: string}} [opts]
  *   fallback text for an unknown machine; glow adds the one-shot correct-fix
  *   flash (repair view only); stateLabel acknowledges a completed test. Machine
@@ -847,10 +862,15 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   for (const id of Object.keys(TESTS)) {
     const cost = DIAGNOSIS.testMinutes[id] ?? 0;
     if (job.testsRun.includes(id)) {
+      const latest = id === job.testsRun[job.testsRun.length - 1];
+      const kind = TEST_INSTRUMENT_CLASS[id] ?? 'log';
       completedTests.push(`
-        <li class="evidence-item">
+        <li class="evidence-item evidence-item--${kind}${latest ? ' evidence-item--latest' : ''}">
           <div class="evidence-head">
-            <span class="test-label">${withTermHelp(testLabel(id, job.machineType))}</span>
+            <span class="test-evidence-label">
+              ${testInstrumentHtml(id)}
+              <span class="test-label">${withTermHelp(testLabel(id, job.machineType))}</span>
+            </span>
             <span class="evidence-time">+${cost} min</span>
           </div>
           <p class="test-result">${withTermHelp(testResult(job, id, faults))}</p>
@@ -872,9 +892,12 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
           ? `Unlocks $${after} bonus`
           : `Bonus $${before} → $${after}`;
     availableTests.push(`
-      <li class="test-row">
-        <button class="btn btn-test" ${available ? `data-test="${id}"` : 'disabled'}>
-          <span class="test-label">${testLabel(id, job.machineType)}</span>
+      <li class="test-row test-row--${TEST_INSTRUMENT_CLASS[id] ?? 'log'}">
+        <button class="btn btn-test" ${available ? `data-test="${id}"` : 'disabled'} data-test-kind="${TEST_INSTRUMENT_CLASS[id] ?? 'log'}">
+          <span class="test-action-label">
+            ${testInstrumentHtml(id)}
+            <span class="test-label">${testLabel(id, job.machineType)}</span>
+          </span>
           <span class="test-consequence">
             <strong>+${cost} min</strong>
             <span>${consequence}</span>
@@ -983,11 +1006,8 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
         <li class="diagnosis-step${diagnosisStep === 3 ? ' is-active' : ''}"${diagnosisStep === 3 ? ' aria-current="step"' : ''}>Authorise repair</li>
       </ol>`;
 
-  // Art feedback: show the interaction state
-  // matching the LAST test run (probe/leads/ajar — the player just tapped or
-  // clicked their way to it), falling back to the generic 'open' teardown
-  // state when the last test has no matching gesture (error-log) or none has
-  // run yet ('fault', panel closed).
+  // Art feedback shows the interaction state matching the LAST test run
+  // (log/probe/leads/ajar); an untouched machine stays closed and faulty.
   const lastTestId = job.testsRun[job.testsRun.length - 1];
   const artState = lastTestId
     ? (TEST_INTERACTION_STATE[lastTestId] ?? 'open')

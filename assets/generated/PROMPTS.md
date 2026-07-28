@@ -7,11 +7,11 @@ the open integration questions.)
 
 ## What's here
 
-Machine renders — `<machineId>-{fault,open,working,probe,leads,ajar}.webp`, one set
-of **six** per machine in `data/machines.json`. A catalogue test
+Machine renders — `<machineId>-{fault,open,working,log,probe,leads,ajar}.webp`, one set
+of **seven** per machine in `data/machines.json`. A catalogue test
 (`tests/machine-art.test.js`) fails if any machine is missing a state, so keep all
-six per machine. The last three are the tests-as-touches **interaction states**
-(2026-07-08): probe = temp-probe test, leads = continuity test, ajar = inspect test.
+seven per machine. The last four are diagnostic-feedback **interaction states**:
+log = error-log, probe = temp-probe, leads = continuity, ajar = inspect.
 
 - `slushie-machine-*` · `soft-serve-commercial-*` (Tier 1/2)
 - `froyo-multihead-*` · `granita-slushie-*` · `commercial-ice-dispenser-*` (Tier 3)
@@ -120,9 +120,41 @@ like the base set. Instead a per-machine transform was measured and applied:
 The `assets/triptichs/` source jpgs can be deleted once you're happy with the
 committed webps — they're kept only as regeneration source.
 
+## Controller-log state set (`log`) — 2026-07-29
+
+Mode: **Codex built-in image tool, precise image edit**, one edit per machine,
+using that machine's existing `fault.webp` as the reference. The generated PNG
+was resized directly to 640×640 with Pillow/LANCZOS and saved as WebP quality
+88, method 6. The fault reference already supplied a square, matched camera and
+padding; visual review confirmed the resized cabinet stayed aligned with the
+existing state family.
+
+Shared final prompt (replace the bracketed machine description):
+
+```
+Precise object edit for a shipped 2D game asset. Preserve the exact same
+fictional [MACHINE DESCRIPTION], straight-on orthographic camera, machine scale,
+centered placement, generous padding, very dark navy background, palette, cel
+shading, and 1:1 composition from the reference. Change only the interaction
+state: every product door and service panel remains closed and intact while the
+existing front controller is being checked. Illuminate that controller with a
+compact amber fault-history pattern made of abstract bars/dots (no readable text
+or numbers), a restrained ice-cyan scan glow, and one small cyan status LED. No
+open panels, no probes, no multimeter leads, no hands, no people, no loose tools,
+no labels, no logos, no scenery, no watermark. It must read instantly as
+"controller log checked," distinct from teardown, while remaining the exact
+same machine and visual style. Output a clean square bitmap asset.
+```
+
+Machine descriptions used: twin-bowl commercial slushie machine; commercial
+soft-serve freezer; three-head commercial frozen-yogurt machine; three-bowl
+commercial granita machine; tall commercial ice maker/dispenser. Machine-
+specific closure nouns (lids, bowls, taps, chute, bin door) replaced the generic
+product-door phrase where useful.
+
 ## Resolved: the art lane (2026-07-08)
 
-Rendered raster is now the **only** art lane. With all six states present for every
+Rendered raster is now the **only** art lane. With all seven states present for every
 machine, the Settings "Graphics Mode" toggle was removed and `machineImageSrc()`
 always returns the render; the inline SVG (`machineSvg`) survives only as the
 fallback for the test env (webp paths don't resolve headless) and any machine with

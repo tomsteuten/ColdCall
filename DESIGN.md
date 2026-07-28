@@ -211,6 +211,13 @@ everywhere rather than defining a dozen near-duplicate tokens.
   move their tools and panels between states, so percentage hit regions were
   unreliable across machines and viewports. Labelled `.btn-test` controls are
   the single interaction path; machine art reflects the last completed test.
+- **Diagnostic instruments** (2026-07-29) — every `.btn-test` pairs its label
+  with one compact `.test-instrument` mark: controller history, temperature
+  probe, captured fastener, or continuity meter. The same mark follows the
+  observation into `.evidence-item`; only `.evidence-item--latest` plays the
+  instrument-specific settle, then it recedes into the ledger. These marks
+  clarify the nature of an action and are `aria-hidden`; they never replace the
+  text label or create another hit target.
 
 **No emoji as UI chrome.** ✅⚠️🔥📋❌ were removed in favour of badges/dots
 (2026-07-04). Emoji live **only** in flavour text and the MotD share-card grid
@@ -248,9 +255,9 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - **Game-feel pass (2026-07-05):** machine art now breathes continuously
   (`idle-breathe`, filter-based so it never fights a state's own transform
   animation) and gets a one-shot jolt only when a fault ticket's art first
-  mounts (`machine-fault-jolt-once`), plus four small DOM particles
-  (`.art-particles`) drifting over the slot — real elements per CLAUDE.md's
-  DOM-first rule, not canvas. A correct fix gets a one-shot glow overlay
+  mounts (`machine-fault-jolt-once`). The earlier ambient particle layer was
+  retired because it looked like unexplained controls. A correct fix gets a
+  one-shot glow overlay
   (`.repair-glow`) on the repair screen; a wrong fix gets one hard shake
   (`.screen-shake`) on the invoice screen, layered onto the shared fade-in,
   not replacing it. The receipt prints its lines in sequence (`.receipt > *`
@@ -258,9 +265,15 @@ everywhere rather than defining a dozen near-duplicate tokens.
   with a floating `+$N` badge — driven from JS in `job.js` (`wireInvoiceJuice`),
   gated on `prefersReducedMotion()` from `utils.js` since a JS-driven tween
   needs its own check, not just a CSS media query. Test results stamp in
-  (`.test-result`'s `test-result-stamp` keyframe) with a matching sound in
-  `js/audio.js` (`stamp`); tier unlock / contract completion pair
+  (`.test-result`'s `test-result-stamp` keyframe) with a matching instrument
+  sound in `js/audio.js` (`diagnostic`); tier unlock / contract completion pair
   `.celebration-card` with a `fanfare` sound.
+- **Instrument-signature pass (2026-07-29):** `machine-stage--log`, `--probe`,
+  `--leads`, and `--ajar` each settle differently when evidence lands.
+  `.test-instrument` repeats that identity in the controls and latest evidence,
+  while `audio.diagnostic()` supplies controller keys, a probe chirp, fastener
+  clicks, or the meter's continuity beep. Every keyframe is suppressed in the
+  reduced-motion block; no motion is required to identify a test.
 
 ## 7. Anti-patterns (things that broke this system before — don't repeat)
 

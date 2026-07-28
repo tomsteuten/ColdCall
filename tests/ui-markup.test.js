@@ -294,8 +294,8 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
   assert(jobUi.includes("imageSrc ? ' machine-stage--raster' : ''"), 'rendered art should use the larger raster stage');
 
   state.jobs.active.testsRun.push('error-log');
-  const openHtml = jobView({ state, faults, machines, clients });
-  assert(openHtml.includes('machine-stage--open'), 'inspected machine should use open motion');
+  const logHtml = jobView({ state, faults, machines, clients });
+  assert(logHtml.includes('machine-stage--log'), 'controller check should use log motion');
 
   const repairHtml = repairView({ state, repairBeat: { machineType: 'slushie-machine' } });
   assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
@@ -307,6 +307,9 @@ test('diagnostic controls remain the single reliable interaction path', () => {
   assert(!html.includes('art-hotspot'), 'decorative art should not expose unreliable invisible controls');
   assert(html.includes('class="btn btn-test" data-test="temp-probe"'), 'temp probe should remain available from the labelled controls');
   assert(html.includes('class="btn btn-test" data-test="inspect-beater"'), 'inspection should remain available from the labelled controls');
+  for (const kind of ['log', 'probe', 'inspect', 'meter']) {
+    assert(html.includes(`test-instrument--${kind}`), `${kind} action should have a distinct instrument mark`);
+  }
   assert(html.includes('aria-hidden="true"'), 'decorative machine art should stay out of the accessibility tree');
 });
 
@@ -317,8 +320,9 @@ test('machine art state follows the last diagnostic test', () => {
   assert(probeHtml.includes('machine-stage--probe'), 'temp-probe should show the probe interaction state');
 
   state.jobs.active.testsRun.push('error-log');
-  const backToOpenHtml = jobView({ state, faults, machines, clients });
-  assert(backToOpenHtml.includes('machine-stage--open'), 'error-log has no matching state and falls back to open');
+  const logHtml = jobView({ state, faults, machines, clients });
+  assert(logHtml.includes('machine-stage--log'), 'error-log should show the closed controller state');
+  assert(logHtml.includes('test-instrument--log'), 'controller evidence should keep its instrument identity');
 });
 
 test('job view separates reported symptoms, measured evidence and remaining actions', () => {

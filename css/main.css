@@ -562,6 +562,74 @@ html:active-view-transition .screen { animation: none; }
   animation: diagnostic-scan 3.8s linear infinite;
 }
 
+/* Diagnostic states move like their instruments, not like generic page chrome.
+ * The raster already carries the physical prop; these one-shot settles make the
+ * newly mounted state feel handled without turning the art into a control. */
+@keyframes controller-log-check {
+  0% { opacity: 0.75; filter: brightness(0.92) saturate(0.8); }
+  45% { opacity: 1; filter: brightness(1.12) saturate(1.12); }
+  100% { opacity: 1; filter: brightness(1) saturate(1); }
+}
+
+@keyframes controller-log-sweep {
+  from { transform: translateY(-170%); opacity: 0; }
+  18% { opacity: 0.8; }
+  to { transform: translateY(470%); opacity: 0; }
+}
+
+.machine-stage--log .machine-art,
+.machine-stage--log > svg {
+  animation: controller-log-check 0.5s var(--ease-out) 1;
+}
+
+.machine-stage--log::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  height: 18%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 28%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: controller-log-sweep 0.7s ease-out 1 both;
+}
+
+@keyframes probe-settle {
+  0% { transform: translateY(-3px) rotate(0.4deg); }
+  55% { transform: translateY(1px) rotate(-0.15deg); }
+  100% { transform: none; }
+}
+
+@keyframes meter-confirm {
+  0%, 100% { filter: brightness(1); }
+  42% { filter: brightness(1.16) saturate(1.15); }
+}
+
+@keyframes panel-fastener-seat {
+  0% { transform: rotate(-0.45deg) translateX(-2px); }
+  60% { transform: rotate(0.15deg) translateX(1px); }
+  100% { transform: none; }
+}
+
+.machine-stage--probe .machine-art,
+.machine-stage--probe > svg {
+  animation: probe-settle 0.42s var(--ease-out) 1;
+}
+
+.machine-stage--leads .machine-art,
+.machine-stage--leads > svg {
+  animation: meter-confirm 0.48s ease-out 1;
+}
+
+.machine-stage--ajar .machine-art,
+.machine-stage--ajar > svg {
+  animation: panel-fastener-seat 0.38s var(--ease-out) 1;
+}
+
 @keyframes machine-running {
   0%, 100% { transform: translateY(0); filter: brightness(1); }
   50% { transform: translateY(-1px); filter: brightness(1.045); }
@@ -646,6 +714,8 @@ html:active-view-transition .screen { animation: none; }
   .machine-stage > svg,
   .machine-stage::before,
   .machine-stage::after,
+  .test-instrument,
+  .test-instrument i,
   .receipt > *,
   .receipt-line--rep span:last-child,
   .celebration-card,
@@ -2099,7 +2169,7 @@ html:active-view-transition .screen { animation: none; }
   display: flex;
   justify-content: space-between;
   gap: var(--space-sm);
-  align-items: baseline;
+  align-items: center;
 }
 
 .evidence-time {
@@ -2110,6 +2180,198 @@ html:active-view-transition .screen { animation: none; }
 }
 
 .test-label { font-weight: 600; }
+
+.test-action-label,
+.test-evidence-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.test-action-label {
+  text-align: left;
+}
+
+.test-instrument {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--steel));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-deep) 72%, transparent);
+  color: var(--accent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
+}
+
+.test-evidence-label .test-instrument {
+  flex-basis: 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.test-instrument i {
+  position: absolute;
+  display: block;
+}
+
+/* Controller history: three stored-event bars. */
+.test-instrument--log i {
+  bottom: 6px;
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: bottom;
+}
+.test-instrument--log i:nth-child(1) { left: 7px; height: 7px; }
+.test-instrument--log i:nth-child(2) { left: 13px; height: 13px; }
+.test-instrument--log i:nth-child(3) { left: 19px; height: 9px; }
+
+/* Temperature probe: a narrow stem with a filled bulb. */
+.test-instrument--probe::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 12px;
+  width: 5px;
+  height: 17px;
+  border: 1px solid currentColor;
+  border-radius: 4px 4px 2px 2px;
+}
+.test-instrument--probe::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  bottom: 4px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 45%, var(--bg-deep));
+}
+.test-instrument--probe i:first-child {
+  z-index: 1;
+  left: 14px;
+  top: 8px;
+  width: 2px;
+  height: 12px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+}
+
+/* Inspection: a captured panel fastener. */
+.test-instrument--inspect {
+  color: var(--amber);
+}
+.test-instrument--inspect::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.test-instrument--inspect i:first-child,
+.test-instrument--inspect i:nth-child(2) {
+  top: 14px;
+  left: 8px;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.test-instrument--inspect i:nth-child(2) {
+  transform: rotate(90deg);
+}
+
+/* Continuity meter: an analogue arc, needle, and two terminals. */
+.test-instrument--meter {
+  color: var(--success);
+}
+.test-instrument--meter::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 5px;
+  width: 18px;
+  height: 10px;
+  border: 1px solid currentColor;
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+}
+.test-instrument--meter i:first-child {
+  left: 14px;
+  bottom: 8px;
+  width: 1px;
+  height: 10px;
+  background: currentColor;
+  transform: rotate(-42deg);
+  transform-origin: bottom;
+}
+.test-instrument--meter i:nth-child(2),
+.test-instrument--meter i:nth-child(3) {
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.test-instrument--meter i:nth-child(2) { left: 6px; }
+.test-instrument--meter i:nth-child(3) { right: 6px; }
+
+@keyframes log-bars-read {
+  0% { transform: scaleY(0.12); opacity: 0.35; }
+  70% { transform: scaleY(1.18); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes probe-reading-settle {
+  0% { transform: scaleY(0.18); }
+  72% { transform: scaleY(1.12); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes fastener-turn {
+  from { transform: rotate(-105deg); }
+  to { transform: rotate(0); }
+}
+
+@keyframes meter-needle-sweep {
+  0% { transform: rotate(-58deg); }
+  65% { transform: rotate(45deg); }
+  100% { transform: rotate(18deg); }
+}
+
+.evidence-item--latest {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--steel));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface-low));
+}
+
+.evidence-item--latest .test-instrument--log i {
+  animation: log-bars-read 0.34s var(--ease-out) both;
+}
+.evidence-item--latest .test-instrument--log i:nth-child(2) { animation-delay: 0.05s; }
+.evidence-item--latest .test-instrument--log i:nth-child(3) { animation-delay: 0.1s; }
+.evidence-item--latest .test-instrument--probe i:first-child {
+  animation: probe-reading-settle 0.45s var(--ease-out) both;
+}
+.evidence-item--latest .test-instrument--inspect {
+  animation: fastener-turn 0.38s var(--ease-out) both;
+}
+.evidence-item--latest .test-instrument--meter i:first-child {
+  animation: meter-needle-sweep 0.48s var(--ease-out) both;
+}
+
+@media (hover: hover) {
+  .btn-test:hover:not(:disabled) .test-instrument {
+    border-color: currentColor;
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-deep));
+  }
+}
 
 .test-label--complete {
   display: flex;
@@ -2164,6 +2426,9 @@ html:active-view-transition .screen { animation: none; }
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: var(--text-sm);
+}
+
+.evidence-item--latest .test-result {
   animation: test-result-stamp 0.22s ease-out;
 }
 

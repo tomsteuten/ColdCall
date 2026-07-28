@@ -9,7 +9,7 @@ import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
-import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, stamp as sfxStamp, fanfare as sfxFanfare, dispatch as sfxDispatch } from './audio.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, diagnostic as sfxDiagnostic, fanfare as sfxFanfare, dispatch as sfxDispatch } from './audio.js';
 import { prefersReducedMotion } from './utils.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
@@ -181,9 +181,9 @@ const actions = {
   },
   runTest(testId) {
     runTest(state, testId, faults);
-    // Test results "stamp in" (2026-07-05 game-feel session): the visual is a
-    // CSS animation on the fresh .test-result element; this is its sound half.
-    sfxStamp(state.settings.audio);
+    // Controller keys, probe settle, panel fasteners, or a continuity beep:
+    // the confirmation belongs to the instrument that produced the evidence.
+    sfxDiagnostic(state.settings.audio, testId);
     save(state);
     render();
   },

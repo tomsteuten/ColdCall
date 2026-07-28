@@ -26,10 +26,10 @@ test('unknown machines return null for the text fallback path', () => {
 });
 
 test('every catalogued machine has a generated raster asset for every art state', () => {
-  // The three base states plus the three diagnostic-feedback interaction states
-  // (2026-07-08) — the raster set is now complete, so the graphics toggle can
+  // The three base states plus the four diagnostic-feedback interaction states
+  // — the raster set is complete, so the graphics toggle can
   // go and rendered can be the only real lane.
-  const allStates = [...STATES, 'probe', 'leads', 'ajar'];
+  const allStates = [...STATES, 'log', 'probe', 'leads', 'ajar'];
   const catalogue = JSON.parse(readFileSync(join(rootDir, 'data/machines.json'), 'utf8')).machines;
   for (const machine of catalogue) {
     for (const state of allStates) {
@@ -48,10 +48,10 @@ test('fault and open states produce different machine markup', () => {
   }
 });
 
-test('interaction states (probe/leads/ajar) render for every machine, distinct from fault', () => {
+test('interaction states (log/probe/leads/ajar) render for every machine, distinct from fault', () => {
   for (const machineId of MACHINES) {
     const fault = machineSvg(machineId, 'fault');
-    for (const state of ['probe', 'leads', 'ajar']) {
+    for (const state of ['log', 'probe', 'leads', 'ajar']) {
       const svg = machineSvg(machineId, state);
       assert(typeof svg === 'string' && svg.startsWith('<svg '), `${machineId}/${state} should render`);
       assert(svg !== fault, `${machineId}/${state} must visibly differ from the plain fault art`);

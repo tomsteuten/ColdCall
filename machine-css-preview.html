@@ -69,8 +69,8 @@
       { id: 'granita-slushie',          name: 'GlacierGlide Triple-Bowl Granita (Tier 3)' },
       { id: 'commercial-ice-dispenser', name: 'IceO-Matic 9000 Ice Dispenser (Tier 3)' },
     ];
-    // Base states + the tests-as-touches interaction states (2026-07-04).
-    const STATES = ['fault', 'open', 'working', 'probe', 'leads', 'ajar'];
+    // Base states + the four diagnostic-feedback interaction states.
+    const STATES = ['fault', 'open', 'working', 'log', 'probe', 'leads', 'ajar'];
 
     const root = document.getElementById('preview');
 

@@ -2,12 +2,13 @@
  * or when no AudioContext exists (node, old browsers). The audible behaviour is
  * manual-check territory; these tests pin the failure modes. */
 
-import { click, jingle, thunk, dispatch } from '../js/audio.js';
+import { click, jingle, thunk, diagnostic, dispatch } from '../js/audio.js';
 
 test('all SFX are silent no-ops when the audio setting is off', () => {
   click(false);
   jingle(false);
   thunk(false);
+  diagnostic(false, 'continuity-test');
   dispatch(false);
   // Reaching here without a throw is the assertion.
   assert(true);
@@ -18,6 +19,7 @@ test('all SFX survive an environment with no AudioContext (node)', () => {
   click(true);
   jingle(true);
   thunk(true);
+  diagnostic(true, 'temp-probe');
   dispatch(true);
   assert(true);
 });

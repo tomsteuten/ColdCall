@@ -18,7 +18,7 @@
     });
   </script>
   <script type="module">
-    const [{ defaultState }, { loadGameData }, jobUi, shopUi, codexUi, { startJob }, { mulberry32 }] = await Promise.all([
+    const [{ defaultState }, { loadGameData }, jobUi, shopUi, codexUi, { startJob, runTest }, { mulberry32 }] = await Promise.all([
       import('./js/state.js'),
       import('./js/faults.js'),
       import('./js/ui/job.js'),
@@ -216,6 +216,11 @@
         } : null,
       });
     } else if (screen === 'job') {
+      const requestedTest = params.get('test');
+      if (state.jobs.active && ['error-log', 'temp-probe', 'inspect-beater', 'continuity-test'].includes(requestedTest)
+        && !state.jobs.active.testsRun.includes(requestedTest)) {
+        runTest(state, requestedTest, faults);
+      }
       app.innerHTML = jobUi.jobView({ state, faults, machines, clients });
     } else if (screen === 'callbacks') {
       app.innerHTML = jobUi.callbacksView({ state, faults, clients });
@@ -266,7 +271,10 @@
     const focus = params.get('focus');
     if (focus) {
       requestAnimationFrame(() => {
-        app.querySelector(`[data-home-panel="${focus}"]`)?.scrollIntoView({ block: 'start' });
+        const target = focus === 'diagnostics'
+          ? app.querySelector('.diagnostics-panel')
+          : app.querySelector(`[data-home-panel="${focus}"]`);
+        target?.scrollIntoView({ block: 'start' });
       });
     }
     document.body.dataset.viewportWidth = innerWidth;

@@ -2,10 +2,11 @@
  *
  * Base states (used by the game today):
  *   'fault'   — machine showing symptoms, panel closed (shown before any tests run)
- *   'open'    — mid-teardown: lids/panels off, internals exposed (after first test)
+ *   'open'    — mid-teardown: lids/panels off, internals exposed
  *   'working' — machine fixed and running (invoice / repair beat / preview tool)
  *
  * Interaction states used as feedback after labelled diagnostic tests:
+ *   'log'     — cabinet closed, controller awake with stored alarms
  *   'probe'   — a lid is off and the temp probe is in the product
  *   'leads'   — an access cover is off with meter leads clipped to terminals
  *   'ajar'    — the service panel is cracked open, screwdriver still out
@@ -136,11 +137,11 @@ function miniSwirl(cx, baseY, colour = '#f0e6d2') {
   </g>`;
 }
 
-// Each machine has three base states (fault/open/working) plus the three
-// interaction states (probe/leads/ajar) that labelled diagnostic controls swap
-// to — all scale-/camera-matched to the fault render so the swap never
+// Each machine has three base states (fault/open/working) plus the four
+// interaction states (log/probe/leads/ajar) that labelled diagnostic controls
+// swap to — all scale-/camera-matched to the fault render so the swap never
 // jumps (see assets/generated/PROMPTS.md for how the interaction set was made).
-const RENDER_STATES = ['fault', 'open', 'working', 'probe', 'leads', 'ajar'];
+const RENDER_STATES = ['fault', 'open', 'working', 'log', 'probe', 'leads', 'ajar'];
 const GENERATED_MACHINES = Object.fromEntries(
   ['slushie-machine', 'soft-serve-commercial', 'froyo-multihead', 'granita-slushie', 'commercial-ice-dispenser']
     .map((id) => [id, Object.fromEntries(RENDER_STATES.map((s) => [s, `assets/generated/${id}-${s}.webp`]))])
@@ -149,11 +150,11 @@ const GENERATED_MACHINES = Object.fromEntries(
 /**
  * Returns the generated raster render for a machine type and visual state, or
  * null to fall back to the inline SVG (`machineSvg`). Rendered raster is the
- * one art lane now that every machine has all six states (2026-07-08); the SVG
+ * one art lane now that every machine has all seven states; the SVG
  * survives only as the fallback for the test environment (globalThis.test —
  * webp paths don't resolve headless) and any machine without a render.
  * @param {string} machineId
- * @param {'fault'|'open'|'working'|'probe'|'leads'|'ajar'} state
+ * @param {'fault'|'open'|'working'|'log'|'probe'|'leads'|'ajar'} state
  * @returns {string|null}
  */
 export function machineImageSrc(machineId, state) {
@@ -167,7 +168,7 @@ export function machineImageSrc(machineId, state) {
 /**
  * Returns inline SVG markup for a machine in the given display state.
  * @param {string} machineId  matches the id field in machines.json
- * @param {'fault'|'open'|'working'} state
+ * @param {'fault'|'open'|'working'|'log'|'probe'|'leads'|'ajar'} state
  * @returns {string|null} SVG markup string, or null if no art for this machine
  */
 export function machineSvg(machineId, state) {

@@ -22,7 +22,7 @@
     const params = new URLSearchParams(location.search);
     const requestedFault = params.get('fault') ?? 'mix-feed-valve-stuck-closed';
     const faultFile = /^[a-z0-9-]+$/.test(requestedFault) ? requestedFault : 'mix-feed-valve-stuck-closed';
-    const [{ defaultState }, { startJob }, { jobView }, { wireTermHelp }, fault, machineData, clientData] = await Promise.all([
+    const [{ defaultState }, { startJob, runTest }, { jobView }, { wireTermHelp }, fault, machineData, clientData] = await Promise.all([
       import('../js/state.js'),
       import('../js/diagnosis.js'),
       import('../js/ui/job.js'),
@@ -49,8 +49,11 @@
     }
 
     if (params.has('tested')) {
-      state.jobs.active.testsRun.push('temp-probe');
-      state.jobs.active.minutesSpent = 5;
+      const requestedTest = params.get('tested');
+      const testId = ['error-log', 'temp-probe', 'inspect-beater', 'continuity-test'].includes(requestedTest)
+        ? requestedTest
+        : 'temp-probe';
+      runTest(state, testId, { [fault.id]: fault });
     }
 
     const machines = machineData.machines ?? machineData;
@@ -66,6 +69,9 @@
     document.querySelector('[data-action="go-to-diagnostics"]')?.addEventListener('click', () => {
       document.querySelector('.diagnostics-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+    if (params.get('focus') === 'diagnostics') {
+      document.querySelector('.diagnostics-panel')?.scrollIntoView({ block: 'start' });
+    }
     document.body.dataset.viewportWidth = innerWidth;
   </script>
 </body>

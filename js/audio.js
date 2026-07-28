@@ -90,6 +90,35 @@ export function stamp(enabled) {
 }
 
 /**
+ * Test-specific instrument confirmations. These stay short enough to read as
+ * workshop equipment rather than reward jingles.
+ * @param {boolean} enabled state.settings.audio
+ * @param {string} testId diagnosis test id
+ */
+export function diagnostic(enabled, testId) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    if (testId === 'error-log') {
+      tone(ac, { freq: 310, at: 0.00, dur: 0.035, type: 'square', peak: 0.026 });
+      tone(ac, { freq: 420, at: 0.07, dur: 0.055, type: 'square', peak: 0.025 });
+    } else if (testId === 'temp-probe') {
+      tone(ac, { freq: 430, at: 0.00, dur: 0.07, type: 'triangle', peak: 0.026 });
+      tone(ac, { freq: 570, at: 0.08, dur: 0.12, type: 'triangle', peak: 0.024 });
+    } else if (testId === 'inspect-beater') {
+      tone(ac, { freq: 190, at: 0.00, dur: 0.045, type: 'sawtooth', peak: 0.022 });
+      tone(ac, { freq: 145, at: 0.065, dur: 0.055, type: 'sawtooth', peak: 0.02 });
+    } else if (testId === 'continuity-test') {
+      tone(ac, { freq: 260, at: 0.00, dur: 0.025, type: 'square', peak: 0.018 });
+      tone(ac, { freq: 880, at: 0.035, dur: 0.18, type: 'sine', peak: 0.026 });
+    } else {
+      stamp(enabled);
+    }
+  } catch { /* sound is optional, never fatal */ }
+}
+
+/**
  * A brighter three-note rise for a bigger deal than a plain correct fix —
  * tier unlock or a completed daily contract — layered alongside the fix
  * jingle rather than replacing it.
