@@ -40,6 +40,28 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-31 — Codex — Phase 1C settlement becomes a game result
+
+- **Files touched:** `js/ui/job.js`, `css/main.css`, `tests/ui-markup.test.js`,
+  `DESIGN.md`, `GDD.md`, `HANDOFF.md`, `sw.js`.
+- **Contract:** `invoiceView()` still consumes the existing transient invoice
+  payload and changes no action hooks. `.settlement-board` is now the leading
+  result surface; it totals job earnings plus contract/Codex awards already
+  present in the payload. `.receipt-ledger` preserves the itemised `.receipt`,
+  collapsed on success and open on failure. `invoice-next-ticket` and
+  `dismiss-invoice` remain before the ledger. Negative reputation is clamped to
+  zero only in the native progress meter; actual state and tier maths are untouched.
+- **Graphics mode:** n/a — code-native DOM/CSS result graphics.
+- **sw.js cache bumped?** yes v43→v44.
+- **prefers-reduced-motion honored?** yes — the result seal animation is disabled
+  in the shared reduced-motion block.
+- **Schema change?** none.
+- **Tests:** `node tests/run.js` → **370 passing, 0 failed**.
+- **Open / unverified:** visually verified through a real clean-save success and
+  failure at 390×844, plus 320×640 and 1280×720 responsive checks; no horizontal
+  overflow and no console errors. Branch is stacked on unpublished-to-main
+  `ux/phase-1b-diagnosis`, so merge Phase 1B before Phase 1C.
+
 ### 2026-07-08 — Claude Code — Session 30: playtest-feedback pass (nav, density, repetition)
 
 - **Files touched:** `js/main.js` (routing, goHome/resumeJob actions, guards,

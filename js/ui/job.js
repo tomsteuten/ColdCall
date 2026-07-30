@@ -1465,26 +1465,120 @@ export function invoiceView({ state, invoice }) {
       ? `<p class="receipt-codex celebration-card">Contract complete: +$${contractInfo.reward.toLocaleString('en-US')}</p>`
       : `<p class="receipt-codex">Today's contract: ${contractInfo.progress}/${contractInfo.count}</p>`
     : '';
+  const codexBonus = codexInfo
+    ? codexInfo.milestonesPaid.reduce((total, milestone) => total + milestone.bonus, 0)
+    : 0;
+  const contractBonus = contractInfo?.justCompleted ? contractInfo.reward : 0;
+  const settlementTotal = earned + codexBonus + contractBonus;
+  const bonusEvents = [
+    contractBonus > 0
+      ? `<span><strong>+$${contractBonus.toLocaleString('en-US')}</strong> daily contract</span>`
+      : '',
+    ...((codexInfo?.milestonesPaid ?? []).map(
+      (milestone) => `<span><strong>+$${milestone.bonus.toLocaleString('en-US')}</strong> manual ${milestone.pct}%</span>`
+    )),
+    codexInfo?.isNew
+      ? `<span><strong>${codexInfo.mastered}/${codexInfo.total}</strong> manual entry</span>`
+      : '',
+  ].filter(Boolean).join('');
+  const bonusHtml = bonusEvents
+    ? `<div class="settlement-bonuses" aria-label="Additional rewards">${bonusEvents}</div>`
+    : '';
 
   // A wrong fix gets one hard screen-shake as the receipt lands (2026-07-05
   // game-feel session); a correct one already got its glow beat on the repair
   // screen just before this, so the invoice itself stays calm.
   const shakeClass = !isWorkshop && !correct ? ' screen-shake' : '';
+  const repDelta = !isWorkshop && typeof invoice.repDelta === 'number' ? invoice.repDelta : 0;
+  const nextTier = state.player.tierUnlocked + 1;
+  const nextThreshold = REPUTATION.tierThresholds[nextTier];
+  const repRemaining = typeof nextThreshold === 'number'
+    ? Math.max(0, nextThreshold - state.player.reputation)
+    : null;
+  const unlockCopy = unlockedTier === 2
+    ? 'Burgertown calls and the refurbishment line are now live.'
+    : unlockedTier === 3
+      ? 'Regional cold-chain clients and advanced routes are now live.'
+      : unlockedTier
+        ? `Tier ${unlockedTier} work is now live.`
+        : nextTier === 2
+          ? 'Next unlock: Burgertown calls and the refurbishment line.'
+          : nextTier === 3
+            ? 'Next unlock: regional clients and advanced routes.'
+            : 'All launch client tiers are unlocked.';
+  const heroEyebrow = isWorkshop
+    ? 'Workshop report'
+    : correct
+      ? callback
+        ? 'Return visit closed'
+        : 'Field report closed'
+      : 'Callback raised';
+  const heroTitle = isWorkshop
+    ? correct ? 'Ready for resale' : 'Still on the bench'
+    : correct ? 'Back in service' : 'Diagnosis missed';
+  const heroDetail = correct
+    ? `${escapeHtml(fixLabel(chosenFix))} · ${invoice.minutesSpent ?? 0} diagnostic min`
+    : `Committed ${escapeHtml(fixLabel(chosenFix))} · callback scheduled for tomorrow`;
+  const thirdMetricLabel = correct && !callback && !isWorkshop ? 'Clean run' : 'Job time';
+  const thirdMetricValue = correct && !callback && !isWorkshop
+    ? `${invoice.cleanStreak ?? 0}`
+    : `${invoice.minutesSpent ?? 0}m`;
+  const thirdMetricNote = correct && !callback && !isWorkshop
+    ? ((invoice.cleanStreak ?? 0) > 1 ? 'job streak' : 'streak started')
+    : 'diagnosis';
+  const repMetric = isWorkshop
+    ? `<div class="settlement-metric">
+         <span>Workshop</span><strong>${correct ? 'Ready' : 'Repair'}</strong><small>${correct ? 'sale unlocked' : 'repair incomplete'}</small>
+       </div>`
+    : `<div class="settlement-metric">
+         <span>Reputation</span>
+         <strong class="${repDelta < 0 ? 'is-negative' : ''}">${repDelta >= 0 ? '+' : '−'}${Math.abs(repDelta)}</strong>
+         <small>${repRemaining === null ? `Tier ${state.player.tierUnlocked}` : `${repRemaining} to Tier ${nextTier}`}</small>
+       </div>`;
+  const progressHtml = isWorkshop
+    ? `<div class="settlement-next">
+         <span class="settlement-next-label">Workshop handoff</span>
+         <strong>${correct ? 'Move this machine to Ready inventory' : 'Return to the bench with the new evidence'}</strong>
+         <p>${correct ? 'Sell it from the Operations Board when you are ready.' : 'No workshop value was lost; the machine can be diagnosed again.'}</p>
+       </div>`
+    : `<div class="settlement-next${unlockedTier ? ' settlement-next--unlock celebration-card' : ''}">
+         <div class="settlement-next-head">
+           <span class="settlement-next-label">${unlockedTier ? 'Network expanded' : 'Service network'}</span>
+           <strong>${unlockedTier ? `Tier ${unlockedTier} unlocked` : repRemaining === null ? `Tier ${state.player.tierUnlocked} reached` : `${repRemaining} rep to Tier ${nextTier}`}</strong>
+         </div>
+         ${typeof nextThreshold === 'number' && !unlockedTier
+           ? `<progress max="${nextThreshold}" value="${Math.max(0, Math.min(state.player.reputation, nextThreshold))}">${Math.max(0, state.player.reputation)}/${nextThreshold}</progress>`
+           : ''}
+         <p>${unlockCopy}</p>
+       </div>`;
 
   return `
     ${statusBar(state, { home: true })}
     <section class="screen screen-invoice${shakeClass}">
-      <div class="receipt">
-        <div class="receipt-header">— COLD CALL SERVICES —</div>
-        <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
-        ${lineItems}
-        ${repLine}
-        ${streakLine}
-        ${receiptNote}
-        ${codexLines}
-        ${contractLine}
-        ${unlockedTier ? `<p class="receipt-unlock celebration-card">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
-        ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
+      <div class="settlement-board settlement-board--${correct ? 'good' : 'bad'}">
+        <header class="settlement-hero">
+          <div class="settlement-seal" aria-hidden="true"><span></span></div>
+          <div>
+            <p>${heroEyebrow}</p>
+            <h2>${heroTitle}</h2>
+            <span>${heroDetail}</span>
+          </div>
+        </header>
+        <div class="settlement-metrics" aria-label="Job outcome">
+          <div class="settlement-metric settlement-metric--primary">
+            <span>${isWorkshop ? 'Repair value' : 'Banked'}</span>
+            <strong>+$${settlementTotal.toLocaleString('en-US')}</strong>
+            <small>$${state.player.cash.toLocaleString('en-US')} balance</small>
+          </div>
+          ${repMetric}
+          <div class="settlement-metric">
+            <span>${thirdMetricLabel}</span>
+            <strong>${thirdMetricValue}</strong>
+            <small>${thirdMetricNote}</small>
+          </div>
+        </div>
+        ${bonusHtml}
+        ${progressHtml}
       </div>
       <div class="invoice-actions${isWorkshop ? ' invoice-actions--single' : ''}">
         ${isWorkshop
@@ -1492,6 +1586,24 @@ export function invoiceView({ state, invoice }) {
           : `<button class="btn btn-primary" data-action="invoice-next-ticket">Next ticket</button>
              <button class="btn" data-action="dismiss-invoice">Home</button>`}
       </div>
+      <details class="receipt-ledger"${!correct ? ' open' : ''}>
+        <summary>
+          <span>Itemised invoice</span>
+          <strong>${outcomeText} · $${earned.toLocaleString('en-US')}</strong>
+        </summary>
+        <div class="receipt">
+          <div class="receipt-header">— COLD CALL SERVICES —</div>
+          <p class="receipt-outcome ${outcomeClass}">${outcomeText}</p>
+          ${lineItems}
+          ${repLine}
+          ${streakLine}
+          ${receiptNote}
+          ${codexLines}
+          ${contractLine}
+          ${unlockedTier ? `<p class="receipt-unlock celebration-card">★ Tier ${unlockedTier} clients unlocked!</p>` : ''}
+          ${correct ? `<p class="receipt-flavour">“${fault.flavour}”</p>` : ''}
+        </div>
+      </details>
       ${learningBlock}
     </section>`;
 }

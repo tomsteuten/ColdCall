@@ -752,6 +752,44 @@ test('receipt shows the reputation change and a grown clean streak', () => {
   assert(!missHtml.includes('in a row'), 'no streak line after a miss');
 });
 
+test('settlement leads with a visual payoff, progression and optional itemised detail', () => {
+  const state = defaultState();
+  state.player.cash = 740;
+  state.player.reputation = 1;
+  state.stats.cleanStreak = 1;
+  const invoice = {
+    correct: true,
+    fault,
+    earned: 90,
+    repDelta: 1,
+    chosenFix: 'right-fix',
+    callback: false,
+    callbackSource: null,
+    unlockedTier: null,
+    minutesSpent: 2,
+    testsUsed: 1,
+    cleanStreak: 1,
+    codex: { isNew: true, mastered: 1, total: 10, milestonesPaid: [{ pct: 25, bonus: 100 }] },
+    contract: { justCompleted: true, reward: 50 },
+  };
+  const html = invoiceView({ state, invoice });
+  assert(html.includes('class="settlement-board settlement-board--good"'), 'a successful job should lead with the game-result surface');
+  assert(html.includes('Back in service'), 'the physical outcome should lead the settlement');
+  assert(html.includes('+$240'), 'the headline banked amount should include job, contract and manual rewards');
+  assert(html.includes('9 rep to Tier 2'), 'the result should name progress toward the next client tier');
+  assert(html.includes('<progress max="10" value="1">'), 'tier progress should have a native visual meter');
+  assert(html.includes('class="settlement-bonuses"'), 'additional rewards should stay visible outside the collapsed ledger');
+  assert(html.includes('<details class="receipt-ledger">'), 'successful itemised detail should be available but initially collapsed');
+  assert(html.indexOf('data-action="invoice-next-ticket"') < html.indexOf('class="receipt-ledger"'), 'the next loop action should precede optional accounting detail');
+
+  state.player.reputation = -2;
+  const missHtml = invoiceView({ state, invoice: { ...invoice, correct: false, earned: 40, repDelta: -2, cleanStreak: 0, codex: null, contract: null } });
+  assert(missHtml.includes('settlement-board--bad') && missHtml.includes('Diagnosis missed'), 'a miss should lead with its consequence state');
+  assert(missHtml.includes('<progress max="10" value="0">0/10</progress>'), 'negative reputation should clamp the visual network meter at zero');
+  assert(missHtml.includes('<details class="receipt-ledger" open>'), 'failure accounting should stay open for review');
+  assert(missHtml.includes('Where it went wrong'), 'the visual debrief must preserve the authored teaching block');
+});
+
 test('mature home groups the ticket loop, crew and workshop before daily and long-term goals', () => {
   const state = defaultState();
   state.stats.jobsCompleted = 3;

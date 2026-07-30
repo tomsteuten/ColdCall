@@ -134,8 +134,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
 - **`.home-details`** — native `<details>` collapsible for secondary home
   sections (prestige, workshop) so the loop stays above the fold. One-line
   `<summary>`, expands on tap.
-- **`.receipt`** — the settlement surface. Cream printed-paper look, monospace-y
-  line items, `--total` bold row. The single warm surface; the payoff beat.
+- **`.settlement-board`** (2026-07-31) — the job-result surface: physical outcome
+  seal, banked cash, reputation, streak/time, bonus awards and one truthful
+  network-progress meter. Success uses service green; callbacks use warning
+  salmon. It is the payoff beat and must fit above both exits on a 320×640 view.
+- **`.receipt-ledger` / `.receipt`** — native disclosure plus cream printed-paper
+  accounting. The itemised invoice deliberately remains monospace text; it is
+  collapsed after success and open after a miss, when reviewing consequences is
+  more important than accelerating into the next ticket.
 - **`.callback-card`** (full, for due callbacks) vs **`.callback-line`**
   (one-line, for not-yet-due). Match this due/pending split in any new queue UI.
 - **`.job-ticket`** (2026-07-05, compacted 2026-07-30) — the job screen's
@@ -220,10 +226,11 @@ everywhere rather than defining a dozen near-duplicate tokens.
   segmented control: the active step uses `aria-current="step"`; completed
   steps use success colour. It is orientation only, never a hint about the
   correct test or fix.
-- **`.invoice-actions`** (2026-07-12) — Next ticket and Home share one centered
-  two-column row immediately below a normal receipt. A workshop invoice has
-  one full-width Home action. Failure teaching follows the exits so a long
-  lesson can never bury navigation.
+- **`.invoice-actions`** (2026-07-12, moved 2026-07-31) — Next ticket and Home
+  share one centered two-column row immediately below `.settlement-board` and
+  before the optional itemised ledger. A workshop result has one full-width
+  Home action. Failure teaching follows the exits so a long lesson can never
+  bury navigation.
 - **`.repair-tray`** (2026-07-30) — the final diagnosis lives in a native
   `<details>` tray after the evidence controls. It begins collapsed before any
   test so the physical machine and evidence actions own the first interaction;

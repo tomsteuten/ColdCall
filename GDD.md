@@ -134,6 +134,19 @@ invoice layouts start at the top and use tighter receipt padding so both exits
 stay visible without an unnecessary second button row. Existing actions and
 diagnosis behavior are unchanged.
 
+**Decision of record (2026-07-31) — settlement becomes a game result.**
+The old receipt-first invoice hid the physical payoff and split progression
+across several small lines. Settlement now leads with a compact result board:
+back-in-service/callback state, total cash actually banked (including contract
+and Service Manual awards), reputation change, streak or diagnostic time, and a
+native progress meter naming the next client-network unlock. Bonus awards remain
+visible as compact chips. Next ticket and Home stay immediately below that board;
+the cream itemised invoice becomes a native disclosure, collapsed after success
+and open after failure alongside the authored diagnostic lesson. This deliberately
+supersedes the 2026-07-12 receipt-first ordering while retaining the receipt as
+text-based accounting. Economy, settlement maths, callbacks, progression, save
+shape and action wiring are unchanged.
+
 **Decision of record (2026-07-28) — mature Home becomes an Operations Board.**
 After the first completed job, Home groups the existing manual queue, field
 technicians/contract routes, and Tier-2 workshop into a visible operations
