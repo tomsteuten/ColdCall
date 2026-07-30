@@ -632,6 +632,7 @@ test('home Callbacks button distinguishes ready from returning-soon callbacks', 
   try {
     // Only a future callback: button must show "returning soon", not vanish.
     const pendingOnly = stateWithCallback({ dueDay: '2026-06-14', source: 'tech' });
+    pendingOnly.stats.jobsCompleted = 1;
     const html = homeView({ state: pendingOnly });
     assert(html.includes('returning soon'), 'a queued-but-not-due callback should remain visible on home');
     assert(html.includes('data-action="open-callbacks"'), 'the Callbacks button should still render');
@@ -776,7 +777,13 @@ test('operations board appears after the first completed job without changing ne
   const freshHtml = homeView({ state: fresh, faults: {} });
   assert(!freshHtml.includes('operations-board'), 'onboarding home should remain a simple action sequence');
   assert(freshHtml.includes('data-action="next-ticket"'), 'onboarding home keeps its primary ticket action');
-
+  assert(freshHtml.includes('class="first-call"'), 'onboarding home should stage the first ticket as an incoming call');
+  assert(freshHtml.includes('Your first field job is waiting'), 'the player should understand their immediate objective');
+  assert(freshHtml.includes('Read symptoms'), 'the first call should preview the diagnosis loop');
+  assert(freshHtml.includes('Cash + reputation'), 'the first call should state the clean-fix reward');
+  assert(freshHtml.includes('Return callback'), 'the first call should state the wrong-fix consequence');
+  assertEqual((freshHtml.match(/btn-primary/g) ?? []).length, 1, 'the first screen should expose one strong CTA');
+  assert(freshHtml.indexOf('class="first-call"') < freshHtml.indexOf('data-action="start-motd"'), 'the field call should outrank optional daily play');
   const mature = defaultState();
   mature.stats.jobsCompleted = 1;
   const matureHtml = homeView({ state: mature, faults: {} });
@@ -817,6 +824,7 @@ test('operations board exposes technician route, skill and offline capacity', ()
 
 test('home shift brief recommends the most urgent existing action', () => {
   const state = defaultState();
+  state.stats.jobsCompleted = 1;
   const today = new Date(Date.now()).toISOString().slice(0, 10);
   state.player.reputation = 7;
   state.jobs.callbacks.push({
@@ -914,6 +922,7 @@ test("home shows Today's contract with machine name, progress badge, and reward"
   assert(html.includes('Fix 2 × Polar Twister'), 'target machine named from machines.json');
   assert(html.includes('+$80'), 'reward visible');
   assert(html.includes('1/2'), 'progress visible');
+  assertEqual((html.match(/Today's contract/g) ?? []).length, 1, 'fresh Home should fold the contract into the call rather than duplicate it');
 
   // Completed contract shows the success badge instead of progress.
   state.contract.progress = 2;

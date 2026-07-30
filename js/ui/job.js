@@ -444,6 +444,54 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       <p class="home-shift-action">${escapeHtml(shiftRecommendation)}</p>
       <p class="home-shift-reason">${escapeHtml(shiftReason)} ${shiftProgress}</p>
     </aside>`;
+  // A brand-new save opens on one clear game-shaped proposition: an incoming
+  // field call. Ticket details are deliberately not previewed here because the
+  // client and fault are selected only when nextTicket() runs. This surface
+  // stages the real loop and consequences without inventing state or changing
+  // ticket selection.
+  const firstCallAction = paused
+    ? primaryAction
+    : `<button class="btn btn-primary first-call-cta" data-action="next-ticket">
+         <span>Answer the call</span>
+         <span class="btn-subtext">Start your first diagnosis</span>
+       </button>`;
+  const firstCallContract = contractIsToday
+    ? `<div class="first-call-bonus${contract.paid ? ' first-call-bonus--done' : ''}">
+         <span class="first-call-bonus-label">Today's contract</span>
+         <span class="first-call-bonus-copy">
+           <strong>Fix ${contract.count} × ${escapeHtml(contractMachine)}</strong>
+           <span>+$${contract.reward.toLocaleString('en-US')} bonus</span>
+         </span>
+         ${contract.paid
+           ? `<span class="badge badge--success">Complete</span>`
+           : `<span class="badge">${contract.progress}/${contract.count}</span>`}
+       </div>`
+    : '';
+  const firstCallHero = `
+    <section class="first-call" aria-labelledby="first-call-title">
+      <header class="first-call-head">
+        <span class="first-call-signal" aria-hidden="true"><i></i></span>
+        <span class="first-call-heading">
+          <span class="first-call-kicker">${paused ? 'Diagnosis paused' : 'Incoming service call'}</span>
+          <h2 id="first-call-title">${paused ? 'Your first job is saved' : 'Your first field job is waiting'}</h2>
+        </span>
+        <span class="badge${paused ? '' : ' badge--warn'}">${paused ? 'On hold' : 'New call'}</span>
+      </header>
+      <p class="first-call-brief">${paused
+        ? 'Return to the work order when you are ready. Simulated time is stopped while the job is paused.'
+        : 'The van is stocked. Read the work order, test the machine, then authorise one repair.'}</p>
+      <ol class="first-call-steps" aria-label="First job flow">
+        <li><span>01</span>Read symptoms</li>
+        <li><span>02</span>Gather evidence</li>
+        <li><span>03</span>Authorise repair</li>
+      </ol>
+      <div class="first-call-stakes" aria-label="Job consequences">
+        <span><i class="dot dot--ok" aria-hidden="true"></i><strong>Clean fix</strong> Cash + reputation</span>
+        <span><i class="dot dot--warn" aria-hidden="true"></i><strong>Wrong fix</strong> Return callback</span>
+      </div>
+      ${firstCallAction}
+      ${firstCallContract}
+    </section>`;
 
   const corruptBanner = corruptSaveBlob
     ? `<div class="corrupt-banner">
@@ -819,17 +867,21 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
         <button class="btn" data-action="open-settings">Settings</button>
       </nav>`
     : `
-      ${shiftBrief}
-      ${primaryAction}
-      ${alternateTicketAction}
-      ${total > 0 && !callbackIsPrimary ? `<button class="btn btn-callbacks" data-action="open-callbacks">${callbackLabel}</button>` : ''}
-      ${motdSection}
-      ${contractSection}
+      ${firstCallHero}
+      <section class="first-call-extras" aria-labelledby="first-call-extras-title">
+        <div class="first-call-extras-head">
+          <h2 class="home-section-title" id="first-call-extras-title">Before dispatch</h2>
+          <p>Optional training and setup</p>
+        </div>
+        <div class="first-call-extras-grid">
+          ${motdSection}
+          <button class="btn" data-action="open-codex">Service Manual <span class="btn-subtext">${codexMastered}/${codexTotal} faults logged</span></button>
+          <button class="btn" data-action="open-shop">Upgrades</button>
+          <button class="btn" data-action="open-settings">Settings</button>
+        </div>
+      </section>
       ${prestigeSection}
       ${workshopSection}
-      <button class="btn" data-action="open-codex">Service Manual — ${codexMastered}/${codexTotal} logged</button>
-      <button class="btn" data-action="open-shop">Upgrades shop</button>
-      <button class="btn" data-action="open-settings">Settings</button>
       ${(state.van.stock['generic-parts'] ?? 0) < state.van.slots
         ? `<button class="btn btn-restock" data-action="restock-van">Restock van</button>`
         : ''}`;
@@ -841,7 +893,9 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
     ${statusBar(state)}
     <section class="screen screen-home${matureHome ? ' screen-home--operations' : ''}">
       ${brand}
-      <p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>
+      ${matureHome
+        ? `<p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>`
+        : ''}
 
       ${unlockBanner}
       ${corruptBanner}

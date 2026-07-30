@@ -961,6 +961,246 @@ html:active-view-transition .screen { animation: none; }
   color: var(--text-dim);
   margin: var(--space-xs) 0 0;
 }
+/* New-player Home: the first ticket reads as an incoming field call rather
+ * than one button among a stack of utilities. The visual dispatch contains no
+ * guessed client/fault data; accepting it remains the existing next-ticket
+ * action and therefore preserves the ticket rules. */
+.first-call {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+  padding: var(--space);
+  border: var(--border);
+  border-top: var(--stroke-accent) solid var(--accent);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 40%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-hi) 28%, transparent), transparent 58%),
+    var(--surface-low);
+  box-shadow: var(--shadow-panel);
+  text-align: left;
+}
+
+.first-call::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: 0.32;
+  background:
+    linear-gradient(color-mix(in srgb, var(--accent) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 6%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, black, transparent 60%);
+  pointer-events: none;
+}
+
+.first-call-head {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.first-call-signal {
+  position: relative;
+  width: 3rem;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, var(--steel));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: first-call-ring 1.2s var(--ease-out) 2;
+}
+
+.first-call-signal::before,
+.first-call-signal::after,
+.first-call-signal i {
+  content: "";
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+
+.first-call-signal::before {
+  inset: 0.65rem;
+  opacity: 0.5;
+}
+
+.first-call-signal::after {
+  inset: 1rem;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.first-call-signal i {
+  inset: 0.3rem;
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+@keyframes first-call-ring {
+  50% { box-shadow: 0 0 0 0.4rem transparent; }
+}
+
+.first-call-heading { min-width: 0; }
+
+.first-call-kicker {
+  display: block;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.first-call-heading h2,
+.first-call-brief,
+.first-call-extras-head h2,
+.first-call-extras-head p { margin: 0; }
+
+.first-call-heading h2 {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+}
+
+.first-call-brief {
+  max-width: var(--measure-copy);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
+
+.first-call-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.first-call-steps li {
+  min-width: 0;
+  padding: var(--space-sm);
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+  line-height: 1.25;
+}
+
+.first-call-steps span {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.first-call-stakes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+
+.first-call-stakes > span {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 var(--space-xs);
+  align-items: center;
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+}
+
+.first-call-stakes .dot { grid-row: 1 / 3; }
+
+.first-call-stakes strong {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.first-call-cta {
+  min-height: 3.65rem;
+  font-size: var(--text-lg);
+  box-shadow: var(--shadow-raised), 0 0 24px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.first-call-cta .btn-subtext {
+  color: color-mix(in srgb, var(--text-inv) 72%, transparent);
+  font-weight: 600;
+}
+
+.first-call-bonus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--space-sm);
+  align-items: center;
+  padding: var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--amber) 42%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--amber) 6%, var(--surface));
+}
+
+.first-call-bonus--done { border-color: color-mix(in srgb, var(--success) 42%, transparent); }
+
+.first-call-bonus-label {
+  grid-column: 1 / -1;
+  color: var(--amber);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.first-call-bonus-copy {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-sm);
+  align-items: baseline;
+  font-size: var(--text-sm);
+}
+
+.first-call-bonus-copy span {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.first-call-extras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  text-align: left;
+}
+
+.first-call-extras-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  align-items: baseline;
+}
+
+.first-call-extras-head p {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.first-call-extras-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.first-call-extras-grid > * { min-width: 0; }
+.first-call-extras-grid .btn-motd { grid-column: 1 / -1; }
 
 .home-shift-brief {
   display: grid;

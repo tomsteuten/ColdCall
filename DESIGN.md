@@ -162,6 +162,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   Home's primary action. It summarizes the most urgent existing queue,
   contract, paused-job, or unlock state; it never introduces a duplicate
   action or event hook. Keep it to one action line plus one short reason.
+- **`.first-call`** (2026-07-30) — the fresh-save Home's incoming-dispatch
+  surface. It makes the first field call the only primary objective, previews
+  the real symptom → evidence → repair loop, states the clean-fix/callback
+  consequences, and folds Today's Contract into one compact bonus strip.
+  Never preview a client, machine, or fault here unless ticket selection is
+  moved into durable state; accepting the call currently performs that draw.
+  Machine of the Day, the manual, upgrades, and settings remain visibly
+  optional in `.first-call-extras`.
 - **`.operations-board`** (2026-07-28) — the mature-player Home surface after
   the first completed job. It groups existing state and actions into Work
   Queue, Field Crew, and (from Tier 2) Workshop lanes. Mobile stacks the lanes;
