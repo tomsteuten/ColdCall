@@ -104,10 +104,10 @@ everywhere rather than defining a dozen near-duplicate tokens.
   only the two-column job/repair screens and the mature Home Operations Board
   use the full width. Keep list screens in the narrow rule: a list of buttons
   stretched to 900px reads badly.
-- **Desktop job screen is a two-column grid on `.screen-job` itself**
-  (2026-07-08): the ticket panel + machine art form the left column and the
-  diagnostics/commit panels the right (`.job-cols { display: contents }`
-  lifts its children into the grid). This is a height budget, not
+- **Desktop job screen is a two-column grid on `.job-cols`** (2026-07-30):
+  the ticket panel, machine art, and caller context form the left column; the
+  diagnostics and progressive repair tray form the right. This is a height
+  budget, not
   decoration — Windows browsers at 125–150% zoom leave only ~640 CSS px of
   height, and a standard job must fit it without scrolling. The evidence
   still renders first (top-left, above the controls) per the §7
@@ -138,13 +138,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   line items, `--total` bold row. The single warm surface; the payoff beat.
 - **`.callback-card`** (full, for due callbacks) vs **`.callback-line`**
   (one-line, for not-yet-due). Match this due/pending split in any new queue UI.
-- **`.job-ticket`** (2026-07-05) — the job screen's full-width header panel:
-  client/machine name plus the reported symptoms quoted as a work order
-  (`.job-ticket-order`, left-accent blockquote). Rendered outside `.job-cols`
-  so it's always the first content after the status bar, on every viewport —
-  see §7 anti-patterns for why. The symptom block is the dominant inset within
-  the ticket: 4px accent, tinted low surface, upright semibold symptom lines.
-  Caller flavour and the progress rail must remain visually secondary.
+- **`.job-ticket`** (2026-07-05, compacted 2026-07-30) — the job screen's
+  symptoms-first work-order header: source/stakes, client/machine, quoted
+  symptoms, then the diagnosis rail. It remains the first item in `.job-cols`
+  and the first content after the status bar on every viewport, but caller flavour
+  and job instruments now sit below the machine art. This keeps the report
+  first while bringing the physical equipment into the first mobile viewport.
+  The symptom block remains the dominant inset: 4px accent, tinted low surface,
+  upright semibold symptom lines.
 - **`.streak-flame`** (2026-07-05) — small inline SVG icon (not emoji) marking
   an escalating clean streak at 5/10/20 via `--1`/`--2`/`--3` glow tiers.
 - **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
@@ -223,6 +224,12 @@ everywhere rather than defining a dozen near-duplicate tokens.
   two-column row immediately below a normal receipt. A workshop invoice has
   one full-width Home action. Failure teaching follows the exits so a long
   lesson can never bury navigation.
+- **`.repair-tray`** (2026-07-30) — the final diagnosis lives in a native
+  `<details>` tray after the evidence controls. It begins collapsed before any
+  test so the physical machine and evidence actions own the first interaction;
+  it opens after evidence is logged or when confirmation/restocking needs
+  attention. Blind fixes remain possible by opening it manually. The tray is
+  presentation only: it never changes fix availability, settlement, or saves.
 - **Image hotspots are retired** (2026-07-11). Generated raster compositions
   move their tools and panels between states, so percentage hit regions were
   unreliable across machines and viewports. Labelled `.btn-test` controls are

@@ -2471,9 +2471,9 @@ html:active-view-transition .screen { animation: none; }
 }
 
 /* The ticket panel — client/machine header + the caller's reported symptoms,
- * quoted like a work order. Rendered full-width, outside .job-cols, so the
- * evidence is always the first thing after the status bar on every viewport
- * (2026-07-05 game-feel session — it used to be buried below header/art). */
+ * quoted like a work order. It is the first item in .job-cols and the first
+ * content after the status bar on every viewport (2026-07-05 game-feel
+ * session — it used to be buried below header/art). */
 .job-ticket {
   border-left: 3px solid var(--accent);
   gap: var(--space-xs); /* was sm — density fix 2026-07-08 */
@@ -2481,6 +2481,128 @@ html:active-view-transition .screen { animation: none; }
 
 .diagnostics-panel,
 .commit-panel { border-left: 3px solid var(--steel); }
+/* Phase 1B diagnosis hierarchy: keep the report first, bring the physical
+ * machine directly behind it, then stage evidence and the final repair as
+ * separate bench zones. No simulated state is invented by these surfaces. */
+.job-ticket-head,
+.diagnostics-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.job-ticket-head > div { min-width: 0; }
+.job-ticket-head .badge { flex: none; }
+
+.screen-job .job-ticket-order {
+  margin-top: 0;
+  padding-block: var(--space-sm);
+}
+
+.machine-bench { gap: var(--space-sm); }
+
+.machine-bench-next {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-low));
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.machine-bench-next strong { color: var(--accent); }
+
+.machine-bench .client-callout {
+  padding: 0.4rem 0.5rem;
+  border: var(--border-soft);
+  border-left: var(--stroke-accent) solid var(--steel);
+  border-radius: var(--radius-sm);
+  background: var(--surface-low);
+  text-align: left;
+}
+
+.diagnostics-panel { border-left-color: var(--accent); }
+
+.diagnostics-head .panel-label { margin: 0; }
+.diagnostics-head .badge { flex: none; }
+.diagnostics-panel > .job-instruments { margin-bottom: var(--space-sm); }
+
+.screen-job details.repair-tray {
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border-left-color: var(--steel);
+}
+
+.repair-tray[open] { border-left-color: var(--accent); }
+
+.repair-tray-summary {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-sm) 2rem var(--space-sm) var(--space);
+  cursor: pointer;
+  list-style: none;
+  text-align: left;
+}
+
+.repair-tray-summary::-webkit-details-marker { display: none; }
+
+.repair-tray-summary::after {
+  content: "+";
+  position: absolute;
+  right: var(--space);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.repair-tray[open] .repair-tray-summary::after { content: "−"; }
+
+.repair-tray-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.repair-tray-kicker {
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.repair-tray-heading strong { font-size: var(--text-base); }
+
+.repair-tray-meta {
+  max-width: 11rem;
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+.repair-tray-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space) var(--space);
+  border-top: var(--border-soft);
+  background: color-mix(in srgb, var(--surface-low) 45%, transparent);
+}
+
+.repair-tray-body .term-disclosure { margin-bottom: var(--space-xs); }
 
 .work-order-context {
   display: grid;
@@ -4309,6 +4431,7 @@ html:active-view-transition .screen { animation: none; }
   }
 
   .ticket-next-step,
+  .machine-bench-next,
   .context-guide,
   .settings-guidance {
     grid-template-columns: 1fr;
@@ -4325,24 +4448,24 @@ html:active-view-transition .screen { animation: none; }
     max-width: 900px;
   }
 
-  /* Desktop job layout (2026-07-08 playtest fix, superseding the stacked
-     full-width ticket): the ticket header + art form the LEFT column and the
-     diagnostics/commit controls the RIGHT, so the whole job fits a short
-     desktop viewport (browser zoom at 125–150% leaves ~640 CSS px of
-     height). Reading order still honors the §7 anti-pattern: the evidence
-     is top-left, before and above the controls that act on it.
-     display:contents lifts .job-cols' children into this grid — the mobile
-     column layout below 601px is untouched. */
-  .screen-job {
+  /* Desktop job layout: .job-cols places the ticket, machine, and caller
+     context in the LEFT column and the diagnostics/progressive repair tray
+     in the RIGHT. This keeps the decision loop visible in short desktop
+     viewports (browser zoom at 125–150% leaves ~640 CSS px of height).
+     Mobile below 601px keeps the ordered, stacked workflow. */
+  .screen-job { display: block; }
+  .screen-job .job-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.65rem var(--space-lg);
+    gap: var(--space-lg);
     align-items: start;
   }
-  .screen-job .job-ticket { grid-column: 1; }
-  .screen-job .job-cols { display: contents; }
-  .screen-job .job-col-left { grid-column: 1; }
-  .screen-job .job-col-right { grid-column: 2; grid-row: 1 / span 2; }
+  .screen-job .job-col-left,
+  .screen-job .job-col-right {
+    grid-column: auto;
+    grid-row: auto;
+    gap: 0.65rem;
+  }
 
   .screen-job .panel {
     padding: 0.55rem 0.8rem;

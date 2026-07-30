@@ -1161,11 +1161,11 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     ? ''
     : job.testsRun.length === 0
       ? `<div class="context-guide" aria-label="Beginner guidance">
-          <div><strong>Next: gather evidence.</strong><p>Each test answers a different question. Your first useful test unlocks a speed bonus; extra test minutes reduce it.</p></div>
+          <div><strong>Next: choose one test.</strong><p>Turn the symptom report into measured evidence. One useful test unlocks the speed bonus.</p></div>
           <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
         </div>`
       : `<div class="context-guide context-guide--evidence" aria-label="Beginner guidance">
-          <div><strong>Evidence logged.</strong><p>Compare the result with the reported symptoms. If more than one repair still fits, run the test that would separate them.</p></div>
+          <div><strong>Evidence logged.</strong><p>Compare this reading with the symptoms. Test again only if more than one repair still fits.</p></div>
           <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
         </div>`;
   const testPurposeHelp = guidance
@@ -1176,62 +1176,60 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     : '';
   const repairTerms = termDisclosure(job.fixOptions.map(fixLabel), 'Repair terms');
 
-  // Symptoms are the caller's complaint — the ticket itself — so they render
-  // as the first content after the status bar on every viewport (2026-07-05
-  // game-feel session). The ticket panel sits outside job-cols precisely so
-  // the two-column desktop grid can't push it below the fold or behind the
-  // diagnostics buttons; job-cols only holds the art and the controls that
-  // act on the evidence above it.
+  const repairTrayOpen = job.testsRun.length > 0 || !!pendingFirstFixId || outOfParts;
+  const repairTrayMeta = pendingFirstFixId
+    ? 'Confirmation required'
+    : outOfParts
+      ? 'Van empty'
+      : `${job.fixOptions.length} options · ${job.testsRun.length > 0 ? 'final decision' : 'evidence recommended'}`;
+
+  // Symptoms remain first in the DOM and visual reading order. The ticket is
+  // deliberately compact: caller flavour and job instruments move below the
+  // machine so the physical equipment reaches the first mobile viewport.
+  // Controls still follow the evidence they act on.
   return `
     ${statusBar(state, { home: true })}
     <section class="screen screen-job">
 
-      <div class="panel job-ticket">
-
-        ${workOrderContext}
-
-        <h2 class="job-client">${clientName}</h2>
-
-        <p class="job-machine">${safeMachineName}</p>
-
-        <blockquote class="job-ticket-order">
-
-          <p class="panel-label">Reported symptoms</p>
-
-          <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${withTermHelp(s)}”</li>`).join('')}</ul>
-
-          ${guidance && job.testsRun.length === 0 ? `<div class="ticket-next-step">
-            <p><strong>Start here.</strong> Symptoms describe what changed; tests turn those clues into measured evidence.</p>
-            <button class="btn btn-sm" data-action="go-to-diagnostics">Go to diagnostics</button>
-          </div>` : ''}
-
-        </blockquote>
-
-        ${diagnosisStepper}
-
-        ${portraitHtml}
-
-        ${instrumentBar}
-
-      </div>
-
       <div class="job-cols">
+        <div class="job-col-left machine-bench">
+          <div class="panel job-ticket">
+            ${workOrderContext}
 
-        <div class="job-col-left">
+            <div class="job-ticket-head">
+              <div>
+                <h2 class="job-client">${clientName}</h2>
+                <p class="job-machine">${safeMachineName}</p>
+              </div>
+              <span class="badge">Work order</span>
+            </div>
 
+            <blockquote class="job-ticket-order">
+              <p class="panel-label">Reported symptoms</p>
+              <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${withTermHelp(s)}”</li>`).join('')}</ul>
+            </blockquote>
+
+            ${diagnosisStepper}
+          </div>
           ${artSlot}
 
+          ${guidance && job.testsRun.length === 0 ? `<div class="machine-bench-next">
+            <span><strong>Symptoms logged.</strong> Inspect the machine, then gather evidence.</span>
+            <button class="btn btn-sm" data-action="go-to-diagnostics">Gather evidence</button>
+          </div>` : ''}
+
+          ${portraitHtml}
         </div>
 
-
         <div class="job-col-right">
-
           <div class="panel diagnostics-panel">
+            <div class="diagnostics-head">
+              <h3 class="panel-label">02 · Gather evidence</h3>
+              <span class="badge">${completedTests.length} logged</span>
+            </div>
 
-            <h3 class="panel-label">Diagnostics</h3>
-
+            ${instrumentBar}
             ${diagnosisGuide}
-
             ${testPurposeHelp}
 
             ${completedTests.length ? `
@@ -1245,53 +1243,42 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
                 <h4 class="diagnostic-subhead" id="available-tests-title">${completedTests.length ? 'Run another test' : 'Available tests'}</h4>
                 <ul class="tests">${availableTests.join('')}</ul>
               </section>` : ''}
-
           </div>
 
+          <details class="panel commit-panel repair-tray"${repairTrayOpen ? ' open' : ''}>
+            <summary class="repair-tray-summary">
+              <span class="repair-tray-heading">
+                <span class="repair-tray-kicker">03 · Final decision</span>
+                <strong>Authorise repair</strong>
+              </span>
+              <span class="repair-tray-meta">${repairTrayMeta}</span>
+            </summary>
 
+            <div class="repair-tray-body">
+              <p class="commit-guidance">Choose the repair that best explains the symptoms and measured evidence. This ends diagnosis.</p>
 
-          <div class="panel commit-panel">
+              ${firstJob && !pendingFirstFixId
+                ? `<p class="fix-guidance">If more than one repair still fits, gather evidence that separates them. Your first selection gets one confirmation.</p>`
+                : ''}
 
-            <h3 class="panel-label">Authorise repair</h3>
+              ${repairTerms}
 
-            <p class="commit-guidance">Final diagnosis. Choosing a repair commits it immediately.</p>
+              ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
+                <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
 
-            ${firstJob && !pendingFirstFixId
-
-              ? `<p class="fix-guidance">If more than one repair still fits, gather evidence that separates them. Your first selection gets one confirmation.</p>`
-
-              : ''}
-
-            ${repairTerms}
-
-            ${outOfParts ? `<p class="job-no-parts">Van empty — restock before committing.</p>
-
-              <button class="btn btn-restock" data-action="restock-van">Restock van</button>` : ''}
-
-            ${pendingFirstFixId
-
-              ? `<div class="first-fix-warning" role="alert">
-
-                  <p><strong>Commit ${pendingFixLabel}?</strong></p>
-
-                  <p>This ends diagnosis. A wrong fix causes a reduced-rate callback tomorrow.</p>
-
-                  <div class="first-fix-actions">
-
-                    <button class="btn btn-primary" data-action="confirm-first-fix">Commit fix</button>
-
-                    <button class="btn btn-sm" data-action="cancel-first-fix">Keep diagnosing</button>
-
-                  </div>
-
-                </div>`
-
-              : `<div class="fixes">${fixButtons}</div>`}
-
-          </div>
-
+              ${pendingFirstFixId
+                ? `<div class="first-fix-warning" role="alert">
+                    <p><strong>Commit ${pendingFixLabel}?</strong></p>
+                    <p>This ends diagnosis. A wrong fix causes a reduced-rate callback tomorrow.</p>
+                    <div class="first-fix-actions">
+                      <button class="btn btn-primary" data-action="confirm-first-fix">Commit fix</button>
+                      <button class="btn btn-sm" data-action="cancel-first-fix">Keep diagnosing</button>
+                    </div>
+                  </div>`
+                : `<div class="fixes">${fixButtons}</div>`}
+            </div>
+          </details>
         </div>
-
       </div>
     </section>`;
 }

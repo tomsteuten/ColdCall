@@ -188,16 +188,17 @@ test('first fresh job renders integrated diagnosis guidance and an irreversible-
   assert(isFirstJobOnboarding(state), 'fresh first ticket should receive onboarding');
   assert(showsBeginnerGuidance(state), 'auto guidance should teach the first ticket');
   const initial = jobView({ state, faults, machines, clients });
-  assert(initial.includes('Start here.'), 'first ticket should begin at the reported symptoms');
+  assert(initial.includes('Symptoms logged.'), 'first ticket should hand off from the symptom report to the physical machine');
   assert(initial.includes('data-action="go-to-diagnostics"'), 'first ticket should provide a direct path to the next action');
-  assert(initial.includes('Next: gather evidence.'), 'diagnostics should teach only the current step');
+  assert(initial.includes('Next: choose one test.'), 'diagnostics should teach only the current step');
   assert(initial.includes('What do these tests check?'), 'test purpose should be available without being forced open');
   assert(initial.includes('<strong>+2 min</strong>'), 'test time cost must be visible before use');
   assert(initial.includes('Unlocks $36 bonus'), 'first-test bonus consequence must be named as an unlock');
   assert(initial.includes('No bonus for a blind guess'), 'locked instrument should explain why evidence matters');
   assert(initial.includes('class="diagnosis-steps"'), 'onboarding should retain the current-step rail');
   assert(initial.includes('Your first selection gets one confirmation.'), 'first fix should advertise the guard');
-
+  assert(initial.includes('class="panel commit-panel repair-tray"'), 'repair choices should live in the final-decision tray');
+  assert(!initial.includes('class="panel commit-panel repair-tray" open'), 'the repair tray should initially yield focus to evidence gathering');
   const guarded = jobView({
     state,
     faults,
@@ -236,7 +237,7 @@ test('guidance mode can force help on or turn it off without removing the first-
   state.stats.jobsCompleted = 2;
   state.settings.guidanceMode = 'on';
   assert(showsBeginnerGuidance(state), 'on should restore help for a returning player');
-  assert(jobView({ state, faults, machines, clients }).includes('Next: gather evidence.'),
+  assert(jobView({ state, faults, machines, clients }).includes('Next: choose one test.'),
     'forced help should use the same contextual coach');
 });
 
@@ -248,6 +249,7 @@ test('completed evidence advances the coach and produces a visible machine-state
   assert(html.includes('Evidence logged.'), 'coach should respond to the completed test');
   assert(html.includes('Temperature reading logged'), 'art should acknowledge the latest physical action');
   assert(!html.includes('data-action="go-to-diagnostics"'), 'the symptoms-step action should recede after evidence exists');
+  assert(html.includes('class="panel commit-panel repair-tray" open'), 'evidence should open the final-decision tray');
 });
 
 test('technical terms expose neutral point-of-use definitions without changing action labels', () => {
@@ -278,9 +280,12 @@ test('reported symptoms precede the progress rail and secondary caller context',
   const html = jobView({ state, faults, machines, clients });
   const symptomsAt = html.indexOf('job-ticket-order');
   const stepsAt = html.indexOf('diagnosis-steps');
+  const artAt = html.indexOf('machine-stage');
   const callerAt = html.indexOf('client-callout');
-  assert(symptomsAt !== -1 && symptomsAt < stepsAt && stepsAt < callerAt,
-    'symptoms should lead, followed by the quiet progress rail and caller context');
+  const diagnosticsAt = html.indexOf('diagnostics-panel');
+  const repairAt = html.indexOf('repair-tray');
+  assert(symptomsAt !== -1 && symptomsAt < stepsAt && stepsAt < artAt && artAt < callerAt && callerAt < diagnosticsAt && diagnosticsAt < repairAt,
+    'symptoms and progress should lead into the machine, then secondary caller context, evidence controls and final decision');
   assert(mainCss.includes('border-left: 4px solid var(--accent)'),
     'symptom work order should receive the strongest ticket accent');
 });
