@@ -150,3 +150,20 @@ export function dispatch(enabled) {
     tone(ac, { freq: 980, at: 0.13, dur: 0.06, type: 'square', peak: 0.022 });
   } catch { /* sound is optional, never fatal */ }
 }
+/**
+ * Mechanical torque and compressor-start confirmation for the repair handoff.
+ * It stays dry and brief so it reads as equipment, not another reward jingle.
+ * @param {boolean} enabled state.settings.audio
+ */
+export function repair(enabled) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    tone(ac, { freq: 160, at: 0.00, dur: 0.045, type: 'square', peak: 0.026 });
+    tone(ac, { freq: 118, at: 0.07, dur: 0.07, type: 'sawtooth', peak: 0.020 });
+    tone(ac, { freq: 92, at: 0.17, dur: 0.16, type: 'triangle', peak: 0.022 });
+    tone(ac, { freq: 138, at: 0.30, dur: 0.20, type: 'triangle', peak: 0.024 });
+    tone(ac, { freq: 660, at: 0.50, dur: 0.12, type: 'sine', peak: 0.024 });
+  } catch { /* sound is optional, never fatal */ }
+}

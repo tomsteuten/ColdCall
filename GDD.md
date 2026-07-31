@@ -432,6 +432,14 @@ All numbers are first guesses; balance via config, never hard-coded.
 - Audio: light, shipped in session 22 as generated WebAudio (button blip, correct-fix jingle, wrong-fix thunk — no assets, gated on the Settings toggle). A chiptune loop remains a someday item.
 - **Decision of record (2026-07-05) — game-feel pass, no economy change.** Diagnosed root cause of Tom's "looks pretty mid" verdict as moment-to-moment feedback, not illustration fidelity (art was rebuilt session 26). Shipped: symptoms-first job layout (`.job-ticket`, DESIGN.md §5/§7), continuous ambient machine-art motion plus a one-shot fault jolt, DOM steam/frost particles over the art slot, a one-shot glow beat on a correct fix, a hard shake on a wrong fix, a printer-style staggered receipt with a counting-up settlement number, test results that stamp in, an escalating clean-streak flame icon at 5/10/20, and a celebratory entrance for tier unlocks/completed daily contracts. Two new `js/audio.js` sounds (`stamp`, `fanfare`). All DOM/CSS — no canvas fallback needed (particles didn't jank at 375px). `config/balance.js`/`economy.js` untouched.
 
+- **Decision of record (2026-07-31) — correct repairs now have a physical
+  close-out.** Settlement still happens atomically when the fix is committed,
+  but its cosmetic payoff is split into “repair fitted / panel open” and
+  “recommissioned / stable” states. Holding the fastener advances between them;
+  either stage may be skipped or interrupted safely. This intentionally bends
+  the old one-beat repair treatment without adding timing skill, save fields,
+  economy changes, fault logic, canvas or asset dependencies.
+
 ---
 
 ## 8. Technical Summary (details in CLAUDE.md)

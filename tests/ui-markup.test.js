@@ -318,8 +318,10 @@ test('machine art exposes stable machine and state hooks for CSS motion', () => 
   const logHtml = jobView({ state, faults, machines, clients });
   assert(logHtml.includes('machine-stage--log'), 'controller check should use log motion');
 
-  const repairHtml = repairView({ state, repairBeat: { machineType: 'slushie-machine' } });
-  assert(repairHtml.includes('machine-stage--working'), 'repair payoff should use working motion');
+  const sealHtml = repairView({ state, repairBeat: { machineType: 'slushie-machine', phase: 'seal' } });
+  assert(sealHtml.includes('machine-stage--ajar'), 'panel sealing should keep the machine open');
+  const restartHtml = repairView({ state, repairBeat: { machineType: 'slushie-machine', phase: 'restart' } });
+  assert(restartHtml.includes('machine-stage--working'), 'recommission payoff should use working motion');
 });
 
 test('diagnostic controls remain the single reliable interaction path', () => {
@@ -558,33 +560,51 @@ test('a correct fix shows no failure lesson and hides the correct-fix reveal', (
 
 // --- repair beat (GDD §2.3) ---
 
-test('the repair beat shows the working machine art with a holdable, skippable control', () => {
+test('the repair beat starts with the repair fitted and the service panel open', () => {
   const state = defaultState();
-  const html = repairView({ state, repairBeat: { machineType: 'slushie-machine' } });
-  // Working state pins the green "COOL" indicator — the visible payoff.
-  assert(html.includes('COOL'), 'repair beat should render the working machine art');
-  assert(html.includes('art-slot--has-image'), 'known machine art should fill the slot');
+  const html = repairView({
+    state,
+    repairBeat: { machineType: 'slushie-machine', chosenFix: 'replace-thermistor', phase: 'seal' },
+  });
+  assert(html.includes('machine-stage--ajar'), 'panel sealing should use the open machine art');
+  assert(html.includes('Repair fitted.'), 'the completed repair should be stated plainly');
+  assert(html.includes('repair-service-rail'), 'the physical sequence should be visible');
+  assert(html.includes('repair-screw-icon'), 'the hold control should contain a tactile fastener');
   assert(html.includes('data-repair-hold'), 'beat should expose the hold-to-tighten control');
-  assert(html.includes('data-action="finish-repair"'), 'beat must always be skippable');
+  assert(html.includes('data-action="skip-repair"'), 'the cosmetic sequence must always be skippable');
 });
 
-test('the repair beat keyboard/skip wiring is hooked up', () => {
+test('the recommission stage pays off with working art and stable telemetry', () => {
+  const state = defaultState();
+  const html = repairView({
+    state,
+    repairBeat: { machineType: 'slushie-machine', chosenFix: 'replace-thermistor', phase: 'restart' },
+  });
+  assert(html.includes('machine-stage--working'), 'recommission should reveal the running machine');
+  assert(html.includes('Running cold again.'), 'restart state should land as a clear payoff');
+  assert(html.includes('recommission-readout'), 'restart should show stable operation telemetry');
+  assert(html.includes('data-action="finish-repair"'), 'result handoff should be explicit');
+  assert(html.includes('View job result'), 'result button should name the destination');
+  assert(!html.includes('data-repair-hold'), 'completed restart should not repeat the hold gesture');
+});
+
+test('the repair beat keyboard and skip wiring is hooked up', () => {
   assert(
-    jobUi.includes("root.querySelectorAll('[data-action=\"finish-repair\"]')"),
-    'finish-repair (skip) must be wired'
+    jobUi.includes("root.querySelectorAll('[data-action=\"skip-repair\"]')"),
+    'skip-repair must be wired'
   );
   assert(jobUi.includes('wireRepairHold(root, actions)'), 'the hold gesture must be wired');
   assert(jobUi.includes("e.key === 'Enter'"), 'the hold control must finish on keyboard for accessibility');
+  assert(jobUi.includes('actions.completeRepairStep()'), 'the hold should advance rather than dismiss the payoff');
 });
 
 test('the repair beat falls back to text for an unknown machine and stays skippable', () => {
   const state = defaultState();
-  const html = repairView({ state, repairBeat: { machineType: 'no-such-machine' } });
+  const html = repairView({ state, repairBeat: { machineType: 'no-such-machine', phase: 'seal' } });
   assert(!html.includes('art-slot--has-image'), 'unknown machine should not claim a real illustration');
-  assert(html.includes('[ repaired ]'), 'unknown machine should show a text fallback');
-  assert(html.includes('data-action="finish-repair"'), 'fallback beat must still be skippable');
+  assert(html.includes('[ repair fitted ]'), 'unknown machine should show a truthful text fallback');
+  assert(html.includes('data-action="skip-repair"'), 'fallback beat must still be skippable');
 });
-
 // --- Session 19: callback / staff / offline clarity ---
 
 const cbFault = { ...fault, machineType: 'slushie-machine' };

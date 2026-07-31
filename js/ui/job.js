@@ -35,6 +35,42 @@ const TEST_INSTRUMENT_CLASS = {
   'continuity-test': 'meter',
 };
 
+const REPAIR_PROCEDURES = {
+  'slushie-machine': {
+    seal: 'Torque the drive cover, then restart both bowl circuits.',
+    restart: 'Both augers are turning and the product is pulling down cold.',
+  },
+  'soft-serve-commercial': {
+    seal: 'Seal the service panel, then bring the freezing cylinder online.',
+    restart: 'Cylinder load is steady and the draw temperature is falling.',
+  },
+  'froyo-multihead': {
+    seal: 'Secure the service bay before enabling all three dispense heads.',
+    restart: 'All three barrels are cooling evenly under load.',
+  },
+  'granita-slushie': {
+    seal: 'Lock the drive panel, then recommission the three bowl circuits.',
+    restart: 'The augers are synchronized and the mix is beginning to freeze.',
+  },
+  'commercial-ice-dispenser': {
+    seal: 'Close the refrigeration bay before restoring the harvest cycle.',
+    restart: 'The freeze cycle is stable and the first harvest is underway.',
+  },
+};
+
+function machineTelemetryHtml(artState) {
+  const telemetryClass = {
+    log: 'log',
+    probe: 'probe',
+    leads: 'meter',
+    ajar: 'inspect',
+    working: 'working',
+  }[artState];
+  if (!telemetryClass) return '';
+  return `<span class="machine-telemetry machine-telemetry--${telemetryClass}" aria-hidden="true">
+    <i></i><i></i><i></i>
+  </span>`;
+}
 /** Compact code-native instrument mark shared by an action and its evidence. */
 function testInstrumentHtml(testId) {
   const kind = TEST_INSTRUMENT_CLASS[testId] ?? 'log';
@@ -227,7 +263,7 @@ function artSlotHtml(machineType, artState, opts = {}) {
     : (svg ?? fallback);
   return `<div class="${artSlotClass}" aria-hidden="true">
     ${content}
-    ${stateLabel ? `<span class="machine-state-feedback">${escapeHtml(stateLabel)}</span>` : ''}
+    ${stateLabel ? `<span class="machine-state-feedback">${machineTelemetryHtml(artState)}<span>${escapeHtml(stateLabel)}</span></span>` : ''}
     ${glow ? '<span class="repair-glow" aria-hidden="true"></span>' : ''}
   </div>`;
 }
@@ -1311,47 +1347,70 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
  * @returns {string}
  */
 export function repairView({ state, repairBeat }) {
-  const artSlot = artSlotHtml(repairBeat.machineType, 'working', {
-    fallback: '[ repaired ]',
-    glow: true, // the one-shot brighten/glow beat (GDD §7 game-feel pass, 2026-07-05)
+  const phase = repairBeat.phase === 'restart' ? 'restart' : 'seal';
+  const restarting = phase === 'restart';
+  const procedure = REPAIR_PROCEDURES[repairBeat.machineType] ?? {
+    seal: 'Secure the service panel before restoring power.',
+    restart: 'Electrical load and operating temperature are stable.',
+  };
+  const chosenFix = repairBeat.chosenFix ? fixLabel(repairBeat.chosenFix) : 'Selected repair';
+  const artSlot = artSlotHtml(repairBeat.machineType, restarting ? 'working' : 'ajar', {
+    fallback: restarting ? '[ running ]' : '[ repair fitted ]',
+    glow: restarting,
+    stateLabel: restarting ? 'Recommissioned · readings stable' : 'Repair fitted · panel open',
   });
+  const serviceRail = `
+    <ol class="repair-service-rail" aria-label="Repair sequence">
+      <li class="is-complete"><span>01</span><strong>Repair fitted</strong></li>
+      <li class="${restarting ? 'is-complete' : 'is-active'}"${restarting ? '' : ' aria-current="step"'}><span>02</span><strong>Seal panel</strong></li>
+      <li class="${restarting ? 'is-active' : ''}"${restarting ? ' aria-current="step"' : ''}><span>03</span><strong>Recommission</strong></li>
+    </ol>`;
 
   return `
     ${statusBar(state)}
-    <section class="screen screen-repair">
+    <section class="screen screen-repair screen-repair--${phase}">
       <div class="repair-layout-cols">
-
         <div class="repair-col-left">
-
-          ${artSlot}
-
+          <div class="repair-stage">${artSlot}</div>
         </div>
 
         <div class="repair-col-right">
-
-          <p class="repair-headline">Running cold again.</p>
-
-          <div class="repair-beat">
-
-            <div class="repair-bolt" data-repair-hold role="button" tabindex="0"
-
-                 aria-label="Hold to tighten the panel, or press Enter to finish">
-
-              <span class="repair-bolt-fill"></span>
-
-              <span class="repair-bolt-label">Hold to tighten</span>
-
-            </div>
-
-            <button class="btn btn-sm" data-action="finish-repair">Skip</button>
-
+          ${serviceRail}
+          <p class="repair-kicker">${restarting ? 'System restart' : 'Final assembly'}</p>
+          <p class="repair-headline">${restarting ? 'Running cold again.' : 'Repair fitted.'}</p>
+          <p class="repair-action-copy">${escapeHtml(restarting ? procedure.restart : procedure.seal)}</p>
+          <div class="repair-part-chip">
+            <span>Installed repair</span>
+            <strong>${escapeHtml(chosenFix)}</strong>
           </div>
-
+          ${restarting
+            ? `<div class="recommission-readout" aria-label="Machine recommissioned successfully">
+                <span class="recommission-lamp" aria-hidden="true"></span>
+                <span class="recommission-copy"><strong>Stable operation</strong><small>Power · cooling · product flow</small></span>
+                <svg class="recommission-scope" viewBox="0 0 96 28" aria-hidden="true">
+                  <path d="M2 17h14l5-9 8 15 8-11 8 5h17l5-7 7 12 6-5h14"/>
+                </svg>
+              </div>
+              <button class="btn btn-primary repair-result-btn" data-action="finish-repair">View job result</button>`
+            : `<div class="repair-beat">
+                <div class="repair-bolt" data-repair-hold role="button" tabindex="0"
+                     aria-label="Hold to torque the service panel, or press Enter to finish"
+                     aria-pressed="false">
+                  <span class="repair-bolt-fill"></span>
+                  <span class="repair-screw-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"></circle><path d="M9 16h14"></path></svg>
+                  </span>
+                  <span class="repair-bolt-copy">
+                    <strong class="repair-bolt-label">Seal service panel</strong>
+                    <small>Hold to torque fasteners</small>
+                  </span>
+                </div>
+                <button class="btn btn-sm" data-action="skip-repair">Skip sequence</button>
+              </div>`}
         </div>
       </div>
     </section>`;
 }
-
 export function invoiceView({ state, invoice }) {
   const { correct, fault, earned, chosenFix, callback, callbackSource, unlockedTier, isWorkshop } = invoice;
 
@@ -1702,6 +1761,9 @@ function wire(root, actions) {
   root.querySelectorAll('[data-action="finish-repair"]').forEach((el) =>
     el.addEventListener('click', actions.finishRepair)
   );
+  root.querySelectorAll('[data-action="skip-repair"]').forEach((el) =>
+    el.addEventListener('click', actions.finishRepair)
+  );
   root.querySelectorAll('[data-action="sell-business"]').forEach((el) =>
 
     el.addEventListener('click', actions.sellBusiness)
@@ -1784,6 +1846,7 @@ function wireRepairHold(root, actions) {
   const bolt = root.querySelectorAll('[data-repair-hold]')[0];
   if (!bolt) return;
   const fill = bolt.querySelector('.repair-bolt-fill');
+  const label = bolt.querySelector('.repair-bolt-label');
   const HOLD_MS = 1000; // time-to-full while held; generous, never a challenge
   let progress = 0;     // 0..1
   let last = 0;
@@ -1794,18 +1857,26 @@ function wireRepairHold(root, actions) {
     if (done) return;
     done = true;
     cancelAnimationFrame(rafId);
-    actions.finishRepair();
+    progress = 1;
+    fill.style.width = '100%';
+    bolt.style.setProperty('--repair-progress', '1');
+    bolt.classList.remove('is-holding');
+    bolt.classList.add('is-complete');
+    bolt.setAttribute('aria-pressed', 'false');
+    if (label) label.textContent = 'Panel sealed';
+    const delay = prefersReducedMotion() ? 0 : 260;
+    setTimeout(() => actions.completeRepairStep(), delay);
   }
   function tick(now) {
     if (done || !bolt.isConnected) return;
     progress += (now - last) / HOLD_MS;
     last = now;
     if (progress >= 1) {
-      fill.style.width = '100%';
       finish();
       return;
     }
     fill.style.width = `${progress * 100}%`;
+    bolt.style.setProperty('--repair-progress', String(progress));
     rafId = requestAnimationFrame(tick);
   }
   function startHold(e) {
@@ -1813,10 +1884,14 @@ function wireRepairHold(root, actions) {
     e.preventDefault();
     last = performance.now();
     cancelAnimationFrame(rafId);
+    bolt.classList.add('is-holding');
+    bolt.setAttribute('aria-pressed', 'true');
     rafId = requestAnimationFrame(tick);
   }
   function pauseHold() {
     cancelAnimationFrame(rafId); // freeze progress until the next press
+    bolt.classList.remove('is-holding');
+    bolt.setAttribute('aria-pressed', 'false');
   }
 
   bolt.addEventListener('pointerdown', startHold);

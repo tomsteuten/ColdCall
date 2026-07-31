@@ -9,7 +9,7 @@ import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
-import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, diagnostic as sfxDiagnostic, fanfare as sfxFanfare, dispatch as sfxDispatch } from './audio.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, diagnostic as sfxDiagnostic, fanfare as sfxFanfare, dispatch as sfxDispatch, repair as sfxRepair } from './audio.js';
 import { prefersReducedMotion } from './utils.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
@@ -90,9 +90,9 @@ const homePanels = { prestige: false, workshop: false };
 let prestigeConfirm = false;
 
 // A correct fix earns a brief repair beat (GDD §2.3) shown before the invoice.
-// Transient and purely cosmetic: the money is already settled inside commitFix
-// (the settlement boundary), so a refresh mid-beat lands on home with cash
-// banked — the reward is never duplicated nor lost by the beat.
+// Transient two-stage payoff after a correct repair. Money is already settled
+// inside commitFix, so either stage can be safely skipped or interrupted without
+// duplicating or losing the reward.
 let repairBeat = null;
 
 function commitSelectedFix(fixId) {
@@ -105,7 +105,11 @@ function commitSelectedFix(fixId) {
     invoice = result;
     if (result.unlockedTier) justUnlockedTier = result.unlockedTier;
     // Only a correct repair gets the satisfying "it works again" payoff.
-    if (result.correct) repairBeat = { machineType: result.fault.machineType };
+    if (result.correct) repairBeat = {
+      machineType: result.fault.machineType,
+      chosenFix: result.chosenFix,
+      phase: 'seal',
+    };
   }
   if (result.correct) sfxJingle(state.settings.audio);
   else sfxThunk(state.settings.audio);
@@ -210,6 +214,12 @@ const actions = {
   },
   goToDiagnostics() {
     app.querySelector('.diagnostics-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+  completeRepairStep() {
+    if (!repairBeat || repairBeat.phase === 'restart') return;
+    repairBeat = { ...repairBeat, phase: 'restart' };
+    sfxRepair(state.settings.audio);
+    render();
   },
   finishRepair() {
     // Dismiss the repair beat to reveal the invoice. Idempotent: a double-fire

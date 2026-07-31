@@ -39,6 +39,29 @@ the integration surface from scratch.
 ---
 
 <!-- newest entry below this line -->
+### 2026-07-31 — Codex — Phase 1E gives correct repairs a tactile close-out
+
+- **Files touched:** `js/ui/job.js`, `js/main.js`, `js/audio.js`,
+  `css/main.css`, `tests/ui-markup.test.js`, `tests/audio.test.js`, `DESIGN.md`,
+  `GDD.md`, `HANDOFF.md`, `sw.js`.
+- **Contract:** a correct commit creates transient `repairBeat` with
+  `{ machineType, chosenFix, phase: 'seal' }`. `actions.completeRepairStep()`
+  advances it to `phase: 'restart'`; `finishRepair()` and `skip-repair` dismiss
+  it to the invoice. Settlement still precedes this UI, so interruption and
+  skipping are safe. `repairView()` defaults a missing phase to `seal` for
+  defensive compatibility. `.machine-telemetry` is decorative and hidden from
+  the accessibility tree.
+- **Graphics mode:** rendered. Existing `ajar` and `working` WebP states now form
+  the two repair beats; all extra graphics are code-native DOM/CSS/SVG marks.
+- **sw.js cache bumped?** yes v45→v46.
+- **prefers-reduced-motion honored?** yes — telemetry bars, repair screw rattle,
+  recommission lamp and scope trace are disabled in the shared media query.
+- **Schema change?** none; repair phase is transient and deliberately unsaved.
+- **Tests:** `node tests/run.js` → **371 passing, 0 failed**.
+- **Open / unverified:** physical pointer-hold duration was not automation-timed;
+  its keyboard-equivalent path and phase transition were verified. Clean-save
+  success flows were visually verified at 1280×720 and 390×844 with no overflow
+  and no browser console errors.
 
 ### 2026-07-31 — Codex — Phase 1D first ticket focuses the evidence decision
 

@@ -259,6 +259,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   instrument-specific settle, then it recedes into the ledger. These marks
   clarify the nature of an action and are `aria-hidden`; they never replace the
   text label or create another hit target.
+- **Repair service sequence** (2026-07-31) — a correct field repair gets two
+  cosmetic, interrupt-safe phases after settlement: `.screen-repair--seal`
+  keeps the rendered machine in its `ajar` state while a single hold control
+  torques the panel; `.screen-repair--restart` reveals the `working` render,
+  stable-operation scope and one primary “View job result” action. The
+  `.repair-service-rail` describes fitted / sealed / recommissioned progress.
+  “Skip sequence” goes directly to the already-settled result and never changes
+  money, reputation, stock or saves.
 
 **No emoji as UI chrome.** ✅⚠️🔥📋❌ were removed in favour of badges/dots
 (2026-07-04). Emoji live **only** in flavour text and the MotD share-card grid
@@ -315,6 +323,12 @@ everywhere rather than defining a dozen near-duplicate tokens.
   while `audio.diagnostic()` supplies controller keys, a probe chirp, fastener
   clicks, or the meter's continuity beep. Every keyframe is suppressed in the
   reduced-motion block; no motion is required to identify a test.
+- **Tactile repair pass (2026-07-31):** `.machine-telemetry` adds a tiny
+  instrument signature to existing state captions. The repair fastener rotates
+  only with actual hold progress; recommission adds a pulsing status lamp and
+  repeating scope trace, paired with `audio.repair()`'s dry torque/compressor
+  sound. All new keyframes are disabled under reduced motion. These are
+  redundant confirmations: text and machine state carry the full meaning.
 - **Cold-chain settlement pass (2026-07-29):** the offline report turns only
   already-settled crew output into three one-shot invoice packets, then the
   mature Home schematic may echo one returned packet along its funding bus.
