@@ -40,6 +40,26 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-07-31 — Codex — Phase 1D first ticket focuses the evidence decision
+
+- **Files touched:** `js/ui/job.js`, `css/main.css`, `tests/character-art.test.js`,
+  `tests/ui-markup.test.js`, `DESIGN.md`, `GDD.md`, `HANDOFF.md`, `sw.js`.
+- **Contract:** while `isFirstJobOnboarding(state)` is true and `testsRun` is
+  empty, `.job-ticket--first-focus` and `.diagnostics-panel--first-choice` form a
+  progressive-disclosure state. It withholds the rail, caller, empty instruments,
+  and repair tray; one completed test restores the unchanged full diagnosis UI.
+  Guidance mode may remove `.first-test-brief` and test-purpose copy but does not
+  bypass this structural first-decision state. Returning jobs are unchanged.
+- **Graphics mode:** rendered; no asset or machine-state changes.
+- **sw.js cache bumped?** yes v44→v45.
+- **prefers-reduced-motion honored?** n/a — no new motion.
+- **Schema change?** none.
+- **Tests:** `node tests/run.js` → **370 passing, 0 failed**.
+- **Open / unverified:** none. Clean-save playthrough verified at 1280×720 and
+  390×844: the initial state has no horizontal overflow, the mobile handoff
+  scrolls all choices into view, and one real test restores every withheld surface.
+  Browser console remained clear.
+
 ### 2026-07-31 — Codex — Phase 1C settlement becomes a game result
 
 - **Files touched:** `js/ui/job.js`, `css/main.css`, `tests/ui-markup.test.js`,

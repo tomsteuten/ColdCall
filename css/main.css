@@ -2480,6 +2480,46 @@ html:active-view-transition .screen { animation: none; }
   gap: var(--space-xs); /* was sm — density fix 2026-07-08 */
 }
 
+/* Phase 1D: the untouched first ticket is a focus state, not a miniature
+ * dashboard. The symptom report carries the strongest local contrast; the
+ * mechanics it motivates reveal after the first evidence action. */
+.job-ticket--first-focus {
+  gap: 0.45rem;
+  border-left-width: 4px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.job-ticket--first-focus .work-order-context {
+  padding-block: 0.28rem;
+  border-left-width: 2px;
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface-low));
+}
+
+.job-ticket--first-focus .job-ticket-order {
+  padding: 0.85rem 0.9rem;
+  border-left-width: 5px;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--steel));
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-low));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
+              0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+.job-ticket--first-focus .job-ticket-order .panel-label {
+  margin-bottom: var(--space-sm);
+  color: var(--accent-hi);
+  letter-spacing: 0.075em;
+}
+
+.job-ticket--first-focus .job-ticket-order .symptoms {
+  font-size: clamp(1.075rem, 1.7vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.48;
+}
+
+.job-ticket--first-focus .job-ticket-order .symptoms li + li {
+  margin-top: 0.65rem;
+}
 .diagnostics-panel,
 .commit-panel { border-left: 3px solid var(--steel); }
 /* Phase 1B diagnosis hierarchy: keep the report first, bring the physical
@@ -3158,6 +3198,36 @@ html:active-view-transition .screen { animation: none; }
   animation: test-result-stamp 0.22s ease-out;
 }
 
+.btn-test--first-choice {
+  min-height: 52px;
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--steel));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface-hi));
+}
+
+.btn-test--first-choice .test-label { font-weight: 700; }
+
+.test-locked-preview {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: center;
+  min-height: 42px;
+  padding: 0.35rem 0.6rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  opacity: 0.62;
+}
+
+.test-locked-preview .test-instrument {
+  width: 2rem;
+  height: 1.75rem;
+}
+
+.test-locked-preview > span,
+.test-locked-preview small { display: block; min-width: 0; }
+.test-locked-preview strong { font-size: var(--text-sm); }
+.test-locked-preview small { font-size: var(--text-xs); }
 .test-locked {
   margin: 0.1rem var(--space-sm) 0;
   font-size: var(--text-xs);
@@ -3232,6 +3302,26 @@ html:active-view-transition .screen { animation: none; }
 .diagnosis-guide strong { color: var(--accent); }
 .fix-guidance { color: var(--text-dim); }
 
+.first-test-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: start;
+  margin-bottom: var(--space-sm);
+  padding: 0.4rem 0.15rem 0.45rem 0.7rem;
+  border-left: var(--stroke-accent) solid var(--accent);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
+
+.first-test-brief strong { color: var(--accent-hi); }
+.first-test-brief p { margin: 0.1rem 0 0; line-height: 1.35; }
+.diagnostics-panel--first-choice .diagnostic-subhead { color: var(--text-muted); }
+.diagnostics-panel--first-choice .test-purpose--catalog {
+  margin: var(--space-sm) 0 0;
+  padding-top: var(--space-sm);
+  border-top: var(--border-soft);
+}
 .ticket-next-step,
 .context-guide {
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
@@ -4652,6 +4742,7 @@ html:active-view-transition .screen { animation: none; }
   .ticket-next-step,
   .machine-bench-next,
   .context-guide,
+  .first-test-brief,
   .settings-guidance {
     grid-template-columns: 1fr;
   }
@@ -4686,6 +4777,7 @@ html:active-view-transition .screen { animation: none; }
     gap: 0.65rem;
   }
 
+  .machine-bench-next--first-job { display: none; }
   .screen-job .panel {
     padding: 0.55rem 0.8rem;
   }

@@ -996,6 +996,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
   const earnsSpeedBonus = !isWorkshop && !isCallback && !job.motd;
   const firstJob = isFirstJobOnboarding(state);
   const guidance = showsBeginnerGuidance(state);
+  const firstJobAwaitingEvidence = firstJob && job.testsRun.length === 0;
 
   const completedTests = [];
   const availableTests = [];
@@ -1020,6 +1021,14 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
     const { available, reason } = testAvailability(state, id);
     const testsSoFar = job.testsRun.length;
+    if (!available && firstJobAwaitingEvidence) {
+      availableTests.push(`
+        <li class="test-locked-preview">
+          ${testInstrumentHtml(id)}
+          <span><strong>${testLabel(id, job.machineType)}</strong><small>${reason} · upgrade goal</small></span>
+        </li>`);
+      continue;
+    }
     const before = earnedSpeedBonus(job.minutesSpent ?? 0, testsSoFar);
     const after = earnedSpeedBonus((job.minutesSpent ?? 0) + cost, testsSoFar + 1);
     const consequence = isWorkshop
@@ -1033,14 +1042,14 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
           : `Bonus $${before} → $${after}`;
     availableTests.push(`
       <li class="test-row test-row--${TEST_INSTRUMENT_CLASS[id] ?? 'log'}">
-        <button class="btn btn-test" ${available ? `data-test="${id}"` : 'disabled'} data-test-kind="${TEST_INSTRUMENT_CLASS[id] ?? 'log'}">
+        <button class="btn btn-test${firstJobAwaitingEvidence ? ' btn-test--first-choice' : ''}" ${available ? `data-test="${id}"` : 'disabled'} data-test-kind="${TEST_INSTRUMENT_CLASS[id] ?? 'log'}">
           <span class="test-action-label">
             ${testInstrumentHtml(id)}
             <span class="test-label">${testLabel(id, job.machineType)}</span>
           </span>
           <span class="test-consequence">
             <strong>+${cost} min</strong>
-            <span>${consequence}</span>
+            ${firstJobAwaitingEvidence ? '' : `<span>${consequence}</span>`}
           </span>
         </button>
         ${available ? '' : `<p class="test-locked">${reason}</p>`}
@@ -1131,7 +1140,9 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
     workTone = ' work-order-context--callback';
   } else {
     workKind = 'Field call';
-    workStakes = 'Best pay · earns reputation · one useful test unlocks the speed bonus';
+    workStakes = firstJobAwaitingEvidence
+      ? 'Cash + reputation · speed bonus after one test'
+      : 'Best pay · earns reputation · one useful test unlocks the speed bonus';
   }
   const workOrderContext = `
     <div class="work-order-context${workTone}">
@@ -1159,7 +1170,12 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
   const diagnosisGuide = !guidance
     ? ''
-    : job.testsRun.length === 0
+    : firstJobAwaitingEvidence
+      ? `<div class="first-test-brief" aria-label="First diagnosis instruction">
+          <div><strong>Choose from the symptom clues.</strong><p>One test unlocks the speed bonus; fewer minutes preserve more of it.</p></div>
+          <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
+        </div>`
+      : job.testsRun.length === 0
       ? `<div class="context-guide" aria-label="Beginner guidance">
           <div><strong>Next: choose one test.</strong><p>Turn the symptom report into measured evidence. One useful test unlocks the speed bonus.</p></div>
           <button class="guide-dismiss" data-action="dismiss-guidance">Hide tips</button>
@@ -1193,7 +1209,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
 
       <div class="job-cols">
         <div class="job-col-left machine-bench">
-          <div class="panel job-ticket">
+          <div class="panel job-ticket${firstJobAwaitingEvidence ? ' job-ticket--first-focus' : ''}">
             ${workOrderContext}
 
             <div class="job-ticket-head">
@@ -1201,36 +1217,36 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
                 <h2 class="job-client">${clientName}</h2>
                 <p class="job-machine">${safeMachineName}</p>
               </div>
-              <span class="badge">Work order</span>
+              ${firstJobAwaitingEvidence ? '' : '<span class="badge">Work order</span>'}
             </div>
 
             <blockquote class="job-ticket-order">
-              <p class="panel-label">Reported symptoms</p>
+              <p class="panel-label">${firstJobAwaitingEvidence ? '01 · Reported symptoms' : 'Reported symptoms'}</p>
               <ul class="symptoms">${jobSymptoms(job, faults).map((s) => `<li>“${withTermHelp(s)}”</li>`).join('')}</ul>
             </blockquote>
 
-            ${diagnosisStepper}
+            ${firstJobAwaitingEvidence ? '' : diagnosisStepper}
           </div>
           ${artSlot}
 
-          ${guidance && job.testsRun.length === 0 ? `<div class="machine-bench-next">
-            <span><strong>Symptoms logged.</strong> Inspect the machine, then gather evidence.</span>
-            <button class="btn btn-sm" data-action="go-to-diagnostics">Gather evidence</button>
+          ${firstJobAwaitingEvidence ? `<div class="machine-bench-next machine-bench-next--first-job">
+            <span><strong>Machine ready.</strong> Choose the first reading.</span>
+            <button class="btn btn-sm" data-action="go-to-diagnostics">Choose a test</button>
           </div>` : ''}
 
-          ${portraitHtml}
+          ${firstJobAwaitingEvidence ? '' : portraitHtml}
         </div>
 
         <div class="job-col-right">
-          <div class="panel diagnostics-panel">
+          <div class="panel diagnostics-panel${firstJobAwaitingEvidence ? ' diagnostics-panel--first-choice' : ''}">
             <div class="diagnostics-head">
-              <h3 class="panel-label">02 · Gather evidence</h3>
-              <span class="badge">${completedTests.length} logged</span>
+              <h3 class="panel-label">${firstJobAwaitingEvidence ? '02 · Choose one test' : '02 · Gather evidence'}</h3>
+              ${firstJobAwaitingEvidence ? '' : `<span class="badge">${completedTests.length} logged</span>`}
             </div>
 
-            ${instrumentBar}
+            ${firstJobAwaitingEvidence ? '' : instrumentBar}
             ${diagnosisGuide}
-            ${testPurposeHelp}
+            ${firstJobAwaitingEvidence ? '' : testPurposeHelp}
 
             ${completedTests.length ? `
               <section class="evidence-section" aria-labelledby="measured-evidence-title">
@@ -1243,9 +1259,10 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
                 <h4 class="diagnostic-subhead" id="available-tests-title">${completedTests.length ? 'Run another test' : 'Available tests'}</h4>
                 <ul class="tests">${availableTests.join('')}</ul>
               </section>` : ''}
+            ${firstJobAwaitingEvidence ? testPurposeHelp : ''}
           </div>
 
-          <details class="panel commit-panel repair-tray"${repairTrayOpen ? ' open' : ''}>
+          ${firstJobAwaitingEvidence ? '' : `<details class="panel commit-panel repair-tray"${repairTrayOpen ? ' open' : ''}>
             <summary class="repair-tray-summary">
               <span class="repair-tray-heading">
                 <span class="repair-tray-kicker">03 · Final decision</span>
@@ -1277,7 +1294,7 @@ export function jobView({ state, faults, machines, clients, pendingFirstFixId = 
                   </div>`
                 : `<div class="fixes">${fixButtons}</div>`}
             </div>
-          </details>
+          </details>`}
         </div>
       </div>
     </section>`;

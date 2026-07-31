@@ -134,6 +134,22 @@ invoice layouts start at the top and use tighter receipt padding so both exits
 stay visible without an unnecessary second button row. Existing actions and
 diagnosis behavior are unchanged.
 
+**Decision of record (2026-07-31) — the untouched first ticket teaches one
+choice at a time.** The first diagnosis had accumulated every truthful surface
+at once: repeated three-step instruction, caller flavour, an empty timer, a
+locked bonus meter, test definitions, four test rows, and repair choices. The
+symptom report now owns the first decision. Before any evidence, the rail,
+caller note, empty instruments, and repair tray are withheld; the player sees
+three available tests with time costs and one compact future-tool preview. One
+short brief explains the speed trade-off once rather than repeating it on every
+row, and optional definitions follow the actions. Running any test restores the
+full existing workspace immediately — measured evidence, timer and bonus,
+caller context, progress rail, and the open repair tray. Returning jobs retain
+normal access to blind fixes. This onboarding sequence remains even when tips
+are disabled, because that preference removes coaching prose rather than the
+safe decision order. No fault, evidence, time, economy, progression, action, or
+save rule changes.
+
 **Decision of record (2026-07-31) — settlement becomes a game result.**
 The old receipt-first invoice hid the physical payoff and split progression
 across several small lines. Settlement now leads with a compact result board:

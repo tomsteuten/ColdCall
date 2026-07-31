@@ -139,7 +139,7 @@ test('work orders keep each diagnosis source and its stakes visible', () => {
   const fresh = onboardingState();
   let html = jobView({ state: fresh, faults, machines, clients });
   assert(html.includes('Field call'), 'fresh work should identify the high-value client loop');
-  assert(html.includes('Best pay · earns reputation'), 'fresh work should name why it matters');
+  assert(html.includes('Cash + reputation · speed bonus after one test'), 'the untouched first ticket should state its stakes without repeating the full tutorial');
 
   const playerReturn = defaultState();
   startJob(playerReturn, fault, 'kwik-stop', () => 0, { misses: 1, source: 'player' });
@@ -183,22 +183,30 @@ test('workshop diagnosis explains the sale handoff and never advertises a speed 
   );
 });
 
-test('first fresh job renders integrated diagnosis guidance and an irreversible-choice guard', () => {
+test('first fresh job progressively discloses one decision at a time', () => {
   const state = onboardingState();
   assert(isFirstJobOnboarding(state), 'fresh first ticket should receive onboarding');
   assert(showsBeginnerGuidance(state), 'auto guidance should teach the first ticket');
   const initial = jobView({ state, faults, machines, clients });
-  assert(initial.includes('Symptoms logged.'), 'first ticket should hand off from the symptom report to the physical machine');
-  assert(initial.includes('data-action="go-to-diagnostics"'), 'first ticket should provide a direct path to the next action');
-  assert(initial.includes('Next: choose one test.'), 'diagnostics should teach only the current step');
-  assert(initial.includes('What do these tests check?'), 'test purpose should be available without being forced open');
-  assert(initial.includes('<strong>+2 min</strong>'), 'test time cost must be visible before use');
-  assert(initial.includes('Unlocks $36 bonus'), 'first-test bonus consequence must be named as an unlock');
-  assert(initial.includes('No bonus for a blind guess'), 'locked instrument should explain why evidence matters');
-  assert(initial.includes('class="diagnosis-steps"'), 'onboarding should retain the current-step rail');
-  assert(initial.includes('Your first selection gets one confirmation.'), 'first fix should advertise the guard');
-  assert(initial.includes('class="panel commit-panel repair-tray"'), 'repair choices should live in the final-decision tray');
-  assert(!initial.includes('class="panel commit-panel repair-tray" open'), 'the repair tray should initially yield focus to evidence gathering');
+  assert(initial.includes('job-ticket--first-focus'), 'the symptom report should own the first-ticket hierarchy');
+  assert(initial.includes('01 · Reported symptoms'), 'the first ticket should number the symptom brief');
+  assert(initial.includes('Choose from the symptom clues.'), 'the coach should frame the immediate test decision');
+  assert(initial.includes('data-action="go-to-diagnostics"'), 'mobile should provide a direct path from machine to tests');
+  assert(initial.includes('02 · Choose one test'), 'the diagnostic panel should name the immediate action');
+  assert(initial.includes('<strong>+2 min</strong>'), 'test time cost must remain visible before use');
+  assert(initial.includes('btn-test--first-choice'), 'available first tests should read as the primary choices');
+  assert(initial.includes('test-locked-preview'), 'future equipment should be previewed without competing with available actions');
+  assert(!initial.includes('Unlocks $36 bonus'), 'the initial action list should not repeat the brief consequence on every row');
+  assert(!initial.includes('class="job-instruments'), 'empty time and bonus instruments should wait until evidence exists');
+  assert(!initial.includes('class="diagnosis-steps"'), 'the already-taught three-step rail should not compete with the first decision');
+  assert(!initial.includes('class="client-callout'), 'caller flavour should wait until the core evidence decision is understood');
+  assert(!initial.includes('class="panel commit-panel repair-tray"'), 'repair choices should not invite a blind first-ticket guess');
+  const actionsAt = initial.indexOf('available-tests-title');
+  const helpAt = initial.indexOf('What do these tests check?');
+  assert(actionsAt !== -1 && helpAt > actionsAt, 'optional test definitions should follow the actionable choices');
+
+  state.jobs.active.testsRun.push('temp-probe');
+  state.jobs.active.minutesSpent = 5;
   const guarded = jobView({
     state,
     faults,
@@ -206,7 +214,7 @@ test('first fresh job renders integrated diagnosis guidance and an irreversible-
     clients,
     pendingFirstFixId: 'right-fix',
   });
-  assert(guarded.includes('Commit Right fix?'), 'guard should name the selected fix');
+  assert(guarded.includes('Commit Right fix?'), 'guard should name the selected fix once repair choices are revealed');
   assert(guarded.includes('This ends diagnosis.'), 'guard should explain irreversibility');
   assert(guarded.includes('reduced-rate callback tomorrow'), 'guard should explain the failure consequence');
   assert(guarded.includes('data-action="confirm-first-fix"'), 'guard should expose confirmation wiring');
@@ -231,9 +239,13 @@ test('guidance mode can force help on or turn it off without removing the first-
   state.settings.guidanceMode = 'off';
   assert(!showsBeginnerGuidance(state), 'off should suppress contextual help');
   const hidden = jobView({ state, faults, machines, clients });
-  assert(!hidden.includes('data-action="go-to-diagnostics"'), 'off should keep the ticket compact');
-  assert(hidden.includes('Your first selection gets one confirmation.'), 'help preference must not remove the safety guard');
-
+  assert(!hidden.includes('first-test-brief'), 'off should suppress the coaching brief');
+  assert(hidden.includes('data-action="go-to-diagnostics"'), 'the structural mobile handoff should remain even when tips are off');
+  assert(!hidden.includes('class="panel commit-panel repair-tray"'), 'the untouched first ticket should still withhold blind repair choices');
+  state.jobs.active.testsRun.push('temp-probe');
+  assert(jobView({ state, faults, machines, clients }).includes('Your first selection gets one confirmation.'),
+    'help preference must not remove the safety guard after evidence reveals repair choices');
+  state.jobs.active.testsRun = [];
   state.stats.jobsCompleted = 2;
   state.settings.guidanceMode = 'on';
   assert(showsBeginnerGuidance(state), 'on should restore help for a returning player');
@@ -249,6 +261,10 @@ test('completed evidence advances the coach and produces a visible machine-state
   assert(html.includes('Evidence logged.'), 'coach should respond to the completed test');
   assert(html.includes('Temperature reading logged'), 'art should acknowledge the latest physical action');
   assert(!html.includes('data-action="go-to-diagnostics"'), 'the symptoms-step action should recede after evidence exists');
+  assert(html.includes('class="job-instruments'), 'the time and bonus instruments should appear once they contain useful state');
+  assert(html.includes('class="diagnosis-steps"'), 'the progress rail should appear when the player advances beyond the first decision');
+  assert(html.includes('class="client-callout'), 'secondary caller context should return after the evidence decision');
+  assert(!html.includes('job-ticket--first-focus'), 'the exaggerated first-decision treatment should recede after evidence');
   assert(html.includes('class="panel commit-panel repair-tray" open'), 'evidence should open the final-decision tray');
 });
 
@@ -310,8 +326,8 @@ test('diagnostic controls remain the single reliable interaction path', () => {
   const state = onboardingState();
   const html = jobView({ state, faults, machines, clients });
   assert(!html.includes('art-hotspot'), 'decorative art should not expose unreliable invisible controls');
-  assert(html.includes('class="btn btn-test" data-test="temp-probe"'), 'temp probe should remain available from the labelled controls');
-  assert(html.includes('class="btn btn-test" data-test="inspect-beater"'), 'inspection should remain available from the labelled controls');
+  assert(html.includes('btn-test--first-choice') && html.includes('data-test="temp-probe"'), 'temp probe should remain available from the labelled controls');
+  assert(html.includes('data-test="inspect-beater"'), 'inspection should remain available from the labelled controls');
   for (const kind of ['log', 'probe', 'inspect', 'meter']) {
     assert(html.includes(`test-instrument--${kind}`), `${kind} action should have a distinct instrument mark`);
   }

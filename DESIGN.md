@@ -152,6 +152,16 @@ everywhere rather than defining a dozen near-duplicate tokens.
   first while bringing the physical equipment into the first mobile viewport.
   The symptom block remains the dominant inset: 4px accent, tinted low surface,
   upright semibold symptom lines.
+- **`.job-ticket--first-focus` / `.diagnostics-panel--first-choice`**
+  (2026-07-31) — a one-decision teaching state used only while the untouched
+  first field job has no evidence. The symptom inset gains the strongest edge
+  and type weight; empty time/bonus instruments, the progress rail, caller
+  flavour, and the repair tray are withheld. The right column asks for one test,
+  keeps the three available labelled controls prominent, and renders a gated
+  meter as a compact upgrade preview. Optional test definitions follow the
+  actions. After any test, the normal diagnosis workspace returns immediately.
+  This structure persists when tips are off; that setting removes coaching copy,
+  not the safe information sequence.
 - **`.streak-flame`** (2026-07-05) — small inline SVG icon (not emoji) marking
   an escalating clean streak at 5/10/20 via `--1`/`--2`/`--3` glow tiers.
 - **`.celebration-card`** (2026-07-05) — apply to a "big deal" moment (tier
@@ -231,12 +241,13 @@ everywhere rather than defining a dozen near-duplicate tokens.
   before the optional itemised ledger. A workshop result has one full-width
   Home action. Failure teaching follows the exits so a long lesson can never
   bury navigation.
-- **`.repair-tray`** (2026-07-30) — the final diagnosis lives in a native
-  `<details>` tray after the evidence controls. It begins collapsed before any
-  test so the physical machine and evidence actions own the first interaction;
-  it opens after evidence is logged or when confirmation/restocking needs
-  attention. Blind fixes remain possible by opening it manually. The tray is
-  presentation only: it never changes fix availability, settlement, or saves.
+- **`.repair-tray`** (2026-07-30, first-ticket rule 2026-07-31) — the final
+  diagnosis lives in a native `<details>` tray after the evidence controls. On
+  normal jobs it begins collapsed before a test and can still be opened for a
+  deliberate blind fix. On the untouched first job it is not rendered at all;
+  one evidence action reveals it already open. Confirmation/restocking also
+  opens it. The tray is presentation only: it never changes fix availability,
+  settlement, or saves.
 - **Image hotspots are retired** (2026-07-11). Generated raster compositions
   move their tools and panels between states, so percentage hit regions were
   unreliable across machines and viewports. Labelled `.btn-test` controls are

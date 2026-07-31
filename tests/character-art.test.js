@@ -28,6 +28,9 @@ function fakeRoot() {
 
 function renderJob(client) {
   const state = defaultState();
+  // Character tests exercise normal secondary caller context, not the
+  // deliberately stripped-back untouched first-ticket state.
+  state.stats.jobsCompleted = 1;
   state.jobs.active = {
     faultId: 'fault',
     clientId: client.id,
