@@ -191,6 +191,14 @@ everywhere rather than defining a dozen near-duplicate tokens.
   Misses and workshop repairs visibly loop back to manual diagnosis. The marks
   are DOM/CSS rather than raster art because every label and state must match
   the current save. Never add cosmetic packets, spinning gears, or fake ticking.
+- **Prestige handover family** (2026-08-03) — `.prestige-handover` is the
+  one-shot sale docket shown only after a successful reset. Its regional route,
+  operation ledger, and Founder Playbook use the pre-reset snapshot plus the
+  settled multiplier; they must reconcile rather than imply a territory system.
+  Once filed, `.founder-legacy` is the durable Home readout derived from
+  `prestigeCount` and `founderBonus`. Always express the bonus as an operating
+  multiplier (`×2.28`), not an ambiguous percentage, and keep route/workshop
+  exclusions beside it so active diagnosis remains the visible advantage.
 - **`.work-order-context`** (2026-07-28) — a compact handover strip at the top
   of every active diagnosis. It names where the machine came from and what a
   correct diagnosis advances: field calls pay cash/rep, player callbacks are
@@ -310,6 +318,11 @@ everywhere rather than defining a dozen near-duplicate tokens.
   These animations mount only with a real return report; ordinary Home and the
   workshop line remain still. `.field-return-track i` and
   `.service-network-bus i` are both disabled by the reduced-motion block.
+- **Prestige transfer (2026-08-03):** only the post-sale handover animates
+  docket packets from the signed-over patch to the new region and stamps the
+  new endpoint into place. The persistent Founder Playbook is static. Both
+  `.prestige-handover-route i` and `.prestige-handover-site--new` are disabled
+  by the reduced-motion block; their resting state contains the full story.
 
 ## 7. Anti-patterns (things that broke this system before — don't repeat)
 

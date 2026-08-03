@@ -213,6 +213,21 @@ real-time factory. DOM/CSS graphics were chosen over new raster assets so the
 network can never disagree with the save. Economy, simulation, save shape, and
 active-over-idle balance are unchanged.
 
+**Decision of record (2026-08-03) — prestige resolves as a business
+handover.** The two-step sell confirmation and all reset/economy rules stay
+unchanged, but a successful sale now snapshots the operation immediately
+before prestige and returns a transient transfer docket: earnings, reputation,
+tier, technicians, routes, and workshop stock are signed over from the old
+region; the new patch receives a clean van and the exact settled Founder
+multiplier. Filing that report leaves a compact Founder Playbook on mature
+Home, derived from `prestigeCount` and `founderBonus`, which says that field
+diagnosis pay and reputation are multiplied while technician routes and
+workshop sales remain at contract rates. This makes the reset a tycoon payoff
+and clarifies active-over-idle without inventing map gameplay or persisting UI
+history. A short generated docket/key/radio sound and one-shot route transfer
+motion accompany the actual sale only. No save migration, economy change, new
+balance value, or runtime asset is introduced.
+
 **Decision of record (2026-07-08) — first playtest feedback pass.** Three
 findings from the first external playtest, and their fixes:
 - *"Unclear how to get home"* → an always-there **Home button in the status

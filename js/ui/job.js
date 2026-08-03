@@ -123,6 +123,44 @@ export function offlineReportView(state, report) {
     </section>`;
 }
 
+function founderMultiplier(value) {
+  return Number(value || 1).toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
+}
+
+/** One-shot transfer docket shown immediately after a successful prestige. */
+function prestigeReportView(report) {
+  if (!report) return '';
+  const oldRegion = String(report.saleNumber).padStart(2, '0');
+  const newRegion = String(report.saleNumber + 1).padStart(2, '0');
+  const multiplier = founderMultiplier(report.founderBonus);
+  const bonusGained = Math.round(report.bonusGained * 100);
+  return `
+    <section class="prestige-handover" aria-labelledby="prestige-handover-title">
+      <header class="prestige-handover-head">
+        <div>
+          <p class="prestige-handover-kicker">Business handover</p>
+          <h2 id="prestige-handover-title">Keys changed hands.</h2>
+        </div>
+        <span class="badge badge--amber">Region ${newRegion}</span>
+      </header>
+      <div class="prestige-handover-map" role="img" aria-label="Region ${oldRegion} operation transferred. Region ${newRegion} service patch opened.">
+        <span class="prestige-handover-site prestige-handover-site--sold">
+          <small>Region ${oldRegion}</small><strong>Sold</strong><i></i>
+        </span>
+        <span class="prestige-handover-route" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="prestige-handover-site prestige-handover-site--new">
+          <small>Region ${newRegion}</small><strong>Van 01</strong><i></i>
+        </span>
+      </div>
+      <div class="prestige-handover-ledger">
+        <span><small>Operation signed over · $${report.lifetimeEarnings.toLocaleString('en-US')} earned · ${report.reputation} rep</small><strong>Tier ${report.soldTier} · ${report.techs} tech${report.techs === 1 ? '' : 's'} · ${report.routes} route${report.routes === 1 ? '' : 's'} · ${report.workshopMachines} in workshop</strong></span>
+        <span><small>Founder playbook</small><strong>+${bonusGained}% this sale · ×${multiplier} field pay + rep</strong></span>
+      </div>
+      <p class="prestige-handover-note">Clean van. Familiar faults. Better invoices when you take the call yourself.</p>
+      <button class="btn btn-sm" data-action="dismiss-prestige-report">File handover</button>
+    </section>`;
+}
+
 /** Whole UTC days from one "YYYY-MM-DD" string to another (toStr − fromStr), or null if unparseable. */
 function dayDelta(fromStr, toStr) {
   const a = Date.parse(`${fromStr}T00:00:00Z`);
@@ -318,7 +356,7 @@ export function statusBar(state, opts = {}) {
     </header>`;
 }
 
-export function homeView({ state, faults, machines = [], clients = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm }) {
+export function homeView({ state, faults, machines = [], clients = [], justUnlockedTier, offlineReport, expiryReport, corruptSaveBlob, homePanels, prestigeConfirm, prestigeReport }) {
   const streak = state.stats.cleanStreak;
   const total = state.jobs.callbacks.length;
   const readyCallbacks = dueCallbacks(state);
@@ -509,9 +547,19 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
        </div>`
     : '';
 
-  const bonusPct = ((state.player.founderBonus || 1.0) * 100).toFixed(0);
+  const bonusCopy = state.player.founderBonus > 1.0 ? ` · Founder Bonus ×${founderMultiplier(state.player.founderBonus)}` : '';
 
-  const bonusCopy = state.player.founderBonus > 1.0 ? ` · Founder Bonus: ${bonusPct}%` : '';
+  const regionNumber = String((state.player.prestigeCount || 0) + 1).padStart(2, '0');
+  const founderLegacy = state.player.prestigeCount > 0
+    ? `<aside class="founder-legacy" aria-label="Founder advantage">
+         <span class="founder-legacy-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+         <span class="founder-legacy-copy">
+           <small>Founder playbook · Region ${regionNumber}</small>
+           <strong>Field diagnosis pay + rep ×${founderMultiplier(state.player.founderBonus)}</strong>
+           <span>Routes and workshop sales stay at contract rates.</span>
+         </span>
+       </aside>`
+    : '';
 
 
 
@@ -896,6 +944,8 @@ export function homeView({ state, faults, machines = [], clients = [], justUnloc
       ${matureHome
         ? `<p class="game-stats">${state.stats.jobsCompleted} jobs completed${streak > 1 ? ` · ${streak} clean in a row ${streakFlameHtml(streak)}` : ''}${bonusCopy}</p>`
         : ''}
+
+      ${prestigeReport ? prestigeReportView(prestigeReport) : founderLegacy}
 
       ${unlockBanner}
       ${corruptBanner}
@@ -1651,6 +1701,9 @@ function wire(root, actions) {
   );
   root.querySelectorAll('[data-action="dismiss-expiry-report"]').forEach((el) =>
     el.addEventListener('click', actions.dismissExpiryReport)
+  );
+  root.querySelectorAll('[data-action="dismiss-prestige-report"]').forEach((el) =>
+    el.addEventListener('click', actions.dismissPrestigeReport)
   );
   root.querySelectorAll('[data-action="open-callbacks"]').forEach((el) =>
     el.addEventListener('click', actions.openCallbacks)

@@ -387,6 +387,7 @@ html:active-view-transition .screen { animation: none; }
 
 .badge--warn    { color: var(--warn);    background: color-mix(in srgb, var(--warn)    15%, transparent); }
 .badge--success { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
+.badge--amber   { color: var(--amber);   background: color-mix(in srgb, var(--amber)   15%, transparent); }
 
 /* ── Component: status dot (replaces emoji-as-UI, 2026-07-04) ── */
 .dot {
@@ -718,6 +719,8 @@ html:active-view-transition .screen { animation: none; }
   .test-instrument i,
   .service-network-bus i,
   .field-return-track i,
+  .prestige-handover-route i,
+  .prestige-handover-site--new,
   .receipt > *,
   .receipt-line--rep span:last-child,
   .settlement-seal,
@@ -1761,6 +1764,298 @@ html:active-view-transition .screen { animation: none; }
 }
 .game-brand--compact .game-wordmark {
   font-size: var(--text-xl);
+}
+
+/* ── Prestige: operation transfer and durable founder advantage ─────────── */
+.founder-legacy {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-sm);
+  border: var(--border-soft);
+  border-left: var(--stroke-accent) solid var(--amber);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--amber) 7%, transparent), transparent 58%),
+    var(--surface-low);
+}
+
+.founder-legacy-mark {
+  position: relative;
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--amber);
+}
+
+.founder-legacy-mark::before,
+.founder-legacy-mark::after,
+.founder-legacy-mark i {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
+.founder-legacy-mark::before {
+  top: 0.42rem;
+  right: 0.48rem;
+  bottom: 0.42rem;
+  left: 0.48rem;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+
+.founder-legacy-mark::after {
+  top: 0.72rem;
+  left: 0.74rem;
+  width: 0.72rem;
+  height: 1px;
+  background: currentColor;
+  box-shadow: 0 0.34rem currentColor, 0 0.68rem currentColor;
+}
+
+.founder-legacy-mark i:nth-child(1) {
+  top: 0.22rem;
+  left: 0.82rem;
+  width: 0.58rem;
+  height: 0.28rem;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  background: var(--surface-low);
+}
+
+.founder-legacy-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.founder-legacy-copy small {
+  color: var(--amber);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.founder-legacy-copy strong {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.founder-legacy-copy > span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.prestige-handover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space);
+  border: var(--border);
+  border-left: var(--stroke-accent) solid var(--amber);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(color-mix(in srgb, var(--amber) 2.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--amber) 2%, transparent) 1px, transparent 1px),
+    linear-gradient(145deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 52%),
+    var(--surface-low);
+  background-size: 1rem 1rem, 1rem 1rem, auto, auto;
+  box-shadow: var(--shadow-panel);
+}
+
+.prestige-handover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.prestige-handover-kicker,
+.prestige-handover-head h2,
+.prestige-handover-note {
+  margin: 0;
+}
+
+.prestige-handover-kicker {
+  color: var(--amber);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.prestige-handover-head h2 {
+  font-size: var(--text-xl);
+  line-height: 1.2;
+}
+
+.prestige-handover-head .badge {
+  white-space: nowrap;
+}
+
+.prestige-handover-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(2.75rem, 0.62fr) minmax(0, 1fr);
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.prestige-handover-site {
+  position: relative;
+  min-width: 0;
+  min-height: 3.65rem;
+  padding: var(--space-sm);
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.prestige-handover-site small {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.prestige-handover-site strong {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.prestige-handover-site i {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  width: 0.58rem;
+  height: 0.58rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.prestige-handover-site--sold {
+  color: var(--text-muted);
+  background:
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-muted) 5%, transparent) 0 5px, transparent 5px 11px),
+    var(--surface-low);
+}
+
+.prestige-handover-site--new {
+  border-color: color-mix(in srgb, var(--amber) 70%, var(--steel));
+  color: var(--amber);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--amber) 10%, transparent), transparent 60%),
+    var(--surface);
+  animation: prestige-region-stamp var(--motion-state) var(--ease-out) 0.42s both;
+}
+
+.prestige-handover-route {
+  position: relative;
+  display: block;
+  height: 1.5rem;
+  overflow: hidden;
+}
+
+.prestige-handover-route::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 1px);
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: repeating-linear-gradient(to right, var(--amber) 0 5px, transparent 5px 9px);
+}
+
+.prestige-handover-route::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 0.25rem);
+  right: 0;
+  border-top: 0.25rem solid transparent;
+  border-bottom: 0.25rem solid transparent;
+  border-left: 0.35rem solid var(--amber);
+}
+
+.prestige-handover-route i {
+  position: absolute;
+  z-index: 1;
+  top: calc(50% - 0.24rem);
+  left: 0;
+  width: 0.44rem;
+  height: 0.48rem;
+  border: 1px solid var(--amber);
+  border-radius: 1px;
+  background: var(--surface-low);
+  opacity: 0;
+  animation: prestige-transfer-packet 0.72s var(--ease-out) 0.12s 1 both;
+}
+
+.prestige-handover-route i:nth-child(2) { animation-delay: 0.24s; }
+.prestige-handover-route i:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes prestige-transfer-packet {
+  0% { left: 0; opacity: 0; }
+  16%, 82% { opacity: 1; }
+  100% { left: calc(100% - 0.44rem); opacity: 0; }
+}
+
+@keyframes prestige-region-stamp {
+  0% { transform: translateX(0.6rem); opacity: 0; }
+  70% { transform: translateX(-0.08rem); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.prestige-handover-ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xs);
+}
+
+.prestige-handover-ledger > span {
+  min-width: 0;
+  padding: var(--space-sm);
+  border: var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  display: flex;
+  flex-direction: column;
+}
+
+.prestige-handover-ledger small {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.prestige-handover-ledger strong {
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+}
+
+.prestige-handover-ledger > span:last-child strong {
+  color: var(--amber);
+}
+
+.prestige-handover-note {
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
+
+.prestige-handover > .btn {
+  align-self: flex-start;
 }
 
 /* ── Home: collapsible panels (prestige, workshop) ───────────── */
@@ -4747,6 +5042,9 @@ html:active-view-transition .screen { animation: none; }
   }
   .screen-home--operations {
     max-width: 900px;
+  }
+  .screen-home--operations .prestige-handover-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .screen-home--operations .service-network {
     grid-template-columns: minmax(13rem, 0.78fr) 3.5rem minmax(0, 1.45fr);

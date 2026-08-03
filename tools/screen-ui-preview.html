@@ -169,6 +169,21 @@
     } else if (fixture === 'prestige') {
       state.player.lifetimeEarnings = 34250;
       state.player.reputation = 128;
+    } else if (fixture === 'prestige-sold') {
+      state.player.cash = 500;
+      state.player.reputation = 0;
+      state.player.tierUnlocked = 1;
+      state.player.lifetimeEarnings = 0;
+      state.player.prestigeCount = 1;
+      state.player.founderBonus = 2.28;
+      state.tools.multimeterTier = 1;
+      state.van.slots = 4;
+      state.van.stock['generic-parts'] = 4;
+      state.routes = [];
+      state.techs = [];
+      state.workshop.machines = [];
+      state.jobs.callbacks = [];
+      state.contract = null;
     }
 
     if (screen === 'job' && !state.jobs.active) {
@@ -211,6 +226,18 @@
           prestige: fixture === 'prestige',
         },
         prestigeConfirm: params.has('confirm'),
+        prestigeReport: fixture === 'prestige-sold' && !params.has('filed') ? {
+          saleNumber: 1,
+          soldTier: 3,
+          techs: 2,
+          routes: 2,
+          workshopMachines: 2,
+          lifetimeEarnings: 34250,
+          reputation: 128,
+          founderBonusBefore: 1,
+          bonusGained: 1.28,
+          founderBonus: 2.28,
+        } : null,
         offlineReport: params.has('notices') ? {
           jobsDone: 11,
           totalEarned: 650,

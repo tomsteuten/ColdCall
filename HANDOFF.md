@@ -40,6 +40,32 @@ the integration surface from scratch.
 
 <!-- newest entry below this line -->
 
+### 2026-08-03 — Codex — Prestige resolves as a business handover
+
+- **Files touched:** `js/main.js`, `js/ui/job.js`, `js/audio.js`,
+  `css/main.css`, `tools/screen-ui-preview.html`, `tests/audio.test.js`,
+  `tests/ui-markup.test.js`, `DESIGN.md`, `GDD.md`, `HANDOFF.md`, `sw.js`.
+- **Contract:** `confirmSellBusiness()` snapshots the sold operation before
+  calling the unchanged `prestige(state)`, then passes transient
+  `prestigeReport` to `homeView()`. `.prestige-handover` reconciles the old
+  region, earnings, reputation, tier, techs, routes, workshop stock, and settled
+  Founder multiplier; `dismiss-prestige-report` replaces it with the durable
+  `.founder-legacy`, derived only from existing `prestigeCount` and
+  `founderBonus`. Founder advantage is expressed as `×N` field diagnosis pay +
+  rep; technician routes and workshop sales remain explicitly unboosted.
+- **Graphics mode:** n/a — code-native DOM/CSS regional transfer graphic.
+- **sw.js cache bumped?** yes v44→v45 after rebasing over Phase 1A–1C.
+- **prefers-reduced-motion honored?** yes — transfer packets and the new-region
+  stamp are disabled in the shared reduced-motion block; all resting content
+  remains visible.
+- **Schema change?** none — the handover report is transient; the persistent
+  strip derives from existing state.
+- **Tests:** `node tests/run.js` → **371 passing, 0 failed**.
+- **Open / unverified:** visually checked before integration at 320×740,
+  390×844, and desktop; the rebase onto the first-call, diagnosis, and
+  settlement redesigns auto-merged every app file. The only manual conflict was
+  the cache version. No economy, balance, save, or simulation code changed.
+
 ### 2026-07-31 — Codex — Phase 1C settlement becomes a game result
 
 - **Files touched:** `js/ui/job.js`, `css/main.css`, `tests/ui-markup.test.js`,

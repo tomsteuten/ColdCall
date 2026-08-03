@@ -1000,3 +1000,44 @@ test('prestige card states what is kept and lost, and never sells in one tap (20
   assert(armed.includes('+182%'), 'confirm restates the bonus at stake');
   assert(armed.includes("can't be undone"), 'irreversibility must be stated');
 });
+
+test('prestige resolves as an operation handover and leaves a truthful founder playbook', () => {
+  const state = defaultState();
+  state.stats.jobsCompleted = 38;
+  state.player.prestigeCount = 1;
+  state.player.founderBonus = 2.28;
+
+  const report = {
+    saleNumber: 1,
+    soldTier: 3,
+    techs: 2,
+    routes: 2,
+    workshopMachines: 2,
+    lifetimeEarnings: 34250,
+    reputation: 128,
+    founderBonusBefore: 1,
+    bonusGained: 1.28,
+    founderBonus: 2.28,
+  };
+  const handover = homeView({ state, faults: {}, prestigeReport: report });
+  assert(handover.includes('class="prestige-handover"'), 'a successful sale should land as a physical handover');
+  assert(handover.includes('Region 01 operation transferred. Region 02 service patch opened.'), 'the old and new patches should be connected');
+  assert(handover.includes('Operation signed over · $34,250 earned · 128 rep'), 'the sale docket should reconcile earnings and reputation');
+  assert(handover.includes('Tier 3 · 2 techs · 2 routes · 2 in workshop'), 'the transferred network should reconcile with pre-sale state');
+  assert(handover.includes('+128% this sale · ×2.28 field pay + rep'), 'the permanent payoff should be expressed as an operating multiplier');
+  assert(handover.includes('data-action="dismiss-prestige-report"'), 'the transient handover should have a filing action');
+  assert(!handover.includes('class="founder-legacy"'), 'the durable strip should wait until the handover is filed');
+  const reducedMotionBlock = mainCss.slice(
+    mainCss.indexOf('@media (prefers-reduced-motion: reduce)'),
+    mainCss.indexOf('/* ── Repair beat')
+  );
+  assert(reducedMotionBlock.includes('.prestige-handover-route i'), 'transfer packets must honor reduced motion');
+  assert(reducedMotionBlock.includes('.prestige-handover-site--new'), 'the region stamp must honor reduced motion');
+
+  const settled = homeView({ state, faults: {} });
+  assert(settled.includes('class="founder-legacy"'), 'a prestiged save should retain its founder advantage on Home');
+  assert(settled.includes('Founder playbook · Region 02'), 'the current region should derive from prestige count');
+  assert(settled.includes('Field diagnosis pay + rep ×2.28'), 'the boosted active loop should stay explicit');
+  assert(settled.includes('Routes and workshop sales stay at contract rates.'), 'unboosted side systems should stay explicit');
+  assert(settled.includes('Founder Bonus ×2.28'), 'the compact stats line should use multiplier language rather than an ambiguous percentage');
+});

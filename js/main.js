@@ -9,7 +9,7 @@ import { pickTicket, recordRecentFault } from './tickets.js';
 import { mulberry32 } from './rng.js';
 import { pickMotdFault, canPlayToday, getTodayDateStr, buildShareCard } from './motd.js';
 import { ensureContract } from './contract.js';
-import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, diagnostic as sfxDiagnostic, fanfare as sfxFanfare, dispatch as sfxDispatch } from './audio.js';
+import { click as sfxClick, jingle as sfxJingle, thunk as sfxThunk, diagnostic as sfxDiagnostic, fanfare as sfxFanfare, dispatch as sfxDispatch, handover as sfxHandover } from './audio.js';
 import { prefersReducedMotion } from './utils.js';
 import * as jobScreen from './ui/job.js';
 import * as shopScreen from './ui/shop.js?v=2';
@@ -59,6 +59,11 @@ let importError = null;
 // the durable Home board. The item itself is already saved; this docket is
 // transient feedback and may safely disappear on refresh.
 let purchaseNotice = null;
+
+// Snapshot of the operation just sold. The prestige mutation already lives in
+// the save; this one-shot handover report exists only to make the reset and its
+// permanent payoff tangible, then recedes when filed.
+let prestigeReport = null;
 
 // Feedback messages for the settings modal. Transient.
 let settingsExportMessage = null;
@@ -279,9 +284,31 @@ const actions = {
   confirmSellBusiness() {
     prestigeConfirm = false;
     homePanels.prestige = false; // next unlock starts collapsed again
+    const soldOperation = {
+      saleNumber: (state.player.prestigeCount || 0) + 1,
+      soldTier: state.player.tierUnlocked,
+      techs: state.techs.length,
+      routes: state.routes.length,
+      workshopMachines: state.workshop?.machines?.length ?? 0,
+      lifetimeEarnings: state.player.lifetimeEarnings,
+      reputation: Math.max(0, state.player.reputation),
+      founderBonusBefore: state.player.founderBonus || 1.0,
+    };
     try {
       prestige(state);
+      prestigeReport = {
+        ...soldOperation,
+        bonusGained: state.player.founderBonus - soldOperation.founderBonusBefore,
+        founderBonus: state.player.founderBonus,
+      };
+      // Older notices describe the operation that was just transferred. The
+      // sale report supersedes them so Home cannot tell two different stories.
+      offlineReport = null;
+      expiryReport = null;
+      purchaseNotice = null;
+      justUnlockedTier = null;
       save(state);
+      sfxHandover(state.settings.audio);
     } catch (e) {
       console.error(e.message);
     }
@@ -289,6 +316,10 @@ const actions = {
   },
   cancelSellBusiness() {
     prestigeConfirm = false;
+    render();
+  },
+  dismissPrestigeReport() {
+    prestigeReport = null;
     render();
   },
   buyWorkshopMachine(machineType) {
@@ -514,6 +545,7 @@ function paint() {
       pendingFirstFixId,
       homePanels,
       prestigeConfirm,
+      prestigeReport,
       screen,
       actions,
     });

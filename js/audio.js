@@ -150,3 +150,21 @@ export function dispatch(enabled) {
     tone(ac, { freq: 980, at: 0.13, dur: 0.06, type: 'square', peak: 0.022 });
   } catch { /* sound is optional, never fatal */ }
 }
+
+/**
+ * A business handover: docket stamp, key drop, then a clipped radio sign-on.
+ * Deliberately procedural rather than jackpot-like — prestige is a trade and
+ * a fresh start, not a slot-machine payout.
+ * @param {boolean} enabled state.settings.audio
+ */
+export function handover(enabled) {
+  if (!enabled) return;
+  try {
+    const ac = context();
+    if (!ac) return;
+    tone(ac, { freq: 170, at: 0.00, dur: 0.055, type: 'square', peak: 0.028 });
+    tone(ac, { freq: 285, at: 0.07, dur: 0.07, type: 'square', peak: 0.032 });
+    tone(ac, { freq: 620, at: 0.19, dur: 0.07, type: 'triangle', peak: 0.027 });
+    tone(ac, { freq: 880, at: 0.29, dur: 0.13, type: 'triangle', peak: 0.024 });
+  } catch { /* sound is optional, never fatal */ }
+}
